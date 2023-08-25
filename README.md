@@ -1,5 +1,5 @@
 # Description
-Flowdometer automatically tracks your process in Salesforce. It can monitor any Object, and changes to any field, usually something named Status or Stage.
+Flowdometer automatically tracks your process in Salesforce. It can monitor any Object, and changes to any Field, usually something named Status or Stage.
 
 # Driveway
 Driveway is an exceptional Salesforce documentation tool. The guides below become interactive in your own org if you download the free Chrome Extension here: https://chrome.google.com/webstore/detail/driveway/cdekmndccoppabcjlfflndphloafcgpf
