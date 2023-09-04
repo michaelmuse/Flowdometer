@@ -8,6 +8,7 @@ public with sharing class MetaDataUtilityCls {
     public static Map<String,String> lookUpAPINameMap = new Map<String,String>();
     public static Boolean isRelationshipAvailable = FALSE;
 
+    //This method is used to get the lookup field from the object
     @AuraEnabled(Cacheable=true)
     public static Map<String,String> getLookupField(String objectName){
         DescribeSObjectResult objDef = Schema.getGlobalDescribe().get(objectName).getDescribe();
@@ -26,6 +27,7 @@ public with sharing class MetaDataUtilityCls {
         return relatedlookupMap;
     }
 
+    //This method is used to get the fields from the object
     @AuraEnabled(Cacheable=true)
     public static Map<String, String> getSObjectFields(String objectName){
         Map<String, String> sObjectFieldsMap = new Map<String, String>();
@@ -46,7 +48,8 @@ public with sharing class MetaDataUtilityCls {
         }
         return fieldSetMap;
     }
-    
+
+    //This method is used to get all the objects from the org
     @AuraEnabled(Cacheable=true)
     public static Map<String, String> getAllSObjectsInOrg(){
         Map<String, String> objectAPIToLabelMap = new Map<String, String>();
@@ -71,6 +74,7 @@ public with sharing class MetaDataUtilityCls {
         return objectAPINameMap;
     }
 
+    //This method is used to sort the keyset
     public static List<String> getSortedKeySet(Map<String, String> objectAPIToLabelMap){
         List<String> keySetLst = new List<String>();
         keySetLst.addAll(objectAPIToLabelMap.keySet());
@@ -78,7 +82,9 @@ public with sharing class MetaDataUtilityCls {
         return keySetLst;
     }
     
-	public static void grantFieldEditAccess(String permissionSetName, String objectApiName, String fieldApiName) {
+    
+    //This method is used to grant field edit access via our permission set    
+    public static void grantFieldEditAccess(String permissionSetName, String objectApiName, String fieldApiName) {
         try {
             MetadataService.MetadataPort service = MetadataService.createService();
             MetadataService.PermissionSet permissionSet = (MetadataService.PermissionSet) service.readMetadata(
@@ -93,10 +99,10 @@ public with sharing class MetaDataUtilityCls {
         } catch (Exception e) {
             System.debug('An error occurred: ' + e.getMessage());
         }
-    }    
+    }
 
-    // This method check that selected field is history tracking Enable or not 
-    // if in case field history not enable then shows the message that 'Enable the History tracking'
+
+    //This method checks if the selected field has history tracking enabled. If field history isn't enabled, then it shows the user a message to 'Enable the History tracking'.
     @AuraEnabled(Cacheable=true)  
     public static String checkFieldHistoryStatus(string sObjectName, string fieldName){
         Set<String> historyEnabledFields = new Set<String>();
@@ -153,10 +159,12 @@ public with sharing class MetaDataUtilityCls {
         return fieldHistoryStatus;
     }
 
+    //This method is used to create the Listener record
     @AuraEnabled
     public static String createListenerRecord(Flowdometer__Listener__c newRecord){
         newRecord.Flowdometer__Last_Execution_On__c = Datetime.now();
         insert newRecord;
         return newRecord.Id;
     }
+    
 }

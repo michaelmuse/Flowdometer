@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Flow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>55.0</apiVersion>
+    <assignments>
+        <name>FlowdoConfig_Value_Assignment</name>
+        <label>FlowdoConfig Value Assignment</label>
+        <locationX>50</locationX>
+        <locationY>479</locationY>
+        <assignmentItems>
+            <assignToReference>varFlowdoConfig</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>$Record</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Listener_Config_Main_Flow</targetReference>
+        </connector>
+    </assignments>
+    <decisions>
+        <name>Check_If_the_Flow_is_Active</name>
+        <label>Check If the Flow is Active</label>
+        <locationX>182</locationX>
+        <locationY>371</locationY>
+        <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
+        <rules>
+            <name>Check_Listener_is_Active</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.Flowdometer__isActive__c</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>FlowdoConfig_Value_Assignment</targetReference>
+            </connector>
+            <label>Check Listener is Active</label>
+        </rules>
+    </decisions>
+    <description>Flowdometer handler for setting up listeners for your object and field.</description>
+    <environments>Default</environments>
+    <interviewLabel>Listener Batch Flow {!$Flow.CurrentDateTime}</interviewLabel>
+    <label>Flowdometer - Listener Tracking Trigger</label>
+    <processMetadataValues>
+        <name>BuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>CanvasMode</name>
+        <value>
+            <stringValue>AUTO_LAYOUT_CANVAS</stringValue>
+        </value>
+    </processMetadataValues>
+    <processMetadataValues>
+        <name>OriginBuilderType</name>
+        <value>
+            <stringValue>LightningFlowBuilder</stringValue>
+        </value>
+    </processMetadataValues>
+    <processType>AutoLaunchedFlow</processType>
+    <start>
+        <locationX>56</locationX>
+        <locationY>0</locationY>
+        <connector>
+            <targetReference>Check_If_the_Flow_is_Active</targetReference>
+        </connector>
+        <doesRequireRecordChangedToMeetCriteria>true</doesRequireRecordChangedToMeetCriteria>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>isActive__c</field>
+            <operator>EqualTo</operator>
+            <value>
+                <booleanValue>true</booleanValue>
+            </value>
+        </filters>
+        <object>Listener__c</object>
+        <recordTriggerType>CreateAndUpdate</recordTriggerType>
+        <scheduledPaths>
+            <name>Run_Every_3_Minutes</name>
+            <connector>
+                <targetReference>Check_If_the_Flow_is_Active</targetReference>
+            </connector>
+            <label>Run Every 3 Minutes</label>
+            <maxBatchSize>1</maxBatchSize>
+            <offsetNumber>3</offsetNumber>
+            <offsetUnit>Minutes</offsetUnit>
+            <recordField>Last_Check__c</recordField>
+            <timeSource>RecordField</timeSource>
+        </scheduledPaths>
+        <triggerType>RecordAfterSave</triggerType>
+    </start>
+    <status>Active</status>
+    <subflows>
+        <name>Listener_Config_Main_Flow</name>
+        <label>Listener Config Main Flow</label>
+        <locationX>50</locationX>
+        <locationY>587</locationY>
+        <flowName>Listener_Configuration_Main_Flow</flowName>
+        <inputAssignments>
+            <name>varFlowDoConfig</name>
+            <value>
+                <elementReference>varFlowdoConfig</elementReference>
+            </value>
+        </inputAssignments>
+    </subflows>
+    <variables>
+        <name>varFlowdoConfig</name>
+        <dataType>SObject</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+        <objectType>Listener__c</objectType>
+    </variables>
+</Flow>
