@@ -10,5 +10,5 @@
       "options": { "parser": "html" }
     }
   ],
-  "ignore": ["**/*.xml"] 
+  "ignore": ["**/*.xml"] // Exclude XML files from formatting
 }

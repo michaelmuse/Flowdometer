@@ -10,5 +10,6 @@
       "options": { "parser": "html" }
     }
   ],
-  "ignore": ["**/*.xml"] 
+  "ignore": ["**/*.xml"],
+  "plugins": ["@prettier/plugin-xml"] 
 }

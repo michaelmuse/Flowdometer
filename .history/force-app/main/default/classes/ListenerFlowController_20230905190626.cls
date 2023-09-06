@@ -25,10 +25,10 @@ global with sharing class ListenerFlowController {
     description=''
     category='ListenerFlowController'
   )
-  public static List<Flowdometer__ListenerFlowLatestResponse> parseRecordsToFlow(
-    List<Flowdometer__ListenerFlowLatestRequest> listenerConfigList
+  public static List<ListenerFlowLatestResponse> parseRecordsToFlow(
+    List<ListenerFlowLatestRequest> listenerConfigList
   ) {
-    Flowdometer__ListenerFlowLatestResponse response = new Flowdometer__ListenerFlowLatestResponse();
+    ListenerFlowLatestResponse response = new ListenerFlowLatestResponse();
     Set<String> targetRecords = new Set<String>();
     Map<String, SObject> sObjectMap = new Map<String, SObject>();
     Map<Id, List<SObject>> latestHistory = new Map<Id, List<SObject>>();
@@ -87,7 +87,7 @@ global with sharing class ListenerFlowController {
         ex.getStackTraceString();
     }
     update listenerConfigRec;
-    return new List<Flowdometer__ListenerFlowLatestResponse>{ response };
+    return new List<ListenerFlowLatestResponse>{ response };
   }
 
   //This method takes in a listener flow record and a boolean value that determines whether or not to include the last modified date check in the where clause.
@@ -297,21 +297,11 @@ global with sharing class ListenerFlowController {
     result.hasRecords = !historyRecordsMap.isEmpty();
   }
 
-  //ListenerFlowLatestResponse params to flow
-  //This method returns a listener flow latest response object.
-  global class Flowdometer__ListenerFlowLatestResponse {
+  //ListenerFlowLatestRequest params from flow
+  //This method takes in a listener flow record and returns a listener flow latest request object.
+  global class ListenerFlowLatestRequest {
     @InvocableVariable
-    global Boolean isCheckSuccess;
-    @InvocableVariable
-    global Boolean hasRecords;
-    @InvocableVariable
-    global List<ListenerFlowController> lstListenerFlow;
-
-    global Flowdometer__ListenerFlowLatestResponse() {
-      this.isCheckSuccess = true;
-      this.hasRecords = false;
-      this.lstListenerFlow = new List<ListenerFlowController>();
-    }
+    global Flowdometer__Listener__c listenerConfig;
   }
 
   //ListenerFlowLatestResponse params to flow

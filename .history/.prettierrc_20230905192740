@@ -10,5 +10,6 @@
       "options": { "parser": "html" }
     }
   ],
-  "ignore": ["**/*.xml"] 
+  "ignore": ["**/*.xml"], // Exclude XML files from formatting
+  "plugins": ["@prettier/plugin-xml"] // Add the XML plugin
 }
