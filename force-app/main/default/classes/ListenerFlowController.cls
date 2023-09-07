@@ -6,9 +6,8 @@ global with sharing class ListenerFlowController {
     @AuraEnabled
     global String varCurrentObjectID;
     @AuraEnabled
-    static {
-        historyRecordsMap = new Map<Id, List<SObject>>();
-    }
+    // Define the historyRecordsMap variable
+    public static Map<Id, List<SObject>> historyRecordsMap;
     global String varNameofTrackedRecord;
     @AuraEnabled
     global Boolean varTerminalStage;
@@ -213,11 +212,21 @@ global with sharing class ListenerFlowController {
         }
         result.hasRecords = !historyRecordsMap.isEmpty();
     }
-  
+    
+    // Define the ListenerFlowLatestRequest class
+    public class ListenerFlowLatestRequest {
+        // Request class members here
+    }
+    
+    // Define the listenerConfigList variable
+    public static List<ListenerFlowLatestRequest> listenerConfigList;
+
     // This method returns a string that is used in a SOQL query to filter records based on the last execution date of the listener flow.
     // Main method that calls getQueryModifiers, getLatestHistoryValues, preparingResponse
     @InvocableMethod(label='Query & Parse History Records', description='Collect history tracking records after you have turned on history tracking', category='ListenerFlowController')
-    public static List<ListenerFlowLatestResponse> parseRecordsToFlow(List<ListenerFlowLatestRequest> listenerConfigList, Listener__c listenerConfig) {
+    // Correct the parameter type
+    public static List<ListenerFlowLatestResponse> parseRecordsToFlow(List<ListenerFlowLatestRequest> listenerConfigList) {
+    // public static List<ListenerFlowLatestResponse> parseRecordsToFlow(List<ListenerFlowLatestRequest> listenerConfigList, Listener__c listenerConfig) {
         ListenerFlowLatestResponse response = new ListenerFlowLatestResponse();
         Set<Id> targetRecords = new Set<Id>();
         Map<Id, SObject> sObjectMap = new Map<Id, SObject>();
