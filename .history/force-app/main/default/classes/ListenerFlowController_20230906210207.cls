@@ -1,30 +1,28 @@
 global with sharing class ListenerFlowController {
-    @AuraEnabled
-    global String varCurrentFieldTracked;
-    @AuraEnabled
-    global String varCurrentFieldValue;
-    @AuraEnabled
-    global String varCurrentObjectID;
-
-    static {
-        historyRecordsMap = new Map<Id, List<SObject>>();
-    }
-
-    global String varNameofTrackedRecord;
-    @AuraEnabled
-    global Boolean varTerminalStage;
-    @AuraEnabled
-    global String varTrackedCustomObjectName;
-    @AuraEnabled
-    global Datetime varEditStartTime;
-    @AuraEnabled
-    global Datetime varEditEndTime;
-    @AuraEnabled
-    global String varType;
-    @AuraEnabled
-    global Id varHistoryRecordId;
-    
-    private static Map<Id, List<SObject>> historyRecordsMap;
+  @AuraEnabled
+  global String varCurrentFieldTracked;
+  @AuraEnabled
+  global String varCurrentFieldValue;
+  @AuraEnabled
+  global String varCurrentObjectID;
+  @AuraEnabled
+  static {
+      historyRecordsMap = new Map<Id, List<SObject>>();
+  }
+  global String varNameofTrackedRecord;
+  @AuraEnabled
+  global Boolean varTerminalStage;
+  @AuraEnabled
+  global String varTrackedCustomObjectName;
+  @AuraEnabled
+  global Datetime varEditStartTime;
+  @AuraEnabled
+  global Datetime varEditEndTime;
+  @AuraEnabled
+  global String varType;
+  @AuraEnabled
+  global Id varHistoryRecordId;
+  private static Map<Id, List<SObject>> historyRecordsMap = new Map<Id, List<SObject>>();
 
   // Inner class for ListenerFlowLatestResponse params to flow
   global class ListenerFlowLatestResponse {
