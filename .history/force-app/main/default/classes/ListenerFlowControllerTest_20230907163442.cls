@@ -19,10 +19,6 @@ private class ListenerFlowControllerTest {
     public ListenerFlowControllerTest() {
         testDataFactory = new TestDataFactory();
     }
-    
-    // Define the historyRecords and request variables
-    List<OpportunityFieldHistory> historyRecords;
-    ListenerFlowController.ListenerFlowLatestRequest request;
 
     // ------------------------------
     // Helper Methods
@@ -40,10 +36,6 @@ private class ListenerFlowControllerTest {
     List<CaseHistory> caseHistoryRecords = testDataFactory.createCaseHistoryRecords(parentCase.Id, 'Status', 2);
     historyRecordsMap.put(parentCase.Id, caseHistoryRecords);
 
-    // Add the TestDataFactory class definition
-    public class TestDataFactory {
-        // TestDataFactory methods here
-    }
 
     // ------------------------------
     // Test Setup and Assertion Methods
