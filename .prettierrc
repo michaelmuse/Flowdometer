@@ -8,10 +8,6 @@
     {
       "files": "*.{cmp,page,component}",
       "options": { "parser": "html" }
-    },
-    {
-      "files": "*.cls",
-      "options": { "parser": "apex" }
     }
   ]
 }
