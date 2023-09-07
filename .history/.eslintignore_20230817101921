@@ -14,4 +14,3 @@
 **/aura/**/*.xml
 **/aura/**/*.app
 .sfdx
-**/desktop.ini

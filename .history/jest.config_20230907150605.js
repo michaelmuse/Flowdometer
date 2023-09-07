@@ -1,4 +1,3 @@
-//F:\Muse Operations Drive\Projects\Flowdometer\jest.config.js
 const { jestConfig } = require('@salesforce/sfdx-lwc-jest/config');
 
 module.exports = {
@@ -6,8 +5,8 @@ module.exports = {
   testEnvironment: 'jsdom',
   preset: '@lwc/jest-preset',
   moduleNameMapper: {
-    // '^c/(.*)$': '<rootDir>/force-app/main/default/lwc/$1/$1.js',
-    '^c/(.*)$': '<rootDir>/force-app/main/default/lwc/$1/$1.js',
+    '^c/(.*)$': '<rootDir>/force-app/main/default/lwc/$1/$1.js', // Keeping the more specific path
+    // Add other mappings here if needed
   },
   testPathIgnorePatterns: ['/node_modules/', '/.history/'],
   modulePathIgnorePatterns: ['<rootDir>/.localdevserver'],
