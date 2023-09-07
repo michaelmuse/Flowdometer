@@ -18,7 +18,7 @@
   },
   "resolutions": {
     "eslint": "8.48.0"
-  },  
+  },
   "devDependencies": {
     "@lwc/eslint-plugin-lwc": "^1.1.2",
     "@lwc/jest-preset": "^14.1.0",
@@ -42,9 +42,7 @@
     "**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}": [
       "prettier --write"
     ],
-    "**/{aura,lwc}/**": [
-      "eslint"
-    ]
+    "**/{aura,lwc}/**": ["eslint"]
   },
   "dependencies": {
     "@salesforce-ux/design-system": "^2.21.3-wcag"

@@ -1,20 +1,20 @@
 //force-app/main/default/lwc/flowdometerInstructions/__tests__/modal.test.js
-import { createElement } from 'lwc';
-import MockedModal from 'c/modal'; // Assuming c-modal is the correct import path
+import { createElement } from "lwc";
+import MockedModal from "c/modal"; // Assuming c-modal is the correct import path
 
-describe('c-modal', () => {
-    it('should emit close event when closed', () => {
-        const element = createElement('c-modal', { is: MockedModal });
-        document.body.appendChild(element);
-        
-        const handler = jest.fn();
-        element.addEventListener('close', handler);
+describe("c-modal", () => {
+  it("should emit close event when closed", () => {
+    const element = createElement("c-modal", { is: MockedModal });
+    document.body.appendChild(element);
 
-        // Simulate close action
-        element.shadowRoot.querySelector('button.close').click();
+    const handler = jest.fn();
+    element.addEventListener("close", handler);
 
-        return Promise.resolve().then(() => {
-            expect(handler).toHaveBeenCalled();
-        });
+    // Simulate close action
+    element.shadowRoot.querySelector("button.close").click();
+
+    return Promise.resolve().then(() => {
+      expect(handler).toHaveBeenCalled();
     });
+  });
 });

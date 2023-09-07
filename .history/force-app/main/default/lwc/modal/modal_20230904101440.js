@@ -1,9 +1,9 @@
 //force-app/main/default/lwc/modal/modal.js
-import { LightningElement, api, track } from 'lwc';
+import { LightningElement, api, track } from "lwc";
 
 export default class Modal extends LightningElement {
   @api title;
-  @api currentModalContent = ''; // Existing property for content
+  @api currentModalContent = ""; // Existing property for content
   @track currentModalContentIsIframe = true; // New property to track if the content is an iframe
   @track internalStateExample;
 
@@ -12,7 +12,7 @@ export default class Modal extends LightningElement {
 
   handleClose() {
     // Dispatch a 'close' event so the parent component can handle it
-    this.dispatchEvent(new CustomEvent('close'));
+    this.dispatchEvent(new CustomEvent("close"));
   }
 
   connectedCallback() {
@@ -22,8 +22,8 @@ export default class Modal extends LightningElement {
 
   yourMethod(arg1, arg2) {
     // Capturing method calls and their arguments for tests
-    this.methodCalls['yourMethod'] = this.methodCalls['yourMethod'] || [];
-    this.methodCalls['yourMethod'].push({ arg1, arg2 });
+    this.methodCalls["yourMethod"] = this.methodCalls["yourMethod"] || [];
+    this.methodCalls["yourMethod"].push({ arg1, arg2 });
   }
 
   addEventListener(event, callback) {

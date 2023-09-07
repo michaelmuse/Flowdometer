@@ -1,10 +1,10 @@
-import { LightningElement, api } from 'lwc';
+import { LightningElement, api } from "lwc";
 
 export default class Modal extends LightningElement {
-    @api title;
+  @api title;
 
-    handleClose() {
-        // Dispatch a 'close' event so the parent component can handle it
-        this.dispatchEvent(new CustomEvent('close'));
-    }
+  handleClose() {
+    // Dispatch a 'close' event so the parent component can handle it
+    this.dispatchEvent(new CustomEvent("close"));
+  }
 }
