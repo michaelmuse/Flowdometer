@@ -42,7 +42,7 @@
     <description>Flowdometer handler for setting up listeners for your object and field.</description>
     <environments>Default</environments>
     <interviewLabel>Listener Batch Flow {!$Flow.CurrentDateTime}</interviewLabel>
-    <label>Flowdometer - Listener Tracking Trigger</label>
+    <label>Flowdometer - (1) Listener Tracking Trigger</label>
     <processMetadataValues>
         <name>BuilderType</name>
         <value>
@@ -93,7 +93,7 @@
         </scheduledPaths>
         <triggerType>RecordAfterSave</triggerType>
     </start>
-    <status>Active</status>
+    <status>Draft</status>
     <subflows>
         <name>Listener_Config_Main_Flow</name>
         <label>Listener Config Main Flow</label>

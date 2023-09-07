@@ -30,7 +30,9 @@
                 <elementReference>$Record.Field_Value_Initial_Timestamp__c</elementReference>
             </value>
         </inputParameters>
+        <nameSegment>CalculateBusinessHoursDiff</nameSegment>
         <storeOutputAutomatically>true</storeOutputAutomatically>
+        <versionSegment>1</versionSegment>
     </actionCalls>
     <apiVersion>58.0</apiVersion>
     <description>An optional automation to append Business Hours to your Flowdometer Trackers. Note that you will need to set up Business Hours first. If you have different sets of business hours, you&apos;ll want to Clone this Flow template and customize it.</description>
