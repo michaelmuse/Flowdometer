@@ -3,6 +3,7 @@
 #
 
 package.xml
+**/desktop.ini
 
 # LWC configuration files
 **/jsconfig.json
