@@ -97,57 +97,27 @@ public class TestDataFactory {
     return opp;
   }
 
-  // public static List<History__c> createHistoryRecords(Integer numRecords) {
-  //   //List<History__c> historyRecords = new List<History__c>();
-  //   List<YourCustomObject__c> historyRecords = new List<YourCustomObject__c>();
-  //   for (Integer i = 0; i < numRecords; i++) {
-  //     // historyRecords.add(
-  //     //   new History__c()
-  //     //     // Populate required fields here
-  //     // );
-  //     List<YourCustomObject__c> historyRecords = new List<YourCustomObject__c>();
-  //     historyRecords.add(
-  //         new YourCustomObject__c()
-  //           // Populate required fields here
-  //     );
-  //   }
-  //   insert historyRecords; // Insert the History__c records
-  //   return historyRecords;
-  // }
-//   public static List<YourCustomObject__c> createHistoryRecords(Integer numRecords) {
-//     List<YourCustomObject__c> historyRecords = new List<YourCustomObject__c>();
-//     for (Integer i = 0; i < numRecords; i++) {
-//         historyRecords.add(
-//             new YourCustomObject__c()
-//                 // Populate required fields here
-//         );
-//     }
-//     insert historyRecords; // Insert the custom object records
-//     return historyRecords;
-// }
-// Replace YourCustomObject__c with the actual API name of the custom object
-public static List<YourCustomObject__c> createHistoryRecords(Integer numRecords) {
-  List<YourCustomObject__c> historyRecords = new List<YourCustomObject__c>();
-  for (Integer i = 0; i < numRecords; i++) {
+  public static List<History__c> createHistoryRecords(Integer numRecords) {
+    List<History__c> historyRecords = new List<History__c>();
+    for (Integer i = 0; i < numRecords; i++) {
       historyRecords.add(
-          new YourCustomObject__c()
-              // Populate required fields here
+        new History__c()
+          // Populate required fields here
       );
+    }
+    insert historyRecords; // Insert the History__c records
+    return historyRecords;
   }
-  insert historyRecords; // Insert the custom object records
-  return historyRecords;
-}
 
-public static List<YourCustomObject__c> createCustomObjects(Integer numRecords) {
-  List<YourCustomObject__c> customObjects = new List<YourCustomObject__c>();
-  for (Integer i = 0; i < numRecords; i++) {
+  public static List<CustomObject__c> createCustomObjects(Integer numRecords) {
+    List<CustomObject__c> customObjects = new List<CustomObject__c>();
+    for (Integer i = 0; i < numRecords; i++) {
       customObjects.add(
-          new YourCustomObject__c()
-              // Populate required fields here
+        new CustomObject__c()
+          // Populate required fields here
       );
+    }
+    insert customObjects; // Insert the CustomObject__c records
+    return customObjects;
   }
-  insert customObjects; // Insert the custom object records
-  return customObjects;
-}
-
 }

@@ -1,5 +1,4 @@
 global with sharing class ListenerFlowController {
-    //This is a managed package so we need the global modifiers
     @AuraEnabled
     global String varCurrentFieldTracked;
     @AuraEnabled
@@ -8,6 +7,7 @@ global with sharing class ListenerFlowController {
     global String varCurrentObjectID;
     @AuraEnabled
     // Define the historyRecordsMap variable
+    public static Map<Id, List<SObject>> historyRecordsMap;
     Map<Id, List<SObject>> historyRecordsMap = new Map<Id, List<SObject>>();
     global String varNameofTrackedRecord;
     @AuraEnabled

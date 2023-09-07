@@ -363,6 +363,18 @@ here
         System.assertEquals(false, isNonExistentCustom, 'Non-existent object should not be a custom object');
     }
 
+    @isTest
+    static void testCreateCustomObjects() {
+        // Create custom objects using the TestDataFactory method
+        Integer numRecords = 3; // Adjust the number of records as needed
+        List<Flowdometer__Flow__c> customObjects = TestDataFactory.createCustomObjects(numRecords);
+
+        // Verify that the custom objects were created
+        System.assertEquals(numRecords, customObjects.size(), 'Number of custom objects created should match');
+
+        // Optionally, you can add additional assertions or checks on the created custom objects here
+    }
+
 
     // ------------------------------
     // Test Methods for preparingResponse

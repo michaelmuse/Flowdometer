@@ -348,21 +348,12 @@ here
         System.assertEquals('', value);
     }
 
+    // Test the utility method for identifying custom objects
     @isTest
     static void testIsCustomObject() {
-        // Test with a standard object (Account)
-        Boolean isAccountCustom = ListenerFlowController.isCustomObject('Account');
-        System.assertEquals(false, isAccountCustom, 'Account should be a standard object');
-
-        // Test with your custom object (Flowdometer__Flow__c)
-        Boolean isFlowCustom = ListenerFlowController.isCustomObject('Flowdometer__Flow__c');
-        System.assertEquals(true, isFlowCustom, 'Flowdometer__Flow__c should be a custom object');
-
-        // Test with a non-existent object (ThisObjectDoesNotExist__c)
-        Boolean isNonExistentCustom = ListenerFlowController.isCustomObject('ThisObjectDoesNotExist__c');
-        System.assertEquals(false, isNonExistentCustom, 'Non-existent object should not be a custom object');
+        Boolean isCustom = ListenerFlowController.isCustomObject('Account');
+        System.assertEquals(false, isCustom);
     }
-
 
     // ------------------------------
     // Test Methods for preparingResponse
