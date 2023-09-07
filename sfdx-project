@@ -8,5 +8,5 @@
   "name": "Flowdometer",
   "namespace": "",
   "sfdcLoginUrl": "https://museoperations-dev-ed.my.salesforce.com/",
-  "sourceApiVersion": "59.0"
+  "sourceApiVersion": "58.0"
 }
