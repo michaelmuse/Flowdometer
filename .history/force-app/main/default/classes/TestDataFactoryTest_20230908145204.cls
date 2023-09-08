@@ -50,8 +50,8 @@ static void testCreateOpportunityHistoryRecords() {
   @isTest
   static void testCreateOpportunity() {
       // Call the createOpportunity method
-      createOpportunity('Test Stage');
-      
+      Opportunity testOpportunity = TestDataFactory.createOpportunity('Test Stage');
+
       // Assert that the Opportunity was created
       System.assertNotEquals(null, testOpportunity.Id);
   }

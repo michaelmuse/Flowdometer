@@ -1,14 +1,18 @@
 ﻿@isTest
 public class TestDataFactoryTest {
   @isTest
-static void testCreateOpportunityHistoryRecords() {
-    // Initialize your parameters
-    Integer numRecords = 5;
-    String fieldName = 'StageName';
+  static void testCreateOpportunityHistoryRecords() {
+      // Create a test Opportunity record
+      Opportunity testOpportunity = TestDataFactory.createOpportunity(
+          'Test Stage'
+      );
+      insert testOpportunity;
 
-    // Call the createOpportunityHistoryRecords method with the new signature
-    createOpportunityHistoryRecords(numRecords, fieldName);  // Changed to match the global method signature
-
+      // Call the createOpportunityHistoryRecords method
+      List<Opportunity> historyRecords = TestDataFactory.createOpportunityHistoryRecords(
+          5, // Number of history records to create
+          'Test Stage' // Provide the fieldName parameter
+      );
 
       // Assert that the history records were created
       System.assertEquals(5, historyRecords.size());
@@ -50,8 +54,8 @@ static void testCreateOpportunityHistoryRecords() {
   @isTest
   static void testCreateOpportunity() {
       // Call the createOpportunity method
-      createOpportunity('Test Stage');
-      
+      Opportunity testOpportunity = TestDataFactory.createOpportunity('Test Stage');
+
       // Assert that the Opportunity was created
       System.assertNotEquals(null, testOpportunity.Id);
   }

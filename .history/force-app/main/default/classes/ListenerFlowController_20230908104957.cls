@@ -206,7 +206,7 @@ global with sharing class ListenerFlowController {
     global class ListenerFlowLatestRequest {
         // Request class members here
         @InvocableVariable
-        global Listener__c listenerConfigRec;
+        global Listener__c listenerConfigRec;  // Replaced listenerConfig with listenerConfigRec
     }
 
     // Define the listenerConfigList variable

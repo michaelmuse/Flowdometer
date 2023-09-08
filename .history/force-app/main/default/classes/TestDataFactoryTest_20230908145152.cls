@@ -3,7 +3,7 @@ public class TestDataFactoryTest {
   @isTest
 static void testCreateOpportunityHistoryRecords() {
     // Initialize your parameters
-    Integer numRecords = 5;
+    Integer numRecords = 3;
     String fieldName = 'StageName';
 
     // Call the createOpportunityHistoryRecords method with the new signature
@@ -50,8 +50,8 @@ static void testCreateOpportunityHistoryRecords() {
   @isTest
   static void testCreateOpportunity() {
       // Call the createOpportunity method
-      createOpportunity('Test Stage');
-      
+      Opportunity testOpportunity = TestDataFactory.createOpportunity('Test Stage');
+
       // Assert that the Opportunity was created
       System.assertNotEquals(null, testOpportunity.Id);
   }

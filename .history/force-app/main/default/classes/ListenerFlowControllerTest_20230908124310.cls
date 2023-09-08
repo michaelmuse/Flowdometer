@@ -39,11 +39,11 @@ public class ListenerFlowControllerTest {
         Map<Id, List<SObject>> historyRecordsMap = new Map<Id, List<SObject>>();
         
         // Create and insert an Opportunity record
-        Opportunity opportunity = new Opportunity(Name = 'Test Opp', fieldName = 'Prospecting', CloseDate = Date.today());
+        Opportunity opportunity = new Opportunity(Name = 'Test Opp', StageName = 'Prospecting', CloseDate = Date.today());
         insert opportunity;
         
         // Use TestDataFactory to create history records for Opportunity
-        List<Opportunity> oppHistoryRecords = testDataFactory.createOpportunityHistoryRecords(2, 'fieldName');
+        List<Opportunity> oppHistoryRecords = testDataFactory.createOpportunityHistoryRecords(2, 'StageName');
         historyRecordsMap.put(opportunity.Id, oppHistoryRecords);
         
         // Create and insert a Case record
@@ -88,7 +88,7 @@ public class ListenerFlowControllerTest {
     static Opportunity createAndUpdateOpportunity(String newStage) {
         Opportunity opportunity = TestDataFactory.createOpportunity('Prospecting');
         insert opportunity;
-        opportunity.fieldName = newStage;
+        opportunity.StageName = newStage;
         update opportunity;
         return opportunity;
     }
@@ -130,29 +130,39 @@ public class ListenerFlowControllerTest {
     // Test the main logic for parsing records to flow
     @isTest
     static void testParseRecordsToFlow() {
-        // Setup test data
-        // Create a Listener__c record
-        Listener__c listenerConfigRec = new Listener__c(
-            // Initialize fields as needed
+        setupTestData();
+        // Create a stub for the Database.query method
+        Database.QueryLocator mockQueryLocator = (Database.QueryLocator) Test.createStub(
+            Database.QueryLocator.class,
+            new MockQueryLocator()
         );
+        // Create test data without inserting the record
+        Flowdometer__Listener__c listenerConfigRec = TestDataFactory.createlistenerConfigRec(null, false); // Passing null for lastExecutionOn and false for insertRecord
+
+        // Now insert the record
         insert listenerConfigRec;
 
-        // Create a ListenerFlowLatestRequest
-        ListenerFlowLatestRequest request = new ListenerFlowLatestRequest();
+        // Create a stub for the Database.query method
+        Database.QueryLocator mockQueryLocator = (Database.QueryLocator) Test.createStub(
+            Database.QueryLocator.class,
+            new MockQueryLocator()
+        );
+        Opportunity opportunity = TestDataFactory.createOpportunity('Prospecting');
+        insert opportunity;
+
+        ListenerFlowController.ListenerFlowLatestRequest request = new ListenerFlowController.ListenerFlowLatestRequest();
         request.listenerConfigRec = listenerConfigRec;
 
-        // Initialize other required parameters
-        List<ListenerFlowLatestRequest> requestList = new List<ListenerFlowLatestRequest>{request};
-        Map<Id, List<SObject>> historyRecordsMap = new Map<Id, List<SObject>>();
-        Map<String, Object> queryModifiers = new Map<String, Object>();
+        // Get query modifiers based on the listenerConfigRec
+        Map<String, Object> queryModifiers = ListenerFlowController.getQueryModifiers(listenerConfigRec);
 
         // Run the test
         Test.startTest();
-        List<ListenerFlowLatestResponse> responseList = parseRecordsToFlow(requestList, historyRecordsMap, queryModifiers);
-        Test.stopTest();
-
-        update new List<Listener__c>{listenerConfigRec};
-        return new List<ListenerFlowLatestResponse>{response};
+        // Use Test.setStub to replace Database.query
+        Test.setStub(Database.QueryLocator.class, mockQueryLocator);
+    
+    List<ListenerFlowController.ListenerFlowLatestResponse> responseList = ListenerFlowController.parseRecordsToFlow(/* your parameters */);
+    Test.stopTest();
     }
 
     // Test the logic for fetching the latest history values
@@ -168,7 +178,7 @@ public class ListenerFlowControllerTest {
         Opportunity opportunity = TestDataFactory.createOpportunity('Prospecting');
         insert opportunity;
 
-        opportunity.fieldName = 'Qualification';
+        opportunity.StageName = 'Qualification';
         update opportunity;
 
         Set<Id> targetRecords = new Set<Id>{opportunity.Id};
@@ -194,7 +204,7 @@ public class ListenerFlowControllerTest {
     
         // Create more than 10,000 history records
         for(Integer i = 0; i < 10001; i++) {
-            // Use TestDataFactory to create Opportunity history records with the provided fieldName
+            // Use TestDataFactory to create Opportunity history records with the provided stageName
             List<Opportunity> oppHistoryRecords = TestDataFactory.createOpportunityHistoryRecords(1, 'updated');
             historyRecordsMap.get(opportunity.Id).addAll(oppHistoryRecords);
         }
@@ -221,7 +231,7 @@ public class ListenerFlowControllerTest {
         // Mock history records with the same CreatedDate but different milliseconds
         List<OpportunityFieldHistory> historyRecords = new List<OpportunityFieldHistory>();
         for(Integer i = 0; i < 5; i++) {
-            OpportunityFieldHistory record = createOpportunityHistoryRecords(opportunity.Id, 'updated');
+            OpportunityFieldHistory record = createOpportunityHistoryRecord(opportunity.Id, 'updated');
             // Mock milliseconds by adding a custom field to your OpportunityFieldHistory object
             // record.Custom_Milliseconds__c = i;
             historyRecords.add(record);
@@ -411,7 +421,7 @@ public class ListenerFlowControllerTest {
         );
         Flowdometer__Listener__c listenerConfigRec = new Flowdometer__Listener__c(
             Flowdometer__Object_Name__c = 'Opportunity',
-            Flowdometer__Field_To_Track__c = 'fieldName',
+            Flowdometer__Field_To_Track__c = 'StageName',
             Flowdometer__TerminalStage__c = 'IsWon',
             Flowdometer__Last_Execution_On__c = oneHourBefore
         );
@@ -420,12 +430,12 @@ public class ListenerFlowControllerTest {
 
         Opportunity opportunity = new Opportunity(
             Name = 'Test Opportunity',
-            fieldName = 'Prospecting',
+            StageName = 'Prospecting',
             CloseDate = Date.today().addDays(10)
         );
         insert opportunity;
 
-        opportunity.fieldName = 'Qualification';
+        opportunity.StageName = 'Qualification';
         update opportunity;
 
         Map<String, SObject> sObjectMap = new Map<String, SObject>{
@@ -484,19 +494,19 @@ public class ListenerFlowControllerTest {
         // Create a Flowdometer__Listener__c object for listenerConfigRec
         Flowdometer__Listener__c listenerConfigRec = new Flowdometer__Listener__c(
             Flowdometer__Object_Name__c = 'Opportunity',
-            Flowdometer__Field_To_Track__c = 'fieldName',
+            Flowdometer__Field_To_Track__c = 'StageName',
             Flowdometer__TerminalStage__c = 'IsWon'
         );
         insert listenerConfigRec;
 
         Opportunity opportunity = new Opportunity(
             Name = 'Test Opportunity',
-            fieldName = 'Prospecting',
+            StageName = 'Prospecting',
             CloseDate = Date.today().addDays(10)
         );
         insert opportunity;
 
-        opportunity.fieldName = 'Qualification';
+        opportunity.StageName = 'Qualification';
         update opportunity;
 
         // Create a Map<Id, List<sObject>> for historyRecordsMap

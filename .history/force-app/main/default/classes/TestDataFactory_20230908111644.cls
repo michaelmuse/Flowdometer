@@ -17,14 +17,14 @@
          - Integer numRecords: The number of history records to create
        - Returns: List<CaseHistory>
 
-    3. createlistenerConfigRec
+    3. createListenerConfig
        - Parameters:
          - DateTime lastExecutionOn: The last execution time for the Listener
        - Returns: Flowdometer__Listener__c
 
     4. createOpportunity
        - Parameters:
-         - String fieldName: The stage name for the Opportunity
+         - String stageName: The stage name for the Opportunity
        - Returns: Opportunity
 
     5. createHistoryRecords
@@ -45,7 +45,7 @@ public class TestDataFactory {
     for (Integer i = 0; i < numRecords; i++) {
       Opportunity opp = new Opportunity(
         Name='Test Opp ' + i,
-        fieldName='Prospecting',
+        StageName='Prospecting',
         CloseDate=System.today(),
         AccountId=parentId  // Assuming parentId is an Account Id
       );
@@ -72,41 +72,41 @@ public class TestDataFactory {
     return new List<CaseHistory>();
   }
 
-  public static Flowdometer__Listener__c createlistenerConfigRec(
+  public static Flowdometer__Listener__c createListenerConfig(
     DateTime lastExecutionOn,
     Boolean insertRecord
   ) {
-    Flowdometer__Listener__c listenerConfigRec = new Flowdometer__Listener__c(
+    Flowdometer__Listener__c listenerConfig = new Flowdometer__Listener__c(
       Flowdometer__Object_Name__c = 'Opportunity',
-      Flowdometer__Field_To_Track__c = 'fieldName',
+      Flowdometer__Field_To_Track__c = 'StageName',
       Flowdometer__TerminalStage__c = 'IsWon',
       Flowdometer__Last_Execution_On__c = lastExecutionOn
     );
 
     if (insertRecord) {
-      insert listenerConfigRec;
+      insert listenerConfig;
     }
 
-    return listenerConfigRec;
+    return listenerConfig;
   }
 
-  public static Opportunity createOpportunity(String fieldName) {
+  public static Opportunity createOpportunity(String stageName) {
     Opportunity opp = new Opportunity(
       Name = 'Test Opportunity',
-      fieldName = fieldName,
+      StageName = stageName,
       CloseDate = Date.today().addDays(10)
     );
     insert opp; // Insert the Opportunity record
     return opp;
   }
 
-  public static List<Opportunity> createOpportunityHistoryRecords(Integer numRecords, String fieldName) {
+  public static List<Opportunity> testCreateOpportunityHistoryRecords(Integer numRecords) {
       List<Opportunity> historyRecords = new List<Opportunity>();
       for (Integer i = 0; i < numRecords; i++) {
           historyRecords.add(
               new Opportunity(
                   Name = 'Test Opportunity ' + i,
-                  fieldName = fieldName, // Use the provided fieldName parameter
+                  StageName = 'Prospecting',
                   CloseDate = Date.today().addDays(10)
               )
           );
@@ -114,7 +114,6 @@ public class TestDataFactory {
       insert historyRecords; // Insert the Opportunity records
       return historyRecords;
   }
-
 
   public static List<Flowdometer__Flow__c> createCustomObjects(Integer numRecords) {
       List<Flowdometer__Flow__c> customObjects = new List<Flowdometer__Flow__c>();

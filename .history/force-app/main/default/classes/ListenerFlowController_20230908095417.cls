@@ -5,7 +5,6 @@ global with sharing class ListenerFlowController {
     @AuraEnabled global String varCurrentFieldValue;
     @AuraEnabled global String varCurrentObjectID;
     @AuraEnabled global Map<Id, List<SObject>> historyRecordsMap = new Map<Id, List<SObject>>();
-    public static Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
     @AuraEnabled global String varNameofTrackedRecord;
     @AuraEnabled global Boolean varTerminalStage;
     @AuraEnabled global String varTrackedCustomObjectName;
@@ -13,6 +12,7 @@ global with sharing class ListenerFlowController {
     @AuraEnabled global Datetime varEditEndTime;
     @AuraEnabled global String varType;
     @AuraEnabled global Id varHistoryRecordId;
+    public Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
   
     // Inner class for ListenerFlowLatestResponse params to flow
     global class ListenerFlowLatestResponse {
@@ -30,7 +30,7 @@ global with sharing class ListenerFlowController {
     }
   
     // Called by: parseRecordsToFlow
-    // Set the booleans and where clause for parseRecordsToFlow
+    // Set the booleans and where clause for constructSOQLQuery
     public static Map<String, Object> getQueryModifiers(Listener__c listenerConfigRec) {
         Map<String, Object> queryModifiers = new Map<String, Object>();
         queryModifiers.put('includeOrderBy', true);  // Always include ORDER BY
@@ -92,7 +92,7 @@ global with sharing class ListenerFlowController {
   
     // Called by: parseRecordsToFlow
     // This method returns a map of the latest history values for the parent records passed in. It takes in a set of parent record ids and a listener flow record. It returns a map of the parent record ids and a list of history records for each parent record id.
-    public static Map<Id, List<SObject>> getLatestHistoryValues(List<Id> mParent, Flowdometer__Listener__c listenerConfigRec, Map<String, Object> queryModifiers) {
+    public static Map<Id, List<SObject>> getLatestHistoryValues(Set<Id> mParent, Listener__c listenerConfigRec, Map<String, Object> queryModifiers) {
         String fieldValue = 'created';
         String objName = listenerConfigRec.Object_Name__c;
         String fieldName = listenerConfigRec.Field_To_Track__c;
@@ -188,13 +188,13 @@ global with sharing class ListenerFlowController {
     // Called by: parseRecordsToFlow
     // This method takes in a listener flow record, a map of parent record ids and a list of history records for each parent record id, a map of goal step records, and a map of parent record ids and parent records. It returns a response object with a list of listener flow controller objects.
     @TestVisible
-    private static void preparingResponse(ListenerFlowLatestResponse result, Map<Id, List<SObject>> historyRecordsMap, Flowdometer__Listener__c listenerConfigRec, Map<Id, SObject> goalStepRecsMap, Map<Id, SObject> sObjectMap) {
-        for (Id parentRecId : sortingDateTimeMap.keySet()) {
+    private static void preparingResponse(ListenerFlowLatestResponse result, Map<Id, List<SObject>> historyRecordsMap, Listener__c listenerConfigRec, Map<Id, Map<String, Id>> goalStepRecsMap, Map<Id, SObject> sObjectMap) {
+        for (Id parentRecId : historyRecordsMap.keySet()) {
             Integer count = 0;
-            for (Datetime dt : sortingDateTimeMap.get(parentRecId)) {
+            for (SObject SObj : historyRecordsMap.get(parentRecId)) {
                 ListenerFlowController trackFlowObj = new ListenerFlowController();
-                SObject SObj = historyRecordsMap.get(parentRecId)[count];  // Fetch the corresponding SObject
                 trackFlowObj.varHistoryRecordId = (Id)SObj.get('Id');  // Set the history record ID
+                // ... (existing code)
                 result.lstListenerFlow.add(trackFlowObj);
                 count++;
             }            
@@ -206,7 +206,7 @@ global with sharing class ListenerFlowController {
     global class ListenerFlowLatestRequest {
         // Request class members here
         @InvocableVariable
-        global Listener__c listenerConfigRec;
+        global Listener__c ListenerConfigRec;  // Replaced listenerConfig with ListenerConfigRec
     }
 
     // Define the listenerConfigList variable
@@ -220,13 +220,14 @@ global with sharing class ListenerFlowController {
         // Declare missing variables
         List<Id> targetRecords = new List<Id>();
         Map<Id, SObject> sObjectMap = new Map<Id, SObject>();
+        List<SObject> latestHistory = new List<SObject>();
         Map<Id, SObject> goalStepRecsMap = new Map<Id, SObject>(); // Assuming it's a Map, adjust as needed
 
-        Listener__c listenerConfigRec = listenerConfigList[0].listenerConfigRec;
+        Listener__c ListenerConfigRec = listenerConfigList[0].ListenerConfigRec;
 
         try {
             // Assuming getQueryModifiers is defined in this class or imported
-            Map<String, Object> queryModifiers = getQueryModifiers(listenerConfigRec);
+            Map<String, Object> queryModifiers = getQueryModifiers(ListenerConfigRec);
 
             String parentNameField = listenerConfigRec.Object_Name__c != null &&
                 listenerConfigRec.Object_Name__c == 'Case' ? 'CaseNumber' : 'Name';
@@ -247,20 +248,21 @@ global with sharing class ListenerFlowController {
                 sObjectMap.put(sob.Id, sob);
             }
 
-            Map<Id, List<SObject>> latestHistory = getLatestHistoryValues(targetRecords, listenerConfigRec, queryModifiers);
+            // Assuming getLatestHistoryValues and preparingResponse are defined in this class or imported
+            latestHistory = getLatestHistoryValues(targetRecords, listenerConfigRec, queryModifiers);
             preparingResponse(response, latestHistory, listenerConfigRec, goalStepRecsMap, sObjectMap);
 
-            listenerConfigRec.Error_Message__c = '';
+            ListenerConfigRec.Error_Message__c = '';
         } catch (Exception ex) {
             response.isCheckSuccess = false;
-            listenerConfigRec.Error_Message__c =
+            ListenerConfigRec.Error_Message__c =
                 'Error: ' +
                 ex.getMessage() +
                 ' Trace: ' +
                 ex.getStackTraceString();
         }
 
-        update new List<Listener__c>{listenerConfigRec};
+        update ListenerConfigRec;
         return new List<ListenerFlowLatestResponse>{response};
     }
 

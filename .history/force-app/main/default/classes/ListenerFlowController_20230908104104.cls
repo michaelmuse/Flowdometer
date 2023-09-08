@@ -206,7 +206,7 @@ global with sharing class ListenerFlowController {
     global class ListenerFlowLatestRequest {
         // Request class members here
         @InvocableVariable
-        global Listener__c listenerConfigRec;
+        global Listener__c ListenerConfigRec;  // Replaced listenerConfig with ListenerConfigRec
     }
 
     // Define the listenerConfigList variable
@@ -222,11 +222,11 @@ global with sharing class ListenerFlowController {
         Map<Id, SObject> sObjectMap = new Map<Id, SObject>();
         Map<Id, SObject> goalStepRecsMap = new Map<Id, SObject>(); // Assuming it's a Map, adjust as needed
 
-        Listener__c listenerConfigRec = listenerConfigList[0].listenerConfigRec;
+        Listener__c ListenerConfigRec = listenerConfigList[0].listenerConfigRec;
 
         try {
             // Assuming getQueryModifiers is defined in this class or imported
-            Map<String, Object> queryModifiers = getQueryModifiers(listenerConfigRec);
+            Map<String, Object> queryModifiers = getQueryModifiers(ListenerConfigRec);
 
             String parentNameField = listenerConfigRec.Object_Name__c != null &&
                 listenerConfigRec.Object_Name__c == 'Case' ? 'CaseNumber' : 'Name';
@@ -248,19 +248,19 @@ global with sharing class ListenerFlowController {
             }
 
             Map<Id, List<SObject>> latestHistory = getLatestHistoryValues(targetRecords, listenerConfigRec, queryModifiers);
-            preparingResponse(response, latestHistory, listenerConfigRec, goalStepRecsMap, sObjectMap);
+            preparingResponse(response, latestHistory, ListenerConfigRec, goalStepRecsMap, sObjectMap);
 
-            listenerConfigRec.Error_Message__c = '';
+            ListenerConfigRec.Error_Message__c = '';
         } catch (Exception ex) {
             response.isCheckSuccess = false;
-            listenerConfigRec.Error_Message__c =
+            ListenerConfigRec.Error_Message__c =
                 'Error: ' +
                 ex.getMessage() +
                 ' Trace: ' +
                 ex.getStackTraceString();
         }
 
-        update new List<Listener__c>{listenerConfigRec};
+        update ListenerConfigRec;
         return new List<ListenerFlowLatestResponse>{response};
     }
 

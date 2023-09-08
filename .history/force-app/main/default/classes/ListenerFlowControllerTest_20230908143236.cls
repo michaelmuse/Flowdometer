@@ -130,29 +130,39 @@ public class ListenerFlowControllerTest {
     // Test the main logic for parsing records to flow
     @isTest
     static void testParseRecordsToFlow() {
-        // Setup test data
-        // Create a Listener__c record
-        Listener__c listenerConfigRec = new Listener__c(
-            // Initialize fields as needed
+        setupTestData();
+        // Create a stub for the Database.query method
+        Database.QueryLocator mockQueryLocator = (Database.QueryLocator) Test.createStub(
+            Database.QueryLocator.class,
+            new MockQueryLocator()
         );
+        // Create test data without inserting the record
+        Flowdometer__Listener__c listenerConfigRec = TestDataFactory.createlistenerConfigRec(null, false); // Passing null for lastExecutionOn and false for insertRecord
+
+        // Now insert the record
         insert listenerConfigRec;
 
-        // Create a ListenerFlowLatestRequest
-        ListenerFlowLatestRequest request = new ListenerFlowLatestRequest();
+        // Create a stub for the Database.query method
+        Database.QueryLocator mockQueryLocator = (Database.QueryLocator) Test.createStub(
+            Database.QueryLocator.class,
+            new MockQueryLocator()
+        );
+        Opportunity opportunity = TestDataFactory.createOpportunity('Prospecting');
+        insert opportunity;
+
+        ListenerFlowController.ListenerFlowLatestRequest request = new ListenerFlowController.ListenerFlowLatestRequest();
         request.listenerConfigRec = listenerConfigRec;
 
-        // Initialize other required parameters
-        List<ListenerFlowLatestRequest> requestList = new List<ListenerFlowLatestRequest>{request};
-        Map<Id, List<SObject>> historyRecordsMap = new Map<Id, List<SObject>>();
-        Map<String, Object> queryModifiers = new Map<String, Object>();
+        // Get query modifiers based on the listenerConfigRec
+        Map<String, Object> queryModifiers = ListenerFlowController.getQueryModifiers(listenerConfigRec);
 
         // Run the test
         Test.startTest();
-        List<ListenerFlowLatestResponse> responseList = parseRecordsToFlow(requestList, historyRecordsMap, queryModifiers);
-        Test.stopTest();
-
-        update new List<Listener__c>{listenerConfigRec};
-        return new List<ListenerFlowLatestResponse>{response};
+        // Use Test.setStub to replace Database.query
+        Test.setStub(Database.QueryLocator.class, mockQueryLocator);
+    
+    List<ListenerFlowController.ListenerFlowLatestResponse> responseList = ListenerFlowController.parseRecordsToFlow(/* your parameters */);
+    Test.stopTest();
     }
 
     // Test the logic for fetching the latest history values
