@@ -256,7 +256,7 @@ global with sharing class ListenerFlowController {
             }
 
             Map<Id, List<SObject>> latestHistory = getLatestHistoryValues(targetRecords, listenerConfigRec, queryModifiers);
-            preparingResponse(response, latestHistory, listenerConfigRec, goalStepRecsMap, sObjectMap, sortingDateTimeMap);
+            preparingResponse(response, latestHistory, listenerConfigRec, goalStepRecsMap, sObjectMap);
 
             listenerConfigRec.Error_Message__c = '';
         } catch (Exception ex) {

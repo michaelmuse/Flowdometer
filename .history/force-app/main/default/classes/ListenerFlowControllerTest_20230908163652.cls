@@ -537,8 +537,6 @@ public class ListenerFlowControllerTest {
     @isTest
     static void testPreparingResponse() {
         // Create test data
-        Map<Id, Map<String, Id>> goalStepRecsMap = new Map<Id, Map<String, Id>>();
-        Map<Id, SObject> sObjectMap = new Map<Id, SObject>();
 
         // Create a ListenerFlowLatestResponse object for testing
         ListenerFlowController.ListenerFlowLatestResponse result = new ListenerFlowController.ListenerFlowLatestResponse();

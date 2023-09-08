@@ -474,7 +474,7 @@ public class ListenerFlowControllerTest {
 
         // Create a sortingDateTimeMap for the test
         Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
-        sortingDateTimeMap.put(parentCase.Id, new List<Datetime>{DateTime.now()});
+        sortingDateTimeMap.put(opportunity.Id, new List<Datetime>{DateTime.now()});
 
         Opportunity opportunity = new Opportunity(
             Name = 'Test Opportunity',
@@ -513,8 +513,6 @@ public class ListenerFlowControllerTest {
         insert listenerConfigRec;
         Map<Id, Map<String, Id>> goalStepRecsMap = new Map<Id, Map<String, Id>>();
         Map<Id, SObject> sObjectMap = new Map<Id, SObject>();
-        Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
-        sortingDateTimeMap.put(opportunity.Id, new List<Datetime>{DateTime.now()});
 
         // Create a case record and related history records
         Case parentCase = new Case(
@@ -527,7 +525,7 @@ public class ListenerFlowControllerTest {
 
         // Call the method to be tested
         Test.startTest();
-        ListenerFlowController.preparingResponse(result, historyRecordsMap, listenerConfigRec, goalStepRecsMap, sObjectMap, sortingDateTimeMap);
+        ListenerFlowController.preparingResponse(result, historyRecordsMap, listenerConfigRec, goalStepRecsMap, sObjectMap);
         Test.stopTest();
 
         // Assertions
@@ -537,8 +535,6 @@ public class ListenerFlowControllerTest {
     @isTest
     static void testPreparingResponse() {
         // Create test data
-        Map<Id, Map<String, Id>> goalStepRecsMap = new Map<Id, Map<String, Id>>();
-        Map<Id, SObject> sObjectMap = new Map<Id, SObject>();
 
         // Create a ListenerFlowLatestResponse object for testing
         ListenerFlowController.ListenerFlowLatestResponse result = new ListenerFlowController.ListenerFlowLatestResponse();
@@ -563,15 +559,6 @@ public class ListenerFlowControllerTest {
 
         // Create a Map<Id, List<sObject>> for historyRecordsMap
         Map<Id, List<sObject>> historyRecordsMap = new Map<Id, List<sObject>>();
-
-        // Create a sortingDateTimeMap for the test
-        Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
-        sortingDateTimeMap.put(opportunity.Id, new List<Datetime>{DateTime.now()});
-
-        Test.startTest();
-        ListenerFlowController.preparingResponse(result, historyRecordsMap, listenerConfigRec, goalStepRecsMap, sObjectMap, sortingDateTimeMap);
-        Test.stopTest();
-    }
 
         // ------------------------------
         // Miscellaneous Test Methods
