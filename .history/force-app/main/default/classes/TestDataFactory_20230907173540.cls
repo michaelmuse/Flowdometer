@@ -107,8 +107,8 @@ public class TestDataFactory {
       // );
       List<YourCustomObject__c> historyRecords = new List<YourCustomObject__c>();
       historyRecords.add(
-          new YourCustomObject__c()
-            // Populate required fields here
+        new YourCustomObject__c()
+        // Populate required fields here
       );
     }
     insert historyRecords; // Insert the History__c records
@@ -121,7 +121,7 @@ public class TestDataFactory {
     for (Integer i = 0; i < numRecords; i++) {
       customObjects.add(
         new CustomObject__c()
-          // Populate required fields here
+        // Populate required fields here
       );
     }
     insert customObjects; // Insert the CustomObject__c records

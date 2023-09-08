@@ -102,7 +102,7 @@ public class TestDataFactory {
     for (Integer i = 0; i < numRecords; i++) {
       historyRecords.add(
         new History__c()
-          // Populate required fields here
+        // Populate required fields here
       );
     }
     return historyRecords;
@@ -113,7 +113,7 @@ public class TestDataFactory {
     for (Integer i = 0; i < numRecords; i++) {
       customObjects.add(
         new CustomObject__c()
-          // Populate required fields here
+        // Populate required fields here
       );
     }
     return customObjects;

@@ -5,6 +5,8 @@
   "description": "Flowdometer",
   "scripts": {
     "lint": "eslint **/{aura,lwc}/**",
+    "lint:apex": "pmd -d ./force-app/main/default/classes -l apex -f text -R category/apex/bestpractices.xml",
+    "lint:clear": "eslint --cache --cache-location .eslintcache --fix --ext .js,.html .",
     "test": "npm run test:unit",
     "test:unit": "sfdx-lwc-jest -- --config jest.config.js",
     "test:unit:watch": "sfdx-lwc-jest --watch",
@@ -40,7 +42,7 @@
   },
   "husky": {
     "hooks": {
-      "runLintStaged": "lint-staged"
+      "pre-commit": "lint-staged"
     }
   },
   "lint-staged": {

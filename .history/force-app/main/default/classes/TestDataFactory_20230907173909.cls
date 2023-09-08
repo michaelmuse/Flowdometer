@@ -114,17 +114,19 @@ public class TestDataFactory {
   //   insert historyRecords; // Insert the History__c records
   //   return historyRecords;
   // }
-  public static List<YourCustomObject__c> createHistoryRecords(Integer numRecords) {
+  public static List<YourCustomObject__c> createHistoryRecords(
+    Integer numRecords
+  ) {
     List<YourCustomObject__c> historyRecords = new List<YourCustomObject__c>();
     for (Integer i = 0; i < numRecords; i++) {
-        historyRecords.add(
-            new YourCustomObject__c()
-                // Populate required fields here
-        );
+      historyRecords.add(
+        new YourCustomObject__c()
+        // Populate required fields here
+      );
     }
     insert historyRecords; // Insert the custom object records
     return historyRecords;
-}
+  }
 
   public static List<CustomObject__c> createCustomObjects(Integer numRecords) {
     // List<CustomObject__c> customObjects = new List<CustomObject__c>();
@@ -132,7 +134,7 @@ public class TestDataFactory {
     for (Integer i = 0; i < numRecords; i++) {
       customObjects.add(
         new CustomObject__c()
-          // Populate required fields here
+        // Populate required fields here
       );
     }
     insert customObjects; // Insert the CustomObject__c records
