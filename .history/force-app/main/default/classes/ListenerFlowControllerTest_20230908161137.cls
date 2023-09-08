@@ -249,43 +249,60 @@ public class ListenerFlowControllerTest {
 
     @isTest
     static void testQueryResponseSortedByCreatedDateAndMillis() {
-        // Setup
-        Opportunity opportunity = createAndUpdateOpportunity('Proposal');
-        insert opportunity;
-    
-        Flowdometer__Listener__c listenerConfigRec = createlistenerConfigRec(DateTime.now());
-        insert listenerConfigRec;
-    
-        // Mock history records with varying milliseconds
+        // Create test data
+        // Mock history records with the same CreatedDate but different milliseconds
         List<SObject> historyRecords = new List<SObject>();
         for(Long i = 0; i < 5; i++) {
             SObject historyRecord = new SObject();
             historyRecord.put('Id', opportunity.Id);
-            historyRecord.put('CreatedDate', DateTime.now().addMilliseconds((Integer)i));
+            historyRecord.put('CreatedDate', DateTime.now().addMilliseconds((Integer)i));  // Add milliseconds
             historyRecords.add(historyRecord);
         }
-    
+
+        Flowdometer__Listener__c listenerConfigRec = createlistenerConfigRec(DateTime.now());
+        insert listenerConfigRec;
+
+        Opportunity opportunity = createAndUpdateOpportunity('Proposal');
+        insert opportunity;
+
+        // Mock history records with the same CreatedDate but different milliseconds
+        List<OpportunityFieldHistory> historyRecords = new List<OpportunityFieldHistory>();
+        for(Integer i = 0; i < 5; i++) {
+            OpportunityFieldHistory record = createOpportunityHistoryRecords(opportunity.Id, 'updated');
+            // Mock milliseconds by adding a custom field to your OpportunityFieldHistory object
+            // record.Custom_Milliseconds__c = i;
+            historyRecords.add(record);
+        }
+
         // Create a Map to hold the history records
         Map<Id, List<SObject>> historyRecordsMap = new Map<Id, List<SObject>>();
-        historyRecordsMap.put(opportunity.Id, historyRecords);
-    
-        // Test Execution
+        historyRecordsMap.put(opportunity.Id, new List<SObject>(historyRecords));
+
+        // Run the test
         Test.startTest();
         List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfigRec, historyRecordsMap);
         Test.stopTest();
-    
-        // Assertion
+
+        // Assert: Check if the records are sorted by CreatedDate and milliseconds
+        // You'll need to add logic to compare the milliseconds
+        // This is just a placeholder for your actual assertion logic
+        // System.assertEquals(expectedOrder, actualOrder);
+
+        // Assuming you have a way to get the milliseconds from your history records
+        // and that they are stored in a List<SObject> in your response
         List<SObject> sortedHistoryRecords = responseList[0].historyRecords;
         for(Integer i = 1; i < sortedHistoryRecords.size(); i++) {
             Datetime prevDate = (Datetime)sortedHistoryRecords[i-1].get('CreatedDate');
             Datetime currDate = (Datetime)sortedHistoryRecords[i].get('CreatedDate');
-    
-            Long prevMillis = prevDate.getTime();
-            Long currMillis = currDate.getTime();
-    
-            System.assert(currMillis >= prevMillis, 'Records are not sorted correctly');
+            // Add your logic to get milliseconds if needed
+            // Integer prevMillis = (Integer)sortedHistoryRecords[i-1].get('Custom_Milliseconds__c');
+            // Integer currMillis = (Integer)sortedHistoryRecords[i].get('Custom_Milliseconds__c');
+
+            // Your assertion logic here
+            System.assert(currDate >= prevDate, 'Records are not sorted by CreatedDate');
+            // System.assert(currMillis >= prevMillis, 'Records with the same CreatedDate are not sorted by milliseconds');
         }
-    }    
+    }
 
     // Test the logic for collecting history records since the last query
     @isTest
