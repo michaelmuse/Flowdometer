@@ -40,15 +40,15 @@ global with sharing class ListenerFlowController {
   
     // Called by: parseRecordsToFlow
     // Set the booleans and where clause for constructSOQLQuery
-    public static Map<String, Object> getQueryModifiers(Listener__c listenerConfigRec) {
+    public static Map<String, Object> getQueryModifiers(Flowdometer__Listener__c listenerConfig) {
         Map<String, Object> queryModifiers = new Map<String, Object>();
         queryModifiers.put('includeOrderBy', true);  // Always include ORDER BY
         queryModifiers.put('includeLimit', true);  // Always include LIMIT
   
         // Generate the whereClause
         String whereClause = 'CreatedDate >= ';
-        if (listenerConfigRec.Flowdometer__Last_Execution_On__c != null) {
-            whereClause += '\'' + listenerConfigRec.Flowdometer__Last_Execution_On__c.formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\'') + '\'';
+        if (listenerConfig.Flowdometer__Last_Execution_On__c != null) {
+            whereClause += '\'' + listenerConfig.Flowdometer__Last_Execution_On__c.formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\'') + '\'';
         } else {
             whereClause += 'LAST_N_YEARS:3';  // Default to the last 3 years if no last execution date
         }
@@ -101,10 +101,14 @@ global with sharing class ListenerFlowController {
   
     // Called by: parseRecordsToFlow
     // This method returns a map of the latest history values for the parent records passed in. It takes in a set of parent record ids and a listener flow record. It returns a map of the parent record ids and a list of history records for each parent record id.
-    public static Map<Id, List<SObject>> getLatestHistoryValues(Set<Id> mParent, Listener__c listenerConfigRec, Map<String, Object> queryModifiers) {
+    public static Map<Id, List<SObject>> getLatestHistoryValues(
+        Set<Id> mParent,
+        Listener__c listenerConfig,
+        Map<String, Object> queryModifiers
+    ) {
         String fieldValue = 'created';
-        String objName = listenerConfigRec.Object_Name__c;
-        String fieldName = listenerConfigRec.Field_To_Track__c;
+        String objName = listenerConfig.Object_Name__c;
+        String fieldName = listenerConfig.Field_To_Track__c;
         String objectSuffix = '__c';
         String objHistoryName = (objName == 'Opportunity')
             ? 'OpportunityFieldHistory'
@@ -189,7 +193,13 @@ global with sharing class ListenerFlowController {
     // Called by: parseRecordsToFlow
     // This method takes in a listener flow record, a map of parent record ids and a list of history records for each parent record id, a map of goal step records, and a map of parent record ids and parent records. It returns a response object with a list of listener flow controller objects.
     @TestVisible
-    private static void preparingResponse(ListenerFlowLatestResponse result, Map<Id, List<SObject>> historyRecordsMap, Listener__c listenerConfigRec, Map<Id, Map<String, Id>> goalStepRecsMap, Map<Id, SObject> sObjectMap) {
+    private static void preparingResponse(
+        ListenerFlowLatestResponse result,
+        Map<Id, List<SObject>> historyRecordsMap,
+        Listener__c listenerConfig,
+        Map<Id, Map<String, Id>> goalStepRecsMap,
+        Map<Id, SObject> sObjectMap
+    ) {
         for (Id parentRecId : historyRecordsMap.keySet()) {
             Integer count = 0;
             for (SObject SObj : historyRecordsMap.get(parentRecId)) {

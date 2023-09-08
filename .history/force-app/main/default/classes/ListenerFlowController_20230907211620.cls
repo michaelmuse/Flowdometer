@@ -103,8 +103,8 @@ global with sharing class ListenerFlowController {
     // This method returns a map of the latest history values for the parent records passed in. It takes in a set of parent record ids and a listener flow record. It returns a map of the parent record ids and a list of history records for each parent record id.
     public static Map<Id, List<SObject>> getLatestHistoryValues(Set<Id> mParent, Listener__c listenerConfigRec, Map<String, Object> queryModifiers) {
         String fieldValue = 'created';
-        String objName = listenerConfigRec.Object_Name__c;
-        String fieldName = listenerConfigRec.Field_To_Track__c;
+        String objName = listenerConfig.Object_Name__c;
+        String fieldName = listenerConfig.Field_To_Track__c;
         String objectSuffix = '__c';
         String objHistoryName = (objName == 'Opportunity')
             ? 'OpportunityFieldHistory'
