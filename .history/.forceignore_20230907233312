@@ -15,4 +15,3 @@ package.xml
 # Temp files
 *.temp
 *.tmp
-temp_*.cls

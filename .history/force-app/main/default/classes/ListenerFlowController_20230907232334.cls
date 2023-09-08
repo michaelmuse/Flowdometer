@@ -233,7 +233,7 @@ public class ListenerFlowController {
 
         try {
             // Assuming getQueryModifiers is defined in this class or imported
-            Map<String, Object> queryModifiers = getQueryModifiers(ListenerConfigRec);
+            Map<String, Object> queryModifiers = getQueryModifiers(listenerConfigRec);
 
             String parentNameField = listenerConfigRec.Object_Name__c != null &&
                 listenerConfigRec.Object_Name__c == 'Case' ? 'CaseNumber' : 'Name';

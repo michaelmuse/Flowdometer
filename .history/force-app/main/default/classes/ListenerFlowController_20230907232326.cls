@@ -204,15 +204,15 @@ public class ListenerFlowController {
         result.hasRecords = !historyRecordsMap.isEmpty();
     }
     
-    // Define the ListenerFlowLatestRequest class only once
-    public class ListenerFlowLatestRequest {
-        // Request class members here
-        @InvocableVariable
-        global Listener__c ListenerConfigRec;  // Replaced listenerConfig with ListenerConfigRec
-    }
+// Define the ListenerFlowLatestRequest class only once
+public class ListenerFlowLatestRequest {
+    // Request class members here
+    @InvocableVariable
+    global Listener__c ListenerConfigRec;  // Replaced listenerConfig with ListenerConfigRec
+}
 
-    // Define the listenerConfigList variable
-    public static List<ListenerFlowLatestRequest> listenerConfigList;
+// Define the listenerConfigList variable
+public static List<ListenerFlowLatestRequest> listenerConfigList;
 
     // Process history tracking records and return results
     @InvocableMethod(
@@ -233,7 +233,7 @@ public class ListenerFlowController {
 
         try {
             // Assuming getQueryModifiers is defined in this class or imported
-            Map<String, Object> queryModifiers = getQueryModifiers(ListenerConfigRec);
+            Map<String, Object> queryModifiers = getQueryModifiers(listenerConfigRec);
 
             String parentNameField = listenerConfigRec.Object_Name__c != null &&
                 listenerConfigRec.Object_Name__c == 'Case' ? 'CaseNumber' : 'Name';

@@ -35,7 +35,7 @@ global class CalculateBusinessHoursDiffTest {
       Integer total_duration_in_seconds = (response[0].diffResult / 1000)
         .intValue();
       Test.stopTest();
-      System.assertEquals(expectedValue, actualValue, 'The actual value did not match the expected value.');
+      System.assertEquals(86400, total_duration_in_seconds);
     }
   }
 }
