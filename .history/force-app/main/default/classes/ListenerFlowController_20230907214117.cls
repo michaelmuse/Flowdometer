@@ -228,10 +228,17 @@ global with sharing class ListenerFlowController {
     )
     public static List<ListenerFlowLatestResponse> parseRecordsToFlow(List<ListenerFlowLatestRequest> listenerConfigList) {
         ListenerFlowLatestResponse response = new ListenerFlowLatestResponse();
-        // ... (rest of the code remains the same)
+        Set<Id> targetRecords = new Set<Id>();
+        Map<Id, SObject> sObjectMap = new Map<Id, SObject>();
+        Map<Id, List<SObject>> latestHistory = new Map<Id, List<SObject>>();
+        Map<Id, Map<String, Id>> goalStepRecsMap = new Map<Id, Map<String, Id>>();
+
+        if (listenerConfigList.isEmpty()) {
+            return null;
+        }
 
         // From the batch, we are passing only one Listener Flow record.
-        Listener__c ListenerConfigRec = listenerConfigList[0].ListenerConfigRec;
+        Listener__c listenerConfigRec = listenerConfigList[0].listenerConfig;
 
         try {
             // Get query modifiers based on the listenerConfigRec

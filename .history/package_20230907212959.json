@@ -60,10 +60,9 @@
       "eslint"
     ],
     "**/*.cls": [
-      "pmd -d ./force-app/main/default/classes -l apex -f text -R ./custom-apex-ruleset.xml",
-      "prettier --write"
+      "pmd -d ./force-app/main/default/classes -l apex -f text -R ./custom-apex-ruleset.xml"
     ]
-  },
+  }
   "dependencies": {
     "@salesforce-ux/design-system": "^2.21.5"
   }
