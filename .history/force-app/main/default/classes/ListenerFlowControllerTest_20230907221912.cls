@@ -1,6 +1,4 @@
 //force-app\main\default\classes\ListenerFlowControllerTest.cls
-import Flowdometer__.TestDataFactory;
-
 @isTest
 private class ListenerFlowControllerTest {
     // Import the TestDataFactory class
@@ -31,35 +29,17 @@ private class ListenerFlowControllerTest {
     // Helper Methods
     // ------------------------------
 
-    // This could be a setup method or part of a specific test method
-    @isTest
-    static void setupTestData() {
-        // Initialize your TestDataFactory
-        TestDataFactory testDataFactory = new TestDataFactory();
-        
-        // Initialize your historyRecordsMap
-        Map<Id, List<SObject>> historyRecordsMap = new Map<Id, List<SObject>>();
-        
-        // Create and insert an Opportunity record
-        Opportunity opportunity = new Opportunity(Name = 'Test Opp', StageName = 'Prospecting', CloseDate = Date.today());
-        insert opportunity;
-        
-        // Use TestDataFactory to create history records for Opportunity
-        List<OpportunityFieldHistory> oppHistoryRecords = testDataFactory.createOpportunityHistoryRecords(opportunity.Id, 'StageName', 2);
-        historyRecordsMap.put(opportunity.Id, new List<SObject>(oppHistoryRecords));
-        
-        // Create and insert a Case record
-        Case parentCase = new Case(Subject = 'Test Case', Status = 'New');
-        insert parentCase;
-        
-        // Use TestDataFactory to create history records for Case
-        List<CaseHistory> caseHistoryRecords = testDataFactory.createCaseHistoryRecords(parentCase.Id, 'Status', 2);
-        historyRecordsMap.put(parentCase.Id, new List<SObject>(caseHistoryRecords));
-    }
 
     // ------------------------------
     // Code Snippets Using Helper Methods
     // ------------------------------
+
+    // Use TestDataFactory to create history records for Opportunity and Case
+    List<OpportunityFieldHistory> oppHistoryRecords = testDataFactory.createOpportunityHistoryRecords(opportunity.Id, 'StageName', 2);
+    historyRecordsMap.put(opportunity.Id, oppHistoryRecords);
+
+    List<CaseHistory> caseHistoryRecords = testDataFactory.createCaseHistoryRecords(parentCase.Id, 'Status', 2);
+    historyRecordsMap.put(parentCase.Id, caseHistoryRecords);
 
     // Add the TestDataFactory class definition
     public class TestDataFactory {
@@ -122,9 +102,6 @@ private class ListenerFlowControllerTest {
     // Test the main logic for parsing records to flow
     @isTest
     static void testParseRecordsToFlow() {
-
-        setupTestData();
-
         // Create test data without inserting the record
         Flowdometer__Listener__c listenerConfig = TestDataFactory.createListenerConfig(null, false); // Passing null for lastExecutionOn and false for insertRecord
 
@@ -149,8 +126,6 @@ private class ListenerFlowControllerTest {
     @isTest
     static void testGetLatestHistoryValues() {
         // Create test data
-        setupTestData();
-
         // Use TestDataFactory to create ListenerConfig and Opportunity records
         Flowdometer__Listener__c listenerConfig = TestDataFactory.createListenerConfig(DateTime.now());
         insert listenerConfig;
@@ -304,7 +279,7 @@ private class ListenerFlowControllerTest {
     static void assertHistoryRecords(List<ListenerFlowController.ListenerFlowLatestResponse> responseList, Integer expectedCount) {
         assertHistoryRecords(responseList, expectedCount, null);
     }
-
+here
     @isTest
     static void testBulkOperations() {
         // Arrange

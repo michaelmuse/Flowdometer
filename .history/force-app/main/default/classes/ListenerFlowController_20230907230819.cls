@@ -221,7 +221,7 @@ public class ListenerFlowController {
     // Define the listenerConfigList variable
     public static List<ListenerFlowLatestRequest> listenerConfigList;
 
-    // Process history tracking records and return results
+    // Process history tracking records and return results.
     @InvocableMethod(
         label='Query and Parse History Records',
         description='Collect history tracking records after you have turned on history tracking',

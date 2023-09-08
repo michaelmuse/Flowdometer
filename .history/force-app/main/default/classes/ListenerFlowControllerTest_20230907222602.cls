@@ -1,6 +1,4 @@
 //force-app\main\default\classes\ListenerFlowControllerTest.cls
-import Flowdometer__.TestDataFactory;
-
 @isTest
 private class ListenerFlowControllerTest {
     // Import the TestDataFactory class
@@ -149,8 +147,6 @@ private class ListenerFlowControllerTest {
     @isTest
     static void testGetLatestHistoryValues() {
         // Create test data
-        setupTestData();
-
         // Use TestDataFactory to create ListenerConfig and Opportunity records
         Flowdometer__Listener__c listenerConfig = TestDataFactory.createListenerConfig(DateTime.now());
         insert listenerConfig;

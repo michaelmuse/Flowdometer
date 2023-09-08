@@ -1,5 +1,4 @@
-//force-app\main\default\classes\ListenerFlowController.cls
-public class ListenerFlowController {
+global with sharing class ListenerFlowController {
     //This is a managed package so we need the global modifiers
     @AuraEnabled
     global String varCurrentFieldTracked;
@@ -221,7 +220,14 @@ public class ListenerFlowController {
     // Define the listenerConfigList variable
     public static List<ListenerFlowLatestRequest> listenerConfigList;
 
-    // Process history tracking records and return results
+    /**
+     * This method is the main entry point for processing history tracking records.
+     * It calls other methods to retrieve history records, prepare the response, and update the listener configuration.
+     * Returns a list containing a single ListenerFlowLatestResponse.
+     *
+     * @param listenerConfigList List of ListenerFlowLatestRequest objects containing configuration information.
+     * @return List of ListenerFlowLatestResponse objects containing the result of processing.
+     */
     @InvocableMethod(
         label='Query and Parse History Records',
         description='Collect history tracking records after you have turned on history tracking',
@@ -229,17 +235,13 @@ public class ListenerFlowController {
     )
     public static List<ListenerFlowLatestResponse> parseRecordsToFlow(List<ListenerFlowLatestRequest> listenerConfigList) {
         ListenerFlowLatestResponse response = new ListenerFlowLatestResponse();
-        
-        // Declare missing variables
-        List<Id> targetRecords = new List<Id>();
-        Map<Id, SObject> sObjectMap = new Map<Id, SObject>();
-        List<SObject> latestHistory = new List<SObject>();
-        Map<Id, SObject> goalStepRecsMap = new Map<Id, SObject>(); // Assuming it's a Map, adjust as needed
+        // ... (rest of the code remains the same)
 
+        // From the batch, we are passing only one Listener Flow record.
         Listener__c ListenerConfigRec = listenerConfigList[0].ListenerConfigRec;
 
         try {
-            // Assuming getQueryModifiers is defined in this class or imported
+            // Get query modifiers based on the listenerConfigRec
             Map<String, Object> queryModifiers = getQueryModifiers(listenerConfigRec);
 
             String parentNameField = listenerConfigRec.Object_Name__c != null &&
@@ -261,22 +263,22 @@ public class ListenerFlowController {
                 sObjectMap.put(sob.Id, sob);
             }
 
-            // Assuming getLatestHistoryValues and preparingResponse are defined in this class or imported
+            // Pass queryModifiers to getLatestHistoryValues
             latestHistory = getLatestHistoryValues(targetRecords, listenerConfigRec, queryModifiers);
+
             preparingResponse(response, latestHistory, listenerConfigRec, goalStepRecsMap, sObjectMap);
 
-            ListenerConfigRec.Error_Message__c = '';
+            listenerConfigRec.Error_Message__c = '';
         } catch (Exception ex) {
             response.isCheckSuccess = false;
-            ListenerConfigRec.Error_Message__c =
+            listenerConfigRec.Error_Message__c =
                 'Error: ' +
                 ex.getMessage() +
                 ' Trace: ' +
                 ex.getStackTraceString();
         }
 
-        update ListenerConfigRec;
+        update listenerConfigRec;
         return new List<ListenerFlowLatestResponse>{response};
     }
-
-}
+  }
