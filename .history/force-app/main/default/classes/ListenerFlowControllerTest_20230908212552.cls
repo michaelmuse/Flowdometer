@@ -4,8 +4,6 @@ public class ListenerFlowControllerTest {
     // Class-level static variables for storing test data across methods
     static Map<Id, List<SObject>> historyRecordsMap;
     static Case parentCase;
-    static List<Account> testAccounts;
-    static List<Contact> testContacts;
 
     // Test Setup Method: Populates data that can be used by all test methods
     @TestSetup 
@@ -19,11 +17,11 @@ public class ListenerFlowControllerTest {
         // Create Opportunity history records and add them to the map
         List<Opportunity> oppHistoryRecords = TestDataFactory.createOpportunityHistoryRecords(2, 'stageName');
         historyRecordsMap.put(opportunity.Id, new List<SObject>(oppHistoryRecords));
-    
+
         // Create a test Case record
         parentCase = new Case(Subject = 'Test Case', Status = 'New');
         insert parentCase;
-    
+
         // Create Case history records and add them to the map
         List<CaseHistory> caseHistoryRecords = TestDataFactory.createCaseHistoryRecords(2, 'Status');
         historyRecordsMap.put(parentCase.Id, new List<SObject>(caseHistoryRecords));
@@ -36,6 +34,11 @@ public class ListenerFlowControllerTest {
     // ------------------------------
     // Code Snippets Using Helper Methods
     // ------------------------------
+
+    // Add the TestDataFactory class definition
+    public class TestDataFactory {
+        // TestDataFactory methods here
+    }
 
     // ------------------------------
     // Test Setup and Assertion Methods
@@ -107,24 +110,36 @@ public class ListenerFlowControllerTest {
     @isTest
     static void testParseRecordsToFlow() {
         // Setup test data
-        // Use existing historyRecordsMap and parentCase from @TestSetup
-        Flowdometer__Listener__c listenerConfigRec = new Flowdometer__Listener__c(
-            // Initialize fields as needed
-        );
-        insert listenerConfigRec;
+            // Mock a history record for the Opportunity
+            SObject historyRecord = new SObject(OpportunityFieldHistory.sObjectType);
+            historyRecord.put('Id', 'some_id_here');  // Replace with appropriate Id
+            historyRecord.put('NewValue', 'some_value_here');
+            historyRecord.put('CreatedDate', DateTime.now());
 
-        // Initialize other required parameters
-        ListenerFlowLatestRequest request = new ListenerFlowLatestRequest();
-        request.listenerConfigRec = listenerConfigRec;
-        List<ListenerFlowLatestRequest> requestList = new List<ListenerFlowLatestRequest>{request};
-        Map<String, Object> queryModifiers = new Map<String, Object>();
+            // Populate the historyRecordsMap
+            Map<Id, List<SObject>> historyRecordsMap = new Map<Id, List<SObject>>();
+            historyRecordsMap.put('some_id_here', new List<SObject>{historyRecord});
+
+            // Create a Listener__c record
+            Listener__c listenerConfigRec = new Listener__c(
+                // Initialize fields as needed
+            );
+            insert listenerConfigRec;
+
+            // Create a ListenerFlowLatestRequest
+            ListenerFlowLatestRequest request = new ListenerFlowLatestRequest();
+            request.listenerConfigRec = listenerConfigRec;
+
+            // Initialize other required parameters
+            List<ListenerFlowLatestRequest> requestList = new List<ListenerFlowLatestRequest>{request};
+            Map<String, Object> queryModifiers = new Map<String, Object>();
 
         // Run the test
         Test.startTest();
         List<ListenerFlowLatestResponse> responseList = ListenerFlowController.parseRecordsToFlow(requestList, historyRecordsMap, queryModifiers);
         Test.stopTest();
 
-        update new List<Flowdometer__Listener__c>{listenerConfigRec};
+        update new List<Listener__c>{listenerConfigRec};
         return new List<ListenerFlowLatestResponse>{response};
     }
 
@@ -329,8 +344,8 @@ public class ListenerFlowControllerTest {
         }
         insert historyRecords;
 
-        // Create a Flowdometer__Listener__c record for testing
-        Flowdometer__Listener__c listenerConfigRec = new Flowdometer__Listener__c(
+        // Create a Listener__c record for testing
+        Listener__c listenerConfigRec = new Listener__c(
             Object_Name__c = 'History__c',  // Replace with the actual object name
             Field_To_Track__c = 'Field1__c'  // Replace with the actual field name
         );
@@ -359,7 +374,7 @@ public class ListenerFlowControllerTest {
         Opportunity testOpportunity = TestDataFactory.createOpportunity('Test Opportunity', 'Prospecting', Date.today().addDays(10));
         // No need to insert here, as it's done in the factory method
     
-        // Create a Flowdometer__Listener__c record using the data factory
+        // Create a Listener__c record using the data factory
         Flowdometer__Listener__c listenerConfigRec = TestDataFactory.createlistenerConfigRec(DateTime.now(), true);
         // No need to insert here, as it's done in the factory method
     
