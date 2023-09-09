@@ -4,5 +4,6 @@
     "**/bower_components": true,
     "**/.sfdx": true
   },
-  "apexPMD.additionalClassPaths": ["F:\\Muse Operations Drive\\Projects\\Flowdometer\\classes"]
+  "apexPMD.additionalClassPaths": ["F:\\Muse Operations Drive\\Projects\\Flowdometer\\classes"],
+  "salesforcedx-vscode-core.retrieve-test-code-coverage": false
 }

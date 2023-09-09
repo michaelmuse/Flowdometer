@@ -86,9 +86,11 @@ public class ListenerFlowControllerTest {
         request.listenerConfigRec = listenerConfigRec;
 
         Test.startTest();
-        // Call parseRecordsToFlow method with listenerConfigList
+        // Call parseRecordsToFlow method with historyRecordsMap and queryModifiers
         List<ListenerFlowController.ListenerFlowLatestResponse> responseList = ListenerFlowController.parseRecordsToFlow(
-            new List<ListenerFlowController.ListenerFlowLatestRequest>{request}
+            new List<ListenerFlowController.ListenerFlowLatestRequest>{request}, 
+            historyRecordsMap != null ? historyRecordsMap : new Map<Id, List<SObject>>(), 
+            queryModifiers != null ? queryModifiers : new Map<String, Object>()
         );
         Test.stopTest();
 
@@ -97,11 +99,10 @@ public class ListenerFlowControllerTest {
 
     // Validates the history records in the response list
     static void assertHistoryRecords(List<ListenerFlowController.ListenerFlowLatestResponse> responseList, Integer expectedCount, String expectedNewValue) {
-        System.assertEquals(expectedCount, responseList.size(), 'The expected count of history records does not match.');
+        System.assertEquals(expectedCount, responseList[0].historyRecords.size(), 'The expected count of history records does not match.');
         if (expectedNewValue != null) {
-            // Assuming the response includes lstListenerFlow, change responseList[0] to responseList[0].lstListenerFlow[0]
-            ListenerFlowController listenerFlowController = responseList[0].lstListenerFlow[0];
-            System.assertEquals(expectedNewValue, listenerFlowController.varCurrentFieldValue, 'Latest history record does not match expected value');
+            SObject latestHistoryRecord = responseList[0].historyRecords[0];
+            System.assertEquals(expectedNewValue, (String)latestHistoryRecord.get('NewValue'), 'Latest history record does not match expected value');
         }
     }
 

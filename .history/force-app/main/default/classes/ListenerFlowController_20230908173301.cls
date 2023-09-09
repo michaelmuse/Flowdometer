@@ -209,8 +209,7 @@ global with sharing class ListenerFlowController {
             for (Datetime dt : sortingDateTimeMap.get(parentRecId)) {
                 ListenerFlowController trackFlowObj = new ListenerFlowController();
                 SObject SObj = historyRecordsMap.get(parentRecId)[count];  // Fetch the corresponding SObject
-                trackFlowObj.varHistoryRecordId = (Id)SObj.get('Id');
-                trackFlowObj.varCurrentFieldTracked = listenerConfigRec.Flowdometer__Field_To_Track__c;
+                trackFlowObj.varHistoryRecordId = (Id)SObj.get('Id');  // Set the history record ID
                 result.lstListenerFlow.add(trackFlowObj);
                 count++;
             }

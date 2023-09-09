@@ -32,6 +32,7 @@
          - Integer numRecords: The number of History__c records to create
        - Returns: List<History__c>
 */
+
 public class TestDataFactory {
 
   public static List<Opportunity> createAndUpdateOpportunities(
@@ -89,14 +90,14 @@ public class TestDataFactory {
     return listenerConfigRec;
   }
 
-  public static Opportunity createOpportunity(String name, String stageName, Date closeDate) {
-    Opportunity opp = new Opportunity(
-        Name = name,
-        StageName = stageName,
-        CloseDate = closeDate
-    );
-    insert opp;
-    return opp;
+  public static Opportunity createOpportunity(String stageName) {
+      Opportunity opp = new Opportunity(
+          Name = 'Test Opportunity',
+          StageName = stageName,  // Use the parameter
+          CloseDate = Date.today().addDays(10)
+      );
+      insert opp;
+      return opp;
   }
 
   public static List<Opportunity> createOpportunityHistoryRecords(Integer numRecords, String stageName) {

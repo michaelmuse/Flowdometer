@@ -136,14 +136,6 @@ global with sharing class ListenerFlowController {
                 sortingDateTimeMap.put(parentId, new List<Datetime>{createdDate});
             }
         }
-        if (!historyRecordsMap.isEmpty()) {
-            for (Id parentId : historyRecordsMap.keySet()) {
-                List<SObject> histories = historyRecordsMap.get(parentId);
-                fieldValue = String.valueOf(histories[0].get(fieldName));
-                break;  // exit after one iteration as we just want to populate fieldValue
-            }
-        }
-
         // Sort by CreatedDate and then by Id
         for (Id parentId : sortingDateTimeMap.keySet()) {
             List<Datetime> dateTimes = sortingDateTimeMap.get(parentId);
@@ -209,8 +201,7 @@ global with sharing class ListenerFlowController {
             for (Datetime dt : sortingDateTimeMap.get(parentRecId)) {
                 ListenerFlowController trackFlowObj = new ListenerFlowController();
                 SObject SObj = historyRecordsMap.get(parentRecId)[count];  // Fetch the corresponding SObject
-                trackFlowObj.varHistoryRecordId = (Id)SObj.get('Id');
-                trackFlowObj.varCurrentFieldTracked = listenerConfigRec.Flowdometer__Field_To_Track__c;
+                trackFlowObj.varHistoryRecordId = (Id)SObj.get('Id');  // Set the history record ID
                 result.lstListenerFlow.add(trackFlowObj);
                 count++;
             }

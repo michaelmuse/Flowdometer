@@ -11,6 +11,16 @@ public class ListenerFlowControllerTest {
     // Make sure the namespace is correct
     // Example: 'import namespacePrefix.TestDataFactory;'
 
+    TestDataFactory dataFactory = new TestDataFactory();
+    // Define the TestDataFactory class
+    public TestDataFactory testDataFactory;
+
+    // Constructor logic
+    // Create an instance of TestDataFactory in the constructor
+    public ListenerFlowControllerTest() {
+        testDataFactory = new TestDataFactory();
+    }
+
     // Define the historyRecords and request variables
     List<OpportunityFieldHistory> historyRecords;
     ListenerFlowController.ListenerFlowLatestRequest request;
@@ -20,18 +30,29 @@ public class ListenerFlowControllerTest {
     // ------------------------------
 
     // This could be a setup method or part of a specific test method
-    @TestSetup 
+    @TestSetup
     static void setupTestData() {
-    opportunity = TestDataFactory.createOpportunity('Test Opportunity', 'Prospecting', Date.today().addDays(10));
-    
-    List<Opportunity> oppHistoryRecords = TestDataFactory.createOpportunityHistoryRecords(2, 'stageName');
-    historyRecordsMap.put(opportunity.Id, oppHistoryRecords);
-    
-    Case parentCase = new Case(Subject = 'Test Case', Status = 'New');
-    insert parentCase;  
+        // Initialize your TestDataFactory
+        TestDataFactory testDataFactory = new TestDataFactory();
+        
+        // Initialize your historyRecordsMap
+        Map<Id, List<SObject>> historyRecordsMap = new Map<Id, List<SObject>>();
+        
+        // Call the createOpportunity method to create and insert an Opportunity record
+        Opportunity opportunity = TestDataFactory.createOpportunity('Prospecting');
 
-    List<CaseHistory> caseHistoryRecords = TestDataFactory.createCaseHistoryRecords(2, 'Status');
-    historyRecordsMap.put(parentCase.Id, caseHistoryRecords);
+        
+        // Use TestDataFactory to create history records for Opportunity
+        List<Opportunity> oppHistoryRecords = testDataFactory.createOpportunityHistoryRecords(2, 'stageName');
+        historyRecordsMap.put(opportunity.Id, oppHistoryRecords);
+        
+        // Create and insert a Case record
+        Case parentCase = new Case(Subject = 'Test Case', Status = 'New');
+        insert parentCase;
+        
+        // Use TestDataFactory to create history records for Case
+        List<CaseHistory> caseHistoryRecords = testDataFactory.createCaseHistoryRecords(2, 'Status');
+        historyRecordsMap.put(parentCase.Id, new List<SObject>(caseHistoryRecords));
     }
 
     // ------------------------------
@@ -69,7 +90,7 @@ public class ListenerFlowControllerTest {
 
     // Creates an Opportunity record for testing
     static Opportunity createAndUpdateOpportunity(String newStage) {
-        Opportunity opportunity = TestDataFactory.createOpportunity('Test Opportunity', 'Prospecting', Date.today().addDays(10));
+        Opportunity opportunity = TestDataFactory.createOpportunity('Prospecting');
         insert opportunity;
         opportunity.stageName = newStage;
         update opportunity;
@@ -86,9 +107,11 @@ public class ListenerFlowControllerTest {
         request.listenerConfigRec = listenerConfigRec;
 
         Test.startTest();
-        // Call parseRecordsToFlow method with listenerConfigList
+        // Call parseRecordsToFlow method with historyRecordsMap and queryModifiers
         List<ListenerFlowController.ListenerFlowLatestResponse> responseList = ListenerFlowController.parseRecordsToFlow(
-            new List<ListenerFlowController.ListenerFlowLatestRequest>{request}
+            new List<ListenerFlowController.ListenerFlowLatestRequest>{request}, 
+            historyRecordsMap != null ? historyRecordsMap : new Map<Id, List<SObject>>(), 
+            queryModifiers != null ? queryModifiers : new Map<String, Object>()
         );
         Test.stopTest();
 
@@ -97,11 +120,10 @@ public class ListenerFlowControllerTest {
 
     // Validates the history records in the response list
     static void assertHistoryRecords(List<ListenerFlowController.ListenerFlowLatestResponse> responseList, Integer expectedCount, String expectedNewValue) {
-        System.assertEquals(expectedCount, responseList.size(), 'The expected count of history records does not match.');
+        System.assertEquals(expectedCount, responseList[0].historyRecords.size(), 'The expected count of history records does not match.');
         if (expectedNewValue != null) {
-            // Assuming the response includes lstListenerFlow, change responseList[0] to responseList[0].lstListenerFlow[0]
-            ListenerFlowController listenerFlowController = responseList[0].lstListenerFlow[0];
-            System.assertEquals(expectedNewValue, listenerFlowController.varCurrentFieldValue, 'Latest history record does not match expected value');
+            SObject latestHistoryRecord = responseList[0].historyRecords[0];
+            System.assertEquals(expectedNewValue, (String)latestHistoryRecord.get('NewValue'), 'Latest history record does not match expected value');
         }
     }
 
@@ -114,13 +136,12 @@ public class ListenerFlowControllerTest {
     static void testParseRecordsToFlow() {
         // Setup test data
             // Mock a history record for the Opportunity
-            SObject historyRecord = new SObject(OpportunityFieldHistory.sObjectType);
+            SObject historyRecord = new SObject();
             historyRecord.put('Id', 'some_id_here');  // Replace with appropriate Id
             historyRecord.put('NewValue', 'some_value_here');
             historyRecord.put('CreatedDate', DateTime.now());
 
             // Populate the historyRecordsMap
-            Map<Id, List<SObject>> historyRecordsMap = new Map<Id, List<SObject>>();
             historyRecordsMap.put('some_id_here', new List<SObject>{historyRecord});
 
             // Create a Listener__c record
@@ -140,7 +161,7 @@ public class ListenerFlowControllerTest {
 
         // Run the test
         Test.startTest();
-        List<ListenerFlowLatestResponse> responseList = ListenerFlowController.parseRecordsToFlow(requestList, historyRecordsMap, queryModifiers);
+        List<ListenerFlowLatestResponse> responseList = parseRecordsToFlow(requestList, historyRecordsMap, queryModifiers);
         Test.stopTest();
 
         update new List<Listener__c>{listenerConfigRec};
@@ -272,7 +293,7 @@ public class ListenerFlowControllerTest {
     static void testCollectHistoryRecordsSinceLastQuery() {
         Flowdometer__Listener__c listenerConfigRec = TestDataFactory.createlistenerConfigRec(DateTime.now());
         
-        Opportunity opportunity = TestDataFactory.createOpportunity('Test Opportunity', 'Prospecting', Date.today().addDays(10));
+        Opportunity opportunity = TestDataFactory.createOpportunity('Proposal');
         insert opportunity;
 
         // Create an empty Map to simulate no history records
@@ -300,7 +321,8 @@ public class ListenerFlowControllerTest {
     @isTest
     static void testCollectAllHistoryRecordsOnFirstRun() {
         Flowdometer__Listener__c listenerConfigRec = createlistenerConfigRec(null);  // Passing null to simulate first run
-        Opportunity opportunity = TestDataFactory.createOpportunity('Test Opportunity', 'Prospecting', Date.today().addDays(10));
+        Opportunity opportunity = createAndUpdateOpportunity('Qualification');
+    
 
         // Mock a history record for the Opportunity
         SObject historyRecord = new SObject();
@@ -334,6 +356,15 @@ public class ListenerFlowControllerTest {
         // Additional Assert: Check if the history record is the one we created
         ListenerFlowController.ListenerFlowLatestResponse response = responseList[0];
         System.assertEquals(historyRecord.Id, response.lstListenerFlow[0].varHistoryRecordId, 'History record ID should match');
+    }
+
+    // Validates the history records in the response list for SObject "history" records
+    static void assertHistoryRecords(List<ListenerFlowController.ListenerFlowLatestResponse> responseList, Integer expectedCount, String expectedNewValue) {
+        System.assertEquals(expectedCount, responseList[0].historyRecords.size(), 'The expected count of history records does not match.');
+        if (expectedNewValue != null) {
+            SObject latestHistoryRecord = responseList[0].historyRecords[0];
+            System.assertEquals(expectedNewValue, (String)latestHistoryRecord.get('NewValue'), 'Latest history record does not match expected value');
+        }
     }
 
     @isTest
@@ -370,7 +401,7 @@ public class ListenerFlowControllerTest {
     static void testNoHistoryRecords() {
         // Arrange
         // Create Opportunity records using the data factory
-        Opportunity testOpportunity = TestDataFactory.createOpportunity('Test Opportunity', 'Prospecting', Date.today().addDays(10));
+        Opportunity testOpportunity = TestDataFactory.createOpportunity('Prospecting');
         // No need to insert here, as it's done in the factory method
     
         // Create a Listener__c record using the data factory

@@ -1,4 +1,4 @@
-@isTest
+﻿@isTest
 public class TestDataFactoryTest {
   @isTest
   static void testCreateOpportunityHistoryRecords() {
@@ -7,7 +7,7 @@ public class TestDataFactoryTest {
     String fieldName = 'StageName';
 
     // Call the createOpportunityHistoryRecords method with the new signature
-    List<Opportunity> historyRecords = TestDataFactory.createOpportunityHistoryRecords(numRecords, fieldName);
+    List<OpportunityFieldHistory> historyRecords = TestDataFactory.createOpportunityHistoryRecords(numRecords, fieldName);  // Capture the returned list
 
     // Assert that the history records were created
     System.assertEquals(5, historyRecords.size());
@@ -49,7 +49,7 @@ public class TestDataFactoryTest {
   @isTest
   static void testCreateOpportunity() {
     // Call the createOpportunity method and capture the result
-    Opportunity testOpportunity = TestDataFactory.createOpportunity('Test Opportunity', 'Test Stage', Date.today());
+    Opportunity testOpportunity = TestDataFactory.createOpportunity('Test Stage');
 
     // Assert that the Opportunity was created
     System.assertNotEquals(null, testOpportunity.Id);

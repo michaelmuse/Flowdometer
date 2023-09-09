@@ -1,3 +1,4 @@
+import Flowdometer__TestDataFactory;
 @isTest
 public class TestDataFactoryTest {
   @isTest

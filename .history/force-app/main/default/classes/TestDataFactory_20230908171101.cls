@@ -24,7 +24,7 @@
 
     4. createOpportunity
        - Parameters:
-         - String stageName: The stage name for the Opportunity
+         - String fieldName: The stage name for the Opportunity
        - Returns: Opportunity
 
     5. createHistoryRecords
@@ -32,6 +32,7 @@
          - Integer numRecords: The number of History__c records to create
        - Returns: List<History__c>
 */
+
 public class TestDataFactory {
 
   public static List<Opportunity> createAndUpdateOpportunities(
@@ -44,9 +45,9 @@ public class TestDataFactory {
     for (Integer i = 0; i < numRecords; i++) {
       Opportunity opp = new Opportunity(
         Name='Test Opp ' + i,
-        stageName='Prospecting',
+        fieldName='Prospecting',
         CloseDate=System.today(),
-        AccountId=parentId
+        AccountId=parentId  // Assuming parentId is an Account Id
       );
       opps.add(opp);
     }
@@ -77,7 +78,7 @@ public class TestDataFactory {
   ) {
     Flowdometer__Listener__c listenerConfigRec = new Flowdometer__Listener__c(
       Flowdometer__Object_Name__c = 'Opportunity',
-      Flowdometer__Field_To_Track__c = 'stageName',
+      Flowdometer__Field_To_Track__c = 'fieldName',
       Flowdometer__TerminalStage__c = 'IsWon',
       Flowdometer__Last_Execution_On__c = lastExecutionOn
     );
@@ -89,23 +90,23 @@ public class TestDataFactory {
     return listenerConfigRec;
   }
 
-  public static Opportunity createOpportunity(String name, String stageName, Date closeDate) {
-    Opportunity opp = new Opportunity(
-        Name = name,
-        StageName = stageName,
-        CloseDate = closeDate
-    );
-    insert opp;
-    return opp;
+  public static Opportunity createOpportunity(String stageName) {
+      Opportunity opp = new Opportunity(
+          Name = 'Test Opportunity',
+          StageName = stageName,  // Use the parameter
+          CloseDate = Date.today().addDays(10)
+      );
+      insert opp;
+      return opp;
   }
 
-  public static List<Opportunity> createOpportunityHistoryRecords(Integer numRecords, String stageName) {
+  public static List<Opportunity> createOpportunityHistoryRecords(Integer numRecords, String fieldName) {
       List<Opportunity> historyRecords = new List<Opportunity>();
       for (Integer i = 0; i < numRecords; i++) {
           historyRecords.add(
               new Opportunity(
                   Name = 'Test Opportunity ' + i,
-                  stageName = stageName, // Use the provided stageName parameter
+                  fieldName = fieldName, // Use the provided fieldName parameter
                   CloseDate = Date.today().addDays(10)
               )
           );

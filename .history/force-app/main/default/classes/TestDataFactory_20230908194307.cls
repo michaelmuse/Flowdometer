@@ -32,6 +32,7 @@
          - Integer numRecords: The number of History__c records to create
        - Returns: List<History__c>
 */
+import Flowdometer__TestDataFactory;
 public class TestDataFactory {
 
   public static List<Opportunity> createAndUpdateOpportunities(

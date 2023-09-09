@@ -1,4 +1,4 @@
-@isTest
+﻿@isTest
 public class TestDataFactoryTest {
   @isTest
   static void testCreateOpportunityHistoryRecords() {
@@ -12,8 +12,8 @@ public class TestDataFactoryTest {
     // Assert that the history records were created
     System.assertEquals(5, historyRecords.size());
   }
-
-  @isTest
+  
+@isTest
   static void testCreateCaseHistoryRecords() {
       // Create a test Case record
       Case testCase = new Case(Subject = 'Test Case', Status = 'Open');
