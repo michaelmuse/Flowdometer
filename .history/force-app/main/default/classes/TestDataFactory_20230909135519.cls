@@ -17,7 +17,7 @@
          - Integer numRecords: The number of history records to create
        - Returns: List<CaseHistory>
 
-    3. createlistenerConfig
+    3. createlistenerConfigRec
        - Parameters:
          - DateTime lastExecutionOn: The last execution time for the Listener
        - Returns: Flowdometer__Listener__c
@@ -71,14 +71,14 @@ public class TestDataFactory {
     return new List<CaseHistory>();
   }
 
-  public static Flowdometer__Listener__c createlistenerConfig(
+  public static Flowdometer__Listener__c createlistenerConfigRecWithFields(
     String objectName,
     String fieldToTrack,
     String terminalStage,
     DateTime lastExecutionOn,
     Boolean insertRecord
   ) {
-    Flowdometer__Listener__c listenerConfig = new Flowdometer__Listener__c(
+    Flowdometer__Listener__c listenerConfigRec = new Flowdometer__Listener__c(
       Flowdometer__Object_Name__c = objectName,
       Flowdometer__Field_To_Track__c = fieldToTrack,
       Flowdometer__TerminalStage__c = terminalStage,
@@ -86,10 +86,10 @@ public class TestDataFactory {
     );
   
     if (insertRecord) {
-      insert listenerConfig;
+      insert listenerConfigRec;
     }
   
-    return listenerConfig;
+    return listenerConfigRec;
   }
 
   public static Opportunity createOpportunity(String name, String stageName, Date closeDate) {
@@ -116,6 +116,7 @@ public class TestDataFactory {
       insert historyRecords; // Insert the Opportunity records
       return historyRecords;
   }
+
 
   public static List<Flowdometer__Flow__c> createCustomObjects(Integer numRecords) {
       List<Flowdometer__Flow__c> customObjects = new List<Flowdometer__Flow__c>();

@@ -42,31 +42,31 @@ public class ListenerFlowControllerTest {
     
         // -------------- Flowdometer Listener Setup --------------
         // Standard Listener Config
-        Flowdometer__Listener__c listenerConfig = TestDataFactory.createlistenerConfig(DateTime.now(), false);
+        Flowdometer__Listener__c listenerConfigRec = TestDataFactory.createlistenerConfigRec(DateTime.now(), false);
     
         // Listener for preparingResponse tests (Scenario 1)
         Datetime oneHourBefore = DateTime.now().addHours(-1);
-        Flowdometer__Listener__c listenerForScenario1 = TestDataFactory.createlistenerConfig(
+        Flowdometer__Listener__c listenerForScenario1 = TestDataFactory.createlistenerConfigRecWithFields(
             'Opportunity', 'stageName', 'IsWon', oneHourBefore, false
         );
     
         // Listener for getLatestHistoryValues (Scenario 2)
         Datetime tenMinutesBefore = DateTime.now().addMinutes(-10);
-        Flowdometer__Listener__c listenerForScenario2 = TestDataFactory.createlistenerConfig(
+        Flowdometer__Listener__c listenerForScenario2 = TestDataFactory.createlistenerConfigRecWithFields(
             'Opportunity', 'stageName', 'IsWon', tenMinutesBefore, false
         );
     
         // Existing Listener Configs
-        Flowdometer__Listener__c listenerForPreparingResponse1 = TestDataFactory.createlistenerConfig(
+        Flowdometer__Listener__c listenerForPreparingResponse1 = TestDataFactory.createlistenerConfigRecWithFields(
             'Opportunity', 'stageName', 'IsWon', DateTime.now(), false
         );
-        Flowdometer__Listener__c listenerForPreparingResponse2 = TestDataFactory.createlistenerConfig(
+        Flowdometer__Listener__c listenerForPreparingResponse2 = TestDataFactory.createlistenerConfigRecWithFields(
             'Case', 'Status', 'isClosed', DateTime.now(), false
         );
     
         // Insert all Listener Config records
         insert new List<Flowdometer__Listener__c>{
-            listenerConfig, 
+            listenerConfigRec, 
             listenerForPreparingResponse1, 
             listenerForPreparingResponse2, 
             listenerForScenario1,
@@ -78,11 +78,11 @@ public class ListenerFlowControllerTest {
     }
 
     // Executes the main test logic and returns the response list
-    static List<ListenerFlowLatestResponse> runTest(
-        Flowdometer__Listener__c listenerConfig, 
+    static List<ListenerFlowController.ListenerFlowLatestResponse> runTest(
+        Flowdometer__Listener__c listenerConfigRec, 
         Map<Id, List<SObject>> historyRecordsMap,
         Map<String, Object> queryModifiers,
-        ListenerFlowLatestResponse response,
+        ListenerFlowController.ListenerFlowLatestResponse response,
         Map<Id, Map<String, Id>> goalStepRecsMap,
         Map<Id, SObject> sObjectMap,
         Map<Id, List<Datetime>> sortingDateTimeMap
@@ -90,7 +90,7 @@ public class ListenerFlowControllerTest {
         if (response != null) {
             // If a response object is provided, it means we're testing preparingResponse
             Test.startTest();
-            ListenerFlowController.preparingResponse(response, historyRecordsMap, listenerConfig, goalStepRecsMap, sObjectMap, sortingDateTimeMap);
+            ListenerFlowController.preparingResponse(response, historyRecordsMap, listenerConfigRec, goalStepRecsMap, sObjectMap, sortingDateTimeMap);
             Test.stopTest();
             // No value is returned for preparingResponse scenarios
 
@@ -98,10 +98,10 @@ public class ListenerFlowControllerTest {
         } else {
             // Existing logic for other tests
             ListenerFlowController.ListenerFlowLatestRequest request = new ListenerFlowController.ListenerFlowLatestRequest();
-            request.listenerConfig = listenerConfig;
+            request.listenerConfigRec = listenerConfigRec;
 
             Test.startTest();
-            List<ListenerFlowLatestResponse> responseList = ListenerFlowController.parseRecordsToFlow(
+            List<ListenerFlowController.ListenerFlowLatestResponse> responseList = ListenerFlowController.parseRecordsToFlow(
                 new List<ListenerFlowController.ListenerFlowLatestRequest>{request}, historyRecordsMap, queryModifiers
             );
             Test.stopTest();
@@ -111,7 +111,7 @@ public class ListenerFlowControllerTest {
     }
 
     // Validates the history records in the response list
-    static void assertHistoryRecords(List<ListenerFlowLatestResponse> responseList, Integer expectedCount, String expectedNewValue) {
+    static void assertHistoryRecords(List<ListenerFlowController.ListenerFlowLatestResponse> responseList, Integer expectedCount, String expectedNewValue) {
         System.assertEquals(expectedCount, responseList.size(), 'The expected count of history records does not match.');
         if (expectedNewValue != null) {
             // Assuming the response includes lstListenerFlow, change responseList[0] to responseList[0].lstListenerFlow[0]
@@ -130,11 +130,11 @@ public class ListenerFlowControllerTest {
     static void testParseRecordsToFlow() {
         // Create test data
             // Using testListeners list from setupTestData()
-            Flowdometer__Listener__c listenerConfig = testListeners[0];
+            Flowdometer__Listener__c listenerConfigRec = testListeners[0];
         
             // Initialize other required parameters
             ListenerFlowController.ListenerFlowLatestRequest request = new ListenerFlowController.ListenerFlowLatestRequest();
-            request.listenerConfig = listenerConfig;
+            request.listenerConfigRec = listenerConfigRec;
             List<ListenerFlowController.ListenerFlowLatestRequest> requestList = new List<ListenerFlowController.ListenerFlowLatestRequest>{request};
             Map<String, Object> queryModifiers = new Map<String, Object>();
 
@@ -143,7 +143,7 @@ public class ListenerFlowControllerTest {
         List<ListenerFlowLatestResponse> responseList = ListenerFlowController.parseRecordsToFlow(requestList, historyRecordsMap, queryModifiers);
         Test.stopTest();
 
-        update new List<Flowdometer__Listener__c>{listenerConfig};
+        update new List<Flowdometer__Listener__c>{listenerConfigRec};
 
         // Assert: Check if the response list is not null and has one element
         System.assertNotEquals(null, responseList, 'Response List should not be null');
@@ -155,20 +155,20 @@ public class ListenerFlowControllerTest {
     @isTest
     static void testGetLatestHistoryValues() {
         // Create test data
-        Flowdometer__Listener__c listenerConfig = testListeners[1];
-        listenerConfig.Flowdometer__Last_Execution_On__c = DateTime.now().addMinutes(-10);
-        update listenerConfig;
+        Flowdometer__Listener__c listenerConfigRec = testListeners[1];
+        listenerConfigRec.Flowdometer__Last_Execution_On__c = DateTime.now().addMinutes(-10);
+        update listenerConfigRec;
         
         // Get the queryModifiers
-        Map<String, Object> queryModifiers = ListenerFlowController.getQueryModifiers(listenerConfig);
+        Map<String, Object> queryModifiers = ListenerFlowController.getQueryModifiers(listenerConfigRec);
 
-        List<ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
+        List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfigRec, historyRecordsMap, null, null, null, null, null);
 
         // Assert: Check if all history records are returned
         for (List<SObject> historyList : historyRecordsMap.values()) {
             for (SObject record : historyList) {
                 Datetime createdDate = (Datetime)record.get('CreatedDate');
-                System.assert(createdDate >= listenerConfig.Flowdometer__Last_Execution_On__c, 'Record date is older than Last Execution On date');
+                System.assert(createdDate >= listenerConfigRec.Flowdometer__Last_Execution_On__c, 'Record date is older than Last Execution On date');
             }
         }
     }
@@ -177,10 +177,11 @@ public class ListenerFlowControllerTest {
     @isTest
     static void testQueryResponseLimit() {
         // Create test data
-        Flowdometer__Listener__c listenerConfig = testListeners[0];
+        Flowdometer__Listener__c listenerConfigRec = new Flowdometer__Listener__c();
+        Flowdometer__Listener__c listenerConfigRec = testListeners[0];
 
         // Run the test
-        List<ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
+        List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfigRec, historyRecordsMap, null, null, null, null, null);
     
         // Assert: Check if only 10,000 records are returned
         assertHistoryRecords(responseList, 10000, null);
@@ -190,7 +191,7 @@ public class ListenerFlowControllerTest {
     static void testQueryResponseSortedByCreatedDateAndMillis() {
 
         // Test Execution
-        List<ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
+        List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfigRec, historyRecordsMap, null, null, null, null, null);
     
         Map<Id, List<SObject>> historyRecords = new Map<Id, List<SObject>>();
         // Assertion
@@ -210,15 +211,16 @@ public class ListenerFlowControllerTest {
     @isTest
     static void testCollectHistoryRecordsSinceLastQuery() {
         // Create test data
+        Flowdometer__Listener__c listenerConfigRec = testListeners[0];
 
         // Run the test
-        List<ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
+        List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfigRec, historyRecordsMap, null, null, null, null, null);
 
         // Assertions
         for (List<SObject> historyList : historyRecordsMap.values()) {
             for (SObject record : historyList) {
                 Datetime createdDate = (Datetime)record.get('CreatedDate');
-                System.assert(createdDate >= listenerConfig.Flowdometer__Last_Execution_On__c, 'Record date is older than Last Execution On date');
+                System.assert(createdDate >= listenerConfigRec.Flowdometer__Last_Execution_On__c, 'Record date is older than Last Execution On date');
             }
         }
     }
@@ -227,10 +229,10 @@ public class ListenerFlowControllerTest {
     @isTest
     static void testCollectAllHistoryRecordsOnFirstRun() {
         // Create test data
-        Flowdometer__Listener__c listenerConfig = testListeners[0];
+        Flowdometer__Listener__c listenerConfigRec = testListeners[0];
 
         // Run the test
-        List<ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
+        List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfigRec, historyRecordsMap, null, null, null, null, null);
 
         // Assert: Check if all history records are returned
         assertHistoryRecords(responseList, 1, 'Qualification');
@@ -243,14 +245,14 @@ public class ListenerFlowControllerTest {
         }
 
         // Additional Assert: Check if the history record is the one we created
-        ListenerFlowLatestResponse response = responseList[0];
+        ListenerFlowController.ListenerFlowLatestResponse response = responseList[0];
         System.assertEquals(historyRecord.Id, response.lstListenerFlow[0].varHistoryRecordId, 'History record ID should match');
     }
 
     @isTest
     static void testBulkOperations() {
-        Flowdometer__Listener__c listenerConfig = new Flowdometer__Listener__c();
-        List<ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
+        Flowdometer__Listener__c listenerConfigRec = new Flowdometer__Listener__c();
+        List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfigRec, historyRecordsMap, null, null, null, null, null);
 
         // Assert that the response list is not null and has 200 elements
         System.assertNotEquals(null, responseList, 'Response List should not be null');
@@ -259,8 +261,8 @@ public class ListenerFlowControllerTest {
 
     @isTest
     static void testNoHistoryRecords() {
-        Flowdometer__Listener__c listenerConfig = new Flowdometer__Listener__c();
-        List<ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
+        Flowdometer__Listener__c listenerConfigRec = new Flowdometer__Listener__c();
+        List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfigRec, historyRecordsMap, null, null, null, null, null);
     
         // Assert
         System.assertNotEquals(null, responseList, 'The responses should not be null.');
@@ -273,7 +275,7 @@ public class ListenerFlowControllerTest {
     static void testGetStringNotNull() {
         String value = ListenerFlowController.getStringNotNull('Hello');
         System.assertEquals('Hello', value);
-        List<ListenerFlowLatestResponse> responseList = new List<ListenerFlowLatestResponse>();
+        List<YourResponseType> responseList = new List<YourResponseType>();
         value = ListenerFlowController.getStringNotNull(null);
         System.assertEquals('', value);
         System.assertEquals(false, responseList[0].hasRecords, 'hasRecords should be false');
@@ -312,9 +314,9 @@ public class ListenerFlowControllerTest {
             currentTime.minute(),
             currentTime.second()
         );
-        Flowdometer__Listener__c listenerConfig = testListeners[2];
-        insert listenerConfig;
-        Test.setCreatedDate(listenerConfig.id, oneHourBefore);
+        Flowdometer__Listener__c listenerConfigRec = testListeners[2];
+        insert listenerConfigRec;
+        Test.setCreatedDate(listenerConfigRec.id, oneHourBefore);
 
         // Create a sortingDateTimeMap for the test
         Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
@@ -336,16 +338,15 @@ public class ListenerFlowControllerTest {
 
         Set<Id> targetRecords = new Set<Id>{opportunity.Id};
 
-        Map<Id, List<SObject>> historyRecordsMap = ListenerFlowController.getLatestHistoryValues(targetRecords, listenerConfig);
+        Map<Id, List<SObject>> historyRecordsMap = ListenerFlowController.getLatestHistoryValues(targetRecords, listenerConfigRec);
 
         // Create a ListenerFlowLatestResponse object for the test
-        ListenerFlowLatestResponse response = new ListenerFlowLatestResponse();
-        String someField = 'stageName';
-        String someOtherField = 'Status';
-        String expectedValue = 'Status';
+        ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
+        String someField = null;
+        String someOtherField = 'YourOtherValueHere';
 
         // Call runTest() specifically for preparingResponse
-        runTest(listenerConfig, historyRecordsMap, null, response, null, sObjectMap, sortingDateTimeMap);
+        runTest(listenerConfigRec, historyRecordsMap, null, response, null, sObjectMap, sortingDateTimeMap);
 
         // Assertions
         System.assertNotEquals(null, response.someField, 'someField should not be null.');
@@ -355,13 +356,13 @@ public class ListenerFlowControllerTest {
     @IsTest
     static void testPreparingResponse_Scenario2() {
         // Create test data
-        ListenerFlowLatestResponse result = new ListenerFlowLatestResponse();
+        ListenerFlowController.ListenerFlowLatestResponse result = new ListenerFlowController.ListenerFlowLatestResponse();
         Map<Id, List<SObject>> historyRecordsMap = new Map<Id, List<SObject>>();
-        Flowdometer__Listener__c listenerConfig = new Flowdometer__Listener__c();
-        listenerConfig.Flowdometer__Object_Name__c = 'Case';
-        listenerConfig.Flowdometer__Field_To_Track__c = 'Status';
-        listenerConfig.Flowdometer__TerminalStage__c = 'isClosed';
-        insert listenerConfig;
+        Flowdometer__Listener__c listenerConfigRec = new Flowdometer__Listener__c();
+        listenerConfigRec.Flowdometer__Object_Name__c = 'Case';
+        listenerConfigRec.Flowdometer__Field_To_Track__c = 'Status';
+        listenerConfigRec.Flowdometer__TerminalStage__c = 'isClosed';
+        insert listenerConfigRec;
         Map<Id, Map<String, Id>> goalStepRecsMap = new Map<Id, Map<String, Id>>();
         Map<Id, SObject> sObjectMap = new Map<Id, SObject>();
         Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
@@ -377,10 +378,10 @@ public class ListenerFlowControllerTest {
 
 
         // Create a ListenerFlowLatestResponse object for the test
-        ListenerFlowLatestResponse response = new ListenerFlowLatestResponse();
+        ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
 
         // Call runTest() specifically for preparingResponse
-        runTest(listenerConfig, historyRecordsMap, null, response, null, sObjectMap, sortingDateTimeMap);
+        runTest(listenerConfigRec, historyRecordsMap, null, response, null, sObjectMap, sortingDateTimeMap);
 
         // Assertions
         Integer expectedSize = 10;
@@ -395,15 +396,15 @@ public class ListenerFlowControllerTest {
         Map<Id, SObject> sObjectMap = new Map<Id, SObject>();
 
         // Create a ListenerFlowLatestResponse object for testing
-        ListenerFlowLatestResponse result = new ListenerFlowLatestResponse();
+        ListenerFlowController.ListenerFlowLatestResponse result = new ListenerFlowController.ListenerFlowLatestResponse();
 
-        // Create a Flowdometer__Listener__c object for listenerConfig
-        Flowdometer__Listener__c listenerConfig = new Flowdometer__Listener__c(
+        // Create a Flowdometer__Listener__c object for listenerConfigRec
+        Flowdometer__Listener__c listenerConfigRec = new Flowdometer__Listener__c(
             Flowdometer__Object_Name__c = 'Opportunity',
             Flowdometer__Field_To_Track__c = 'stageName',
             Flowdometer__TerminalStage__c = 'IsWon'
         );
-        insert listenerConfig;
+        insert listenerConfigRec;
 
         Opportunity opportunity = new Opportunity(
             Name = 'Test Opportunity',
@@ -423,12 +424,12 @@ public class ListenerFlowControllerTest {
         sortingDateTimeMap.put(opportunity.Id, new List<Datetime>{DateTime.now()});
 
         // Create a ListenerFlowLatestResponse object for the test
-        ListenerFlowLatestResponse response = new ListenerFlowLatestResponse();
+        ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
 
-        String someField = 'stageName';
+        String someField = null;
 
         // Call runTest() specifically for preparingResponse
-        runTest(listenerConfig, historyRecordsMap, null, response, null, sObjectMap, sortingDateTimeMap);
+        runTest(listenerConfigRec, historyRecordsMap, null, response, null, sObjectMap, sortingDateTimeMap);
 
         // Assertions
         System.assertNotEquals(null, response.someField, 'someField should not be null.');

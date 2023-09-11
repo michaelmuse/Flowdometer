@@ -31,15 +31,15 @@ global with sharing class ListenerFlowController {
   
     // Called by: parseRecordsToFlow
     // Set the booleans and where clause for parseRecordsToFlow
-    public static Map<String, Object> getQueryModifiers(Listener__c listenerConfig) {
+    public static Map<String, Object> getQueryModifiers(Listener__c listenerConfigRec) {
         Map<String, Object> queryModifiers = new Map<String, Object>();
         queryModifiers.put('includeOrderBy', true);  // Always include ORDER BY
         queryModifiers.put('includeLimit', true);  // Always include LIMIT
   
         // Generate the whereClause
         String whereClause = 'CreatedDate >= ';
-        if (listenerConfig.Flowdometer__Last_Execution_On__c != null) {
-            whereClause += '\'' + listenerConfig.Flowdometer__Last_Execution_On__c.formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\'') + '\'';
+        if (listenerConfigRec.Flowdometer__Last_Execution_On__c != null) {
+            whereClause += '\'' + listenerConfigRec.Flowdometer__Last_Execution_On__c.formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\'') + '\'';
         } else {
             whereClause += 'LAST_N_YEARS:3';  // Default to the last 3 years if no last execution date
         }
@@ -92,10 +92,10 @@ global with sharing class ListenerFlowController {
   
     // Called by: parseRecordsToFlow
     // This method returns a map of the latest history values for the parent records passed in. It takes in a set of parent record ids and a listener flow record. It returns a map of the parent record ids and a list of history records for each parent record id.
-    public static Map<Id, List<SObject>> getLatestHistoryValues(List<Id> mParent, Flowdometer__Listener__c listenerConfig, Map<String, Object> queryModifiers) {
+    public static Map<Id, List<SObject>> getLatestHistoryValues(List<Id> mParent, Flowdometer__Listener__c listenerConfigRec, Map<String, Object> queryModifiers) {
         String fieldValue = 'created';
-        String objName = listenerConfig.Object_Name__c;
-        String fieldName = listenerConfig.Field_To_Track__c;
+        String objName = listenerConfigRec.Object_Name__c;
+        String fieldName = listenerConfigRec.Field_To_Track__c;
         String objectSuffix = '__c';
         String objHistoryName = (objName == 'Opportunity')
             ? 'OpportunityFieldHistory'
@@ -195,34 +195,52 @@ global with sharing class ListenerFlowController {
   
     // Called by: parseRecordsToFlow
     // This method takes in a listener flow record, a map of parent record ids and a list of history records for each parent record id, a map of goal step records, and a map of parent record ids and parent records. It returns a response object with a list of listener flow controller objects.
-    @TestVisible
-    private static void preparingResponse(
-        ListenerFlowLatestResponse result, 
-        Map<Id, List<SObject>> historyRecordsMap, 
-        Flowdometer__Listener__c listenerConfig, 
-        Map<Id, SObject> goalStepRecsMap, 
-        Map<Id, SObject> sObjectMap,
-        Map<Id, List<Datetime>> sortingDateTimeMap  // Added this parameter
-    ) {
+    public static void testPreparingResponse() {    
+        // Create a ListenerFlowLatestResponse object
+        ListenerFlowController.ListenerFlowLatestResponse result = new ListenerFlowController.ListenerFlowLatestResponse();
+        
+        // Initialize the historyRecordsMap
+        Map<Id, List<SObject>> historyRecordsMap = new Map<Id, List<SObject>>();
+        
+        // Initialize the sortingDateTimeMap
+        Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
+        
+        // Initialize the Flowdometer__Listener__c record
+        Flowdometer__Listener__c listenerConfigRec = new Flowdometer__Listener__c();
+        // ... Set the necessary fields
+        
+        // Initialize the goalStepRecsMap
+        Map<Id, SObject> goalStepRecsMap = new Map<Id, SObject>();
+        // ... Populate the map
+        
+        // Initialize the sObjectMap
+        Map<Id, SObject> sObjectMap = new Map<Id, SObject>();
+        // ... Populate the map
+        
+        // Call the method under test
+        ListenerFlowController.preparingResponse(result, historyRecordsMap, listenerConfigRec, goalStepRecsMap, sObjectMap, sortingDateTimeMap);
+        
         for (Id parentRecId : sortingDateTimeMap.keySet()) {
             Integer count = 0;
             for (Datetime dt : sortingDateTimeMap.get(parentRecId)) {
                 ListenerFlowController trackFlowObj = new ListenerFlowController();
                 SObject SObj = historyRecordsMap.get(parentRecId)[count];  // Fetch the corresponding SObject
                 trackFlowObj.varHistoryRecordId = (Id)SObj.get('Id');
-                trackFlowObj.varCurrentFieldTracked = listenerConfig.Flowdometer__Field_To_Track__c;
+                trackFlowObj.varCurrentFieldTracked = listenerConfigRec.Flowdometer__Field_To_Track__c;
                 result.lstListenerFlow.add(trackFlowObj);
                 count++;
             }
         }
+        // Assertions
         result.hasRecords = !historyRecordsMap.isEmpty();
     }
+
     
     // Define the ListenerFlowLatestRequest class only once
     global class ListenerFlowLatestRequest {
         // Request class members here
         @InvocableVariable
-        global Listener__c listenerConfig;
+        global Listener__c listenerConfigRec;
     }
 
     // Define the listenerConfigList variable
@@ -238,15 +256,15 @@ global with sharing class ListenerFlowController {
         Map<Id, SObject> sObjectMap = new Map<Id, SObject>();
         Map<Id, SObject> goalStepRecsMap = new Map<Id, SObject>(); // Assuming it's a Map, adjust as needed
 
-        Listener__c listenerConfig = listenerConfigList[0].listenerConfig;
+        Listener__c listenerConfigRec = listenerConfigList[0].listenerConfigRec;
 
         try {
             // Assuming getQueryModifiers is defined in this class or imported
-            Map<String, Object> queryModifiers = getQueryModifiers(listenerConfig);
+            Map<String, Object> queryModifiers = getQueryModifiers(listenerConfigRec);
 
-            String parentNameField = listenerConfig.Object_Name__c != null &&
-                listenerConfig.Object_Name__c == 'Case' ? 'CaseNumber' : 'Name';
-            String terminalStageField = listenerConfig.TerminalStage__c != null ? listenerConfig.TerminalStage__c : '';
+            String parentNameField = listenerConfigRec.Object_Name__c != null &&
+                listenerConfigRec.Object_Name__c == 'Case' ? 'CaseNumber' : 'Name';
+            String terminalStageField = listenerConfigRec.TerminalStage__c != null ? listenerConfigRec.TerminalStage__c : '';
 
             String queryString = 'SELECT Id';
             if (String.isNotBlank(parentNameField)) {
@@ -255,7 +273,7 @@ global with sharing class ListenerFlowController {
             if (String.isNotBlank(terminalStageField)) {
                 queryString += ', ' + terminalStageField;
             }
-            queryString += ' FROM ' + listenerConfig.Object_Name__c +
+            queryString += ' FROM ' + listenerConfigRec.Object_Name__c +
                 ' WHERE ' + (String) queryModifiers.get('whereClause'); // Use whereClause from queryModifiers
 
             for (SObject sob : Database.query(queryString)) {
@@ -263,20 +281,20 @@ global with sharing class ListenerFlowController {
                 sObjectMap.put(sob.Id, sob);
             }
 
-            Map<Id, List<SObject>> latestHistory = getLatestHistoryValues(targetRecords, listenerConfig, queryModifiers);
-            preparingResponse(response, latestHistory, listenerConfig, goalStepRecsMap, sObjectMap, sortingDateTimeMap);
+            Map<Id, List<SObject>> latestHistory = getLatestHistoryValues(targetRecords, listenerConfigRec, queryModifiers);
+            preparingResponse(response, latestHistory, listenerConfigRec, goalStepRecsMap, sObjectMap, sortingDateTimeMap);
 
-            listenerConfig.Error_Message__c = '';
+            listenerConfigRec.Error_Message__c = '';
         } catch (Exception ex) {
             response.isCheckSuccess = false;
-            listenerConfig.Error_Message__c =
+            listenerConfigRec.Error_Message__c =
                 'Error: ' +
                 ex.getMessage() +
                 ' Trace: ' +
                 ex.getStackTraceString();
         }
 
-        update new List<Listener__c>{listenerConfig};
+        update new List<Listener__c>{listenerConfigRec};
         return new List<ListenerFlowLatestResponse>{response};
     }
 
