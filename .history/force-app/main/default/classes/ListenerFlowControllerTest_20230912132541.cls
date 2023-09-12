@@ -9,7 +9,7 @@ public class ListenerFlowControllerTest {
     static List<Account> testAccounts;
     static List<Contact> testContacts;
     List<Flowdometer__Listener__c> lstListenerFlow = new List<Flowdometer__Listener__c>();
-    List<ListenerFlowLatestResponse> responseList = new List<ListenerFlowLatestResponse>();
+    List<SObject> responseList = new List<SObject>();
     List<Flowdometer__Listener_History__c> historyRecords = new List<Flowdometer__Listener_History__c>();
     Flowdometer__Listener_Config__c listenerConfig = new Flowdometer__Listener_Config__c();
     Flowdometer__Listener_History__c historyRecord = new Flowdometer__Listener_History__c();
@@ -20,15 +20,13 @@ public class ListenerFlowControllerTest {
     @TestSetup 
     static void setupTestData() {
         // Initialize the response list
-        List<ListenerFlowLatestResponse> responseList = new List<ListenerFlowLatestResponse>();
+        List<SObject> responseList = new List<SObject>();
         // Add some test data to the response list
         responseList.add(new ListenerFlowLatestResponse());
         responseList.add(new ListenerFlowLatestResponse());
         // Assign the response list to the class-level variable
+        insert responseList;
         ListenerFlowControllerTest.responseList = responseList;
-        
-        // Add test data to the responseList variable
-        insert ListenerFlowControllerTest.responseList;
         
         // Initialize the map to store history records for Opportunities and Cases
         historyRecordsMap = new Map<Id, List<SObject>>();
@@ -162,7 +160,7 @@ public class ListenerFlowControllerTest {
 
         // Run the test
         Test.startTest();
-        List<ListenerFlowLatestResponse> records = ListenerFlowController.parseRecordsToFlow(responseList);
+        List<SObject> responseList = ListenerFlowController.parseRecordsToFlow(requestList, historyRecordsMap, queryModifiers);
         Test.stopTest();
 
         update new List<Flowdometer__Listener__c>{listenerConfig};
@@ -269,23 +267,21 @@ public class ListenerFlowControllerTest {
         System.assertEquals(historyRecord.Id, response.lstListenerFlow[0].varHistoryRecordId, 'History record ID should match');
     }
 
-    // Test the logic for collecting all history records on the first run
     @isTest
     static void testBulkOperations() {
         Flowdometer__Listener__c listenerConfig = new Flowdometer__Listener__c();
-        List<ListenerFlowLatestResponse> responseList = runTest(listenerConfig, null, null, null, null, null, null);
+        List<SObject> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
 
         // Assert that the response list is not null and has 200 elements
         System.assertNotEquals(null, responseList, 'Response List should not be null');
         System.assertEquals(200, responseList.size(), 'Response List size should be 200');
     }
 
-    // Test the logic for collecting all history records on the first run
     @isTest
     static void testNoHistoryRecords() {
         Flowdometer__Listener__c listenerConfig = new Flowdometer__Listener__c();
-        List<ListenerFlowLatestResponse> responseList = runTest(listenerConfig, null, null, null, null, null, null);
-
+        List<SObject> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
+    
         // Assert
         System.assertNotEquals(null, responseList, 'The responses should not be null.');
         System.assertEquals(1, responseList.size(), 'The size of the responses should be 1.');
@@ -297,12 +293,11 @@ public class ListenerFlowControllerTest {
     static void testGetStringNotNull() {
         String value = ListenerFlowController.getStringNotNull('Hello');
         System.assertEquals('Hello', value);
-        ListenerFlowControllerTest.responseList = new List<ListenerFlowLatestResponse>();
-        ListenerFlowControllerTest.responseList.add(new ListenerFlowLatestResponse());
-        ListenerFlowControllerTest.hasRecords = true;
+        List<SObject> responseList = ListenerFlowControllerTest.responseList;
         value = ListenerFlowController.getStringNotNull(null);
         System.assertEquals('', value);
-        System.assertEquals(false, ListenerFlowControllerTest.hasRecords, 'hasRecords should be false');
+        System.assertEquals(false, responseList[0].hasRecords, 'hasRecords should be false');
+
     }
 
     @isTest

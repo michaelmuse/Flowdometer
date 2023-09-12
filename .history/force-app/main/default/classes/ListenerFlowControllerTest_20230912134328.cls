@@ -1,5 +1,11 @@
 //force-app\main\default\classes\ListenerFlowControllerTest.cls (Test class of the Controller)
 
+// Import statements
+import flowdometer__Listener__c;
+import flowdometer__Listener_History__c;
+import flowdometer__Listener_Config__c;
+import ListenerFlowLatestResponse;
+
 @isTest
 public class ListenerFlowControllerTest {
     // Class-level static variables for storing test data across methods
@@ -9,7 +15,7 @@ public class ListenerFlowControllerTest {
     static List<Account> testAccounts;
     static List<Contact> testContacts;
     List<Flowdometer__Listener__c> lstListenerFlow = new List<Flowdometer__Listener__c>();
-    List<ListenerFlowLatestResponse> responseList = new List<ListenerFlowLatestResponse>();
+    List<SObject> responseList = new List<SObject>();
     List<Flowdometer__Listener_History__c> historyRecords = new List<Flowdometer__Listener_History__c>();
     Flowdometer__Listener_Config__c listenerConfig = new Flowdometer__Listener_Config__c();
     Flowdometer__Listener_History__c historyRecord = new Flowdometer__Listener_History__c();
@@ -162,7 +168,7 @@ public class ListenerFlowControllerTest {
 
         // Run the test
         Test.startTest();
-        List<ListenerFlowLatestResponse> records = ListenerFlowController.parseRecordsToFlow(responseList);
+        List<SObject> responseList = ListenerFlowController.parseRecordsToFlow(requestList, historyRecordsMap, queryModifiers);
         Test.stopTest();
 
         update new List<Flowdometer__Listener__c>{listenerConfig};

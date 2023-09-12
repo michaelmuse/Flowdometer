@@ -1,5 +1,11 @@
 //force-app\main\default\classes\ListenerFlowControllerTest.cls (Test class of the Controller)
 
+// Import statements
+import flowdometer__Listener__c;
+import flowdometer__Listener_History__c;
+import flowdometer__Listener_Config__c;
+import ListenerFlowLatestResponse;
+
 @isTest
 public class ListenerFlowControllerTest {
     // Class-level static variables for storing test data across methods
