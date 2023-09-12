@@ -159,7 +159,7 @@ public class ListenerFlowControllerTest {
 
         // Run the test
         Test.startTest();
-        List<SObject> responseList = ListenerFlowController.parseRecordsToFlow(requestList, historyRecordsMap, queryModifiers);
+        List<ListenerFlowLatestResponse> responseList = ListenerFlowController.parseRecordsToFlow(requestList, historyRecordsMap, queryModifiers);
         Test.stopTest();
 
         update new List<Flowdometer__Listener__c>{listenerConfig};
@@ -181,7 +181,7 @@ public class ListenerFlowControllerTest {
         // Get the queryModifiers
         Map<String, Object> queryModifiers = ListenerFlowController.getQueryModifiers(listenerConfig);
 
-        List<SObject> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
+        List<ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
 
         // Assert: Check if all history records are returned
         for (List<SObject> historyList : historyRecordsMap.values()) {
@@ -199,7 +199,7 @@ public class ListenerFlowControllerTest {
         Flowdometer__Listener__c listenerConfig = testListeners[0];
 
         // Run the test
-        List<SObject> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
+        List<ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
     
         // Assert: Check if only 10,000 records are returned
         assertHistoryRecords(responseList, 10000, null);
@@ -209,7 +209,7 @@ public class ListenerFlowControllerTest {
     static void testQueryResponseSortedByCreatedDateAndMillis() {
 
         // Test Execution
-        List<SObject> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
+        List<ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
     
         Map<Id, List<SObject>> historyRecords = new Map<Id, List<SObject>>();
         // Assertion
@@ -231,7 +231,7 @@ public class ListenerFlowControllerTest {
         // Create test data
 
         // Run the test
-        List<SObject> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
+        List<ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
 
         // Assertions
         for (List<SObject> historyList : historyRecordsMap.values()) {
@@ -249,7 +249,7 @@ public class ListenerFlowControllerTest {
         Flowdometer__Listener__c listenerConfig = testListeners[0];
 
         // Run the test
-        List<SObject> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
+        List<ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
 
         // Assert: Check if all history records are returned
         assertHistoryRecords(responseList, 1, 'Qualification');
@@ -269,7 +269,7 @@ public class ListenerFlowControllerTest {
     @isTest
     static void testBulkOperations() {
         Flowdometer__Listener__c listenerConfig = new Flowdometer__Listener__c();
-        List<SObject> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
+        List<ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
 
         // Assert that the response list is not null and has 200 elements
         System.assertNotEquals(null, responseList, 'Response List should not be null');
@@ -279,7 +279,7 @@ public class ListenerFlowControllerTest {
     @isTest
     static void testNoHistoryRecords() {
         Flowdometer__Listener__c listenerConfig = new Flowdometer__Listener__c();
-        List<SObject> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
+        List<ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, null, null, null, null);
     
         // Assert
         System.assertNotEquals(null, responseList, 'The responses should not be null.');
