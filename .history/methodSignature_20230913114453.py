@@ -14,6 +14,7 @@ def extract_method_signatures(code):
         start_line = code[:match.start()].count('\n') + 1
         method_signature = match.group("signature").strip()
         code_subset = code[match.start():]
+        create_listener_lines = []  # To store lines where createlistenerConfig is called
         for i, char in enumerate(code_subset):
             if char == '{':
                 brackets_count += 1
@@ -21,10 +22,16 @@ def extract_method_signatures(code):
                 brackets_count -= 1
                 if brackets_count == 0:
                     end_line = start_line + code_subset[:i].count('\n')
+                    # Find lines calling createlistenerConfig within this method
+                    method_code = code_subset[:i]
+                    for line_num, line in enumerate(method_code.split('\n'), start=start_line):
+                        if 'createlistenerConfig' in line:
+                            create_listener_lines.append(line_num)
                     extracted_methods.append({
                         "signature": method_signature,
                         "start_line": start_line,
-                        "end_line": end_line
+                        "end_line": end_line,
+                        "create_listener_lines": create_listener_lines  # Add the line numbers here
                     })
                     break
     return extracted_methods

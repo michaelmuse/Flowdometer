@@ -90,7 +90,7 @@ public class ListenerFlowControllerTest {
     }
 
     // Executes the main test logic and returns the response list
-    // Optional parameters are Map<String, Object> additionalParams
+    // Optional parameters are now Map<String, Object> additionalParams
     static List<ListenerFlowController.ListenerFlowLatestResponse> runTest(
         Flowdometer__Listener__c listenerConfig,
         Map<Id, List<SObject>> historyRecordsMap,
@@ -302,7 +302,7 @@ public class ListenerFlowControllerTest {
     @isTest
     static void testBulkOperations() {
         Flowdometer__Listener__c listenerConfig = new Flowdometer__Listener__c();
-        List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfig, null, null, null);
+        List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfig, null, null, null, null, null, null);
 
         // Assert that the response list is not null and has 200 elements
         System.assertNotEquals(null, responseList, 'Response List should not be null');
@@ -313,7 +313,7 @@ public class ListenerFlowControllerTest {
     @isTest
     static void testNoHistoryRecords() {
         Flowdometer__Listener__c listenerConfig = new Flowdometer__Listener__c();
-        List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfig, null, null, null);
+        List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfig, null, null, null, null, null, null);
 
         // Assert
         System.assertNotEquals(null, responseList, 'The responses should not be null.');
