@@ -4,7 +4,6 @@
 public class ListenerFlowControllerTest {
     // Class-level static variables for storing test data across methods
     static Map<Id, List<SObject>> historyRecordsMap;
-    static Flowdometer__Listener__c listenerConfig;
     static Case parentCase;
     static List<Flowdometer__Listener__c> testListeners;
     static List<Account> testAccounts;
@@ -59,7 +58,7 @@ public class ListenerFlowControllerTest {
 
         // -------------- Flowdometer Listener Setup --------------
         // Standard Listener Config
-        listenerConfig = TestDataFactory.createlistenerConfig(DateTime.now(), false);
+        Flowdometer__Listener__c listenerConfig = TestDataFactory.createlistenerConfig(DateTime.now(), false);
         insert listenerConfig;
     
         // Listener for preparingResponse tests (Scenario 1)

@@ -59,7 +59,7 @@ public class ListenerFlowControllerTest {
 
         // -------------- Flowdometer Listener Setup --------------
         // Standard Listener Config
-        listenerConfig = TestDataFactory.createlistenerConfig(DateTime.now(), false);
+        Flowdometer__Listener__c listenerConfig = TestDataFactory.createlistenerConfig(DateTime.now(), false);
         insert listenerConfig;
     
         // Listener for preparingResponse tests (Scenario 1)
