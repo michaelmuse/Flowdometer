@@ -25,6 +25,7 @@ public class ListenerFlowControllerTest {
         ListenerFlowControllerTest.responseList = responseList;
         
         // Add test data to the responseList variable
+        insert ListenerFlowControllerTest.responseList;
         
         // Initialize the map to store history records for Opportunities and Cases
         historyRecordsMap = new Map<Id, List<SObject>>();
@@ -55,6 +56,9 @@ public class ListenerFlowControllerTest {
         // Case History Records
         List<CaseHistory> caseHistoryRecords = TestDataFactory.createCaseHistoryRecords(parentCase.Id, 'Status', 2);
         insert caseHistoryRecords;
+    
+        // Setup historyRecordsMap
+        Map<Id, List<SObject>> historyRecordsMap,
 
         // -------------- Flowdometer Listener Setup --------------
         // Standard Listener Config
@@ -108,6 +112,7 @@ public class ListenerFlowControllerTest {
             ListenerFlowController.preparingResponse(response, historyRecordsMap, listenerConfig, goalStepRecsMap, sObjectMap, sortingDateTimeMap);
             Test.stopTest();
             // No value is returned for preparingResponse scenarios
+
             return null; // preparingResponse doesn't return a value, so we return null here
         } else {
             // Existing logic for other tests
@@ -115,15 +120,11 @@ public class ListenerFlowControllerTest {
             request.listenerConfig = listenerConfig;
 
             Test.startTest();
-            List<SObject> sObjectResponseList = ListenerFlowController.parseRecordsToFlow(
+            List<SObject> responseList = ListenerFlowController.parseRecordsToFlow(
                 new List<ListenerFlowController.ListenerFlowLatestRequest>{request}, historyRecordsMap, queryModifiers
             );
             Test.stopTest();
 
-            // Make sure to cast the result to the expected return type
-            List<ListenerFlowController.ListenerFlowLatestResponse> responseList = 
-                (List<ListenerFlowController.ListenerFlowLatestResponse>) sObjectResponseList;
-            
             return responseList;
         }
     }

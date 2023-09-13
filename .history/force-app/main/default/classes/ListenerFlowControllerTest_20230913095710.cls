@@ -25,6 +25,7 @@ public class ListenerFlowControllerTest {
         ListenerFlowControllerTest.responseList = responseList;
         
         // Add test data to the responseList variable
+        insert ListenerFlowControllerTest.responseList;
         
         // Initialize the map to store history records for Opportunities and Cases
         historyRecordsMap = new Map<Id, List<SObject>>();
@@ -55,11 +56,10 @@ public class ListenerFlowControllerTest {
         // Case History Records
         List<CaseHistory> caseHistoryRecords = TestDataFactory.createCaseHistoryRecords(parentCase.Id, 'Status', 2);
         insert caseHistoryRecords;
-
+    
         // -------------- Flowdometer Listener Setup --------------
         // Standard Listener Config
         Flowdometer__Listener__c listenerConfig = TestDataFactory.createlistenerConfig(DateTime.now(), false);
-        insert listenerConfig;
     
         // Listener for preparingResponse tests (Scenario 1)
         Datetime oneHourBefore = DateTime.now().addHours(-1);
@@ -96,6 +96,8 @@ public class ListenerFlowControllerTest {
 
     // Executes the main test logic and returns the response list
     static List<ListenerFlowController.ListenerFlowLatestResponse> runTest(
+        Listener__c listenerConfig, 
+        Map<Id, List<SObject>> historyRecordsMap,
         Map<String, Object> queryModifiers,
         ListenerFlowController.ListenerFlowLatestResponse response,
         Map<Id, Map<String, Id>> goalStepRecsMap,
@@ -108,6 +110,7 @@ public class ListenerFlowControllerTest {
             ListenerFlowController.preparingResponse(response, historyRecordsMap, listenerConfig, goalStepRecsMap, sObjectMap, sortingDateTimeMap);
             Test.stopTest();
             // No value is returned for preparingResponse scenarios
+
             return null; // preparingResponse doesn't return a value, so we return null here
         } else {
             // Existing logic for other tests
@@ -115,15 +118,11 @@ public class ListenerFlowControllerTest {
             request.listenerConfig = listenerConfig;
 
             Test.startTest();
-            List<SObject> sObjectResponseList = ListenerFlowController.parseRecordsToFlow(
+            List<SObject> responseList = ListenerFlowController.parseRecordsToFlow(
                 new List<ListenerFlowController.ListenerFlowLatestRequest>{request}, historyRecordsMap, queryModifiers
             );
             Test.stopTest();
 
-            // Make sure to cast the result to the expected return type
-            List<ListenerFlowController.ListenerFlowLatestResponse> responseList = 
-                (List<ListenerFlowController.ListenerFlowLatestResponse>) sObjectResponseList;
-            
             return responseList;
         }
     }
@@ -146,11 +145,11 @@ public class ListenerFlowControllerTest {
     // Test the main logic for parsing records to flow
     @isTest
     static void testParseRecordsToFlow() {
+        // Create test data
         
-        // Use listenerConfig and historyRecordsMap directly
-        List<ListenerFlowController.ListenerFlowLatestResponse> records = runTest(
-            listenerConfig, historyRecordsMap, /* other parameters */
-        );
+
+            // Using testListeners list from setupTestData()
+            Flowdometer__Listener__c listenerConfig = testListeners[0];
         
             // Initialize other required parameters
             ListenerFlowController.ListenerFlowLatestRequest request = new ListenerFlowController.ListenerFlowLatestRequest();

@@ -33,25 +33,15 @@ public class TestDataFactoryTest {
 
   @isTest
   static void testCreatelistenerConfig() {
-    // Define test data
-    String objectName = 'Case';
-    String fieldToTrack = 'Status';
-    String terminalStage = 'Closed';
-    DateTime lastExecutionOn = DateTime.now();
-    Boolean insertRecord = true;
-  
     // Call the createlistenerConfig method
     Flowdometer__Listener__c listenerConfig = TestDataFactory.createlistenerConfig(
-      objectName,
-      fieldToTrack,
-      terminalStage,
-      lastExecutionOn,
-      insertRecord
+      DateTime.now(),
+      true // Insert the record
     );
-  
+
     // Assert that the listenerConfig was created
     System.assertNotEquals(null, listenerConfig.Id);
-  
+
     // Delete the created record to clean up after the test
     delete listenerConfig;
   }
