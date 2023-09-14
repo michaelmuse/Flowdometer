@@ -99,19 +99,19 @@ global with sharing class ListenerFlowController {
         }
     }
     
-    // /**
-    //  * Generates query modifiers based on the provided listener configuration.
-    //  * 
-    //  * @param listenerConfig The listener configuration object.
-    //  * @return Map<String, Object> A map containing query modifiers such as 'whereClause', 'includeOrderBy', and 'includeLimit'.
-    //  * 
-    //  * Example return value:
-    //  * {
-    //  *   'whereClause': 'LastModifiedDate >= 2021-01-01T00:00:00Z',
-    //  *   'includeOrderBy': true,
-    //  *   'includeLimit': true
-    //  * }
-    //  */
+    /**
+     * Generates query modifiers based on the provided listener configuration.
+     * 
+     * @param listenerConfig The listener configuration object.
+     * @return Map<String, Object> A map containing query modifiers such as 'whereClause', 'includeOrderBy', and 'includeLimit'.
+     * 
+     * Example return value:
+     * {
+     *   'whereClause': 'LastModifiedDate >= 2021-01-01T00:00:00Z',
+     *   'includeOrderBy': true,
+     *   'includeLimit': true
+     * }
+     */
     @TestVisible
     private static Map<String, Object> getQueryModifiers(Listener__c listenerConfig) {
         Map<String, Object> queryModifiers = new Map<String, Object>();

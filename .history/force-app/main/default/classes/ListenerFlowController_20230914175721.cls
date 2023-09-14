@@ -99,19 +99,19 @@ global with sharing class ListenerFlowController {
         }
     }
     
-    // /**
-    //  * Generates query modifiers based on the provided listener configuration.
-    //  * 
-    //  * @param listenerConfig The listener configuration object.
-    //  * @return Map<String, Object> A map containing query modifiers such as 'whereClause', 'includeOrderBy', and 'includeLimit'.
-    //  * 
-    //  * Example return value:
-    //  * {
-    //  *   'whereClause': 'LastModifiedDate >= 2021-01-01T00:00:00Z',
-    //  *   'includeOrderBy': true,
-    //  *   'includeLimit': true
-    //  * }
-    //  */
+    /**
+     * Generates query modifiers based on the provided listener configuration.
+     * 
+     * @param listenerConfig The listener configuration object.
+     * @return Map<String, Object> A map containing query modifiers such as 'whereClause', 'includeOrderBy', and 'includeLimit'.
+     * 
+     * Example return value:
+     * {
+     *   'whereClause': 'LastModifiedDate >= 2021-01-01T00:00:00Z',
+     *   'includeOrderBy': true,
+     *   'includeLimit': true
+     * }
+     */
     @TestVisible
     private static Map<String, Object> getQueryModifiers(Listener__c listenerConfig) {
         Map<String, Object> queryModifiers = new Map<String, Object>();
@@ -183,19 +183,8 @@ global with sharing class ListenerFlowController {
     // Define the listenerConfigList variable
     public static List<ListenerFlowLatestRequest> listenerConfigList;  
 
-    // /**
-    //  * Fetches the latest history records for given parent records based on listener configuration and query modifiers.
-    //  * 
-    //  * This method queries the history table corresponding to the object specified in the listener configuration. 
-    //  * It constructs a query based on the given parent record IDs and query modifiers. The method returns two maps:
-    //  * - A map of parent record IDs to their corresponding list of history records.
-    //  * - A map of parent record IDs to a sorted list of Datetimes, which helps in sorting the history records.
-    //  *
-    //  * @param mParent List of parent record IDs to fetch the history for.
-    //  * @param listenerConfig Configuration for the listener, containing object and field names.
-    //  * @param queryModifiers A map containing query modifiers like 'whereClause', 'includeOrderBy', etc.
-    //  * @return HistoryValuesResult A wrapper class containing both maps.
-    //  */
+    // Called by: parseRecordsToFlow
+    // This method returns a map of the latest history values for the parent records passed in. It takes in a set of parent record ids and a listener flow record. It returns a map of the parent record ids and a list of history records for each parent record id.
     @TestVisible
     private static HistoryValuesResult getLatestHistoryValues(List<Id> mParent, Listener__c listenerConfig, Map<String, Object> queryModifiers) {
         sortingDateTimeMap.clear(); 
@@ -330,21 +319,6 @@ global with sharing class ListenerFlowController {
         response.hasRecords = !historyRecordsMap.isEmpty();  
     }
 
-    // /**
-    //  * Queries for target records and their corresponding history records, then prepares a response for the flow.
-    //  * 
-    //  * This method serves as the main entry point for the ListenerFlowController. It performs the following steps:
-    //  * 1. It fetches target records based on the listener configuration and query modifiers.
-    //  * 2. It then retrieves the history records for these target records.
-    //  * 3. Finally, it prepares a response object with the fetched data.
-    //  * 
-    //  * The method uses the 'getQueryModifiers' and 'getLatestHistoryValues' utility methods for query modification 
-    //  * and history record retrieval, respectively. It also updates the 'Error_Message__c' field in the listener
-    //  * configuration record in case of an exception.
-    //  *
-    //  * @param listenerConfigList List of listener configuration records.
-    //  * @return List<ListenerFlowLatestResponse> A list of response objects containing the fetched data.
-    //  */
     @InvocableMethod(label='Query & Parse History Records' description='' category='ListenerFlowController')
     public static List<ListenerFlowLatestResponse> parseRecordsToFlow(List<ListenerFlowLatestRequest> listenerConfigList) {
         List<ListenerFlowLatestResponse> responseList = new List<ListenerFlowLatestResponse>();  
