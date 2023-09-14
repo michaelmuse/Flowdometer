@@ -8,29 +8,14 @@ def read_apex_class_file(file_path):
 
 # Function to extract method signatures along with their start and end lines
 def extract_method_signatures(code, methods_to_search):
-    method_matches = re.finditer(r"(?P<signature>((@isTest\s+)?(public|private|protected|global)?\s+(static)?\s*([\w.<>]+)\s+(\w+)\s*\(.*\)\s*\{))", code)
+    method_matches = re.finditer(r"(?P<signature>((@isTest\s+)?(public|private|protected|global)?\s+(static)?\s*(\w+)\s+(\w+)\s*\(.*\)\s*\{))", code)
     extracted_methods = []
     brackets_count = 0
-
     for match in method_matches:
-        method_info = {}
         start_line = code[:match.start()].count('\n') + 1
         method_signature = match.group("signature").strip()
-        
-        # Initialize return_type to None
-        return_type = None  
-        
-        # Then look for it in the method signature
-        return_type_match = re.search(r"(public|private|protected|global)?\s+(static)?\s*([\w.<>]+)(?=\s+\w+\s*\(.*\)\s*\{)", method_signature)
-        if return_type_match:
-            return_type = return_type_match.group(3)
-
-        method_info["start"] = start_line
-        method_info["signature"] = method_signature
-        method_info["end"] = None  # Placeholder, will update later
-
         code_subset = code[match.start():]
-        lines_with_methods = {}
+        lines_with_methods = {method: [] for method in methods_to_search}  # Initialize with methods to search for
 
         for i, char in enumerate(code_subset):
             if char == '{':
@@ -39,20 +24,21 @@ def extract_method_signatures(code, methods_to_search):
                 brackets_count -= 1
                 if brackets_count == 0:
                     end_line = start_line + code_subset[:i].count('\n')
-                    method_info["end"] = end_line
                     method_code = code_subset[:i]
-
                     for line_num, line in enumerate(method_code.split('\n'), start=start_line):
                         for method in methods_to_search:
                             if f"{method}(" in line:  # Ensuring we're looking at a method call
-                                if method not in lines_with_methods:
-                                    lines_with_methods[method] = []
                                 lines_with_methods[method].append(line_num)
-
-                    if lines_with_methods:
-                        method_info["called_methods"] = lines_with_methods
-
-                    extracted_methods.append(method_info)
+                    
+                    # Include only methods that call other specified methods
+                    called_methods = {k: v for k, v in lines_with_methods.items() if v}
+                    if called_methods:
+                        extracted_methods.append({
+                            "start": start_line,
+                            "signature": method_signature,
+                            "called_methods": called_methods,
+                            "end": end_line
+                        })
                     break
 
     return extracted_methods
@@ -62,8 +48,8 @@ methods_to_search = ['preparingResponse', 'parseRecordsToFlow', 'getQueryModifie
 
 # List of Apex test class paths
 apex_test_class_paths = [
-    "F:\\Muse Operations Drive\\Projects\\Flowdometer\\force-app\\main\\default\\classes\\ListenerFlowController.cls",
-    "F:\\Muse Operations Drive\\Projects\\Flowdometer\\force-app\\main\\default\\classes\\ListenerFlowControllerTest.cls"
+    "F:\\Muse Operations Drive\\Projects\\Flowdometer\\force-app\\main\\default\\classes\\ListenerFlowControllerTest1.cls",
+    "F:\\Muse Operations Drive\\Projects\\Flowdometer\\force-app\\main\\default\\classes\\ListenerFlowControllerTest2.cls"
 ]
 
 final_output = {}

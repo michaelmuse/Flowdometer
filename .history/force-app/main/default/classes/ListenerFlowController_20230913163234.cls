@@ -1,32 +1,4 @@
-/*
-  Class: ListenerFlowController (My Controller)
-  Path: force-app\main\default\classes\ListenerFlowController.cls
-  This class contains utility methods and the core logic for the Listener Flow.
-
-  Core Methods:
-  - ListenerFlowLatestResponse(): Constructor that initializes the response object. (Lines: 51-56)
-  - getQueryModifiers(Listener__c listenerConfig): Modifies queries based on custom object types. (Lines: 62-77)
-    - Invokes: getQueryModifiers()
-  - getLatestHistoryValues(...): Retrieves the latest history records. (Lines: 125-225)
-    - Invokes: isCustomObject()
-  - parseRecordsToFlow(List<ListenerFlowLatestRequest> listenerConfigList): Transforms raw records to the format expected by the flow. (Lines: 264-312)
-    - Invokes: getQueryModifiers(), getLatestHistoryValues(), preparingResponse()
-  
-  Utility Methods:
-  - isCustomObject(String objectname): Determines if an object is a custom Salesforce object. (Lines: 81-84)
-    - Invokes: isCustomObject()
-  - getStringNotNull(Object valueObj): Safely converts an Object to its String representation, returning an empty string if null. (Lines: 88-92)
-    - Invokes: getStringNotNull()
-
-  Custom Datetime Sorting:
-  - CustomDatetimeSort(SObject record): Constructor for custom datetime sorting. (Lines: 97-101)
-    - compareTo(Object compareTo): Method for custom comparison. (Lines: 103-119)
-
-  Control Flow:
-  - Various 'if' and 'for' statements for conditional and iterative logic. (Lines: 114-116, 156-159, 163-166, 178-182, 290-295)
-
-  The methods are encapsulated and independent, making them good candidates for unit testing.
-*/
+//force-app\main\default\classes\ListenerFlowController.cls (Controller class) 
 
 global with sharing class ListenerFlowController {
     //This is a managed package so we need global modifiers
@@ -34,7 +6,7 @@ global with sharing class ListenerFlowController {
     @AuraEnabled global String varCurrentFieldValue;
     @AuraEnabled global String varCurrentObjectID;
     @AuraEnabled global Map<Id, List<SObject>> historyRecordsMap = new Map<Id, List<SObject>>();
-    global static Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
+    public static Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
     @AuraEnabled global String varNameofTrackedRecord;
     @AuraEnabled global Boolean varTerminalStage;
     @AuraEnabled global String varTrackedCustomObjectName;
@@ -44,7 +16,6 @@ global with sharing class ListenerFlowController {
     @AuraEnabled global Id varHistoryRecordId;
   
     // Inner class for ListenerFlowLatestResponse params to flow
-    @TestVisible
     global class ListenerFlowLatestResponse {
         @InvocableVariable
         global Boolean isCheckSuccess;
@@ -61,16 +32,15 @@ global with sharing class ListenerFlowController {
   
     // Called by: parseRecordsToFlow
     // Set the booleans and where clause for parseRecordsToFlow
-    @TestVisible
-    private static Map<String, Object> getQueryModifiers(Listener__c listenerConfig) {
+    protected static Map<String, Object> getQueryModifiers(Listener__c listenerConfig) {
         Map<String, Object> queryModifiers = new Map<String, Object>();
         queryModifiers.put('includeOrderBy', true);  // Always include ORDER BY
         queryModifiers.put('includeLimit', true);  // Always include LIMIT
   
         // Generate the whereClause
         String whereClause = 'CreatedDate >= ';
-        if (listenerConfig.Last_Execution_On__c != null) {
-            whereClause += '\'' + listenerConfig.Last_Execution_On__c.formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\'') + '\'';
+        if (listenerConfig.Flowdometer__Last_Execution_On__c != null) {
+            whereClause += '\'' + listenerConfig.Flowdometer__Last_Execution_On__c.formatGmt('yyyy-MM-dd\'T\'HH:mm:ss\'Z\'') + '\'';
         } else {
             whereClause += 'LAST_N_YEARS:3';  // Default to the last 3 years if no last execution date
         }
@@ -87,8 +57,7 @@ global with sharing class ListenerFlowController {
     }
   
     // This method returns a string value of the object passed in. If the object is null, it returns an empty string.
-    @TestVisible
-    private static String getStringNotNull(Object valueObj) {
+    public static String getStringNotNull(Object valueObj) {
         if (valueObj == null)
             return '';
         return String.valueOf(valueObj);
@@ -124,9 +93,7 @@ global with sharing class ListenerFlowController {
   
     // Called by: parseRecordsToFlow
     // This method returns a map of the latest history values for the parent records passed in. It takes in a set of parent record ids and a listener flow record. It returns a map of the parent record ids and a list of history records for each parent record id.
-    @TestVisible
-    private static Map<Id, List<SObject>> getLatestHistoryValues(List<Id> mParent, Listener__c listenerConfig, Map<String, Object> queryModifiers) {
-        sortingDateTimeMap.clear(); 
+    protected static Map<Id, List<SObject>> getLatestHistoryValues(List<Id> mParent, Flowdometer__Listener__c listenerConfig, Map<String, Object> queryModifiers) {
         String fieldValue = 'created';
         String objName = listenerConfig.Object_Name__c;
         String fieldName = listenerConfig.Field_To_Track__c;
@@ -230,10 +197,10 @@ global with sharing class ListenerFlowController {
     // Called by: parseRecordsToFlow
     // This method takes in a listener flow record, a map of parent record ids and a list of history records for each parent record id, a map of goal step records, and a map of parent record ids and parent records. It returns a response object with a list of listener flow controller objects.
     @TestVisible
-    public static void preparingResponse(
+    protected static void preparingResponse(
         ListenerFlowLatestResponse result, 
         Map<Id, List<SObject>> historyRecordsMap, 
-        Listener__c listenerConfig, 
+        Flowdometer__Listener__c listenerConfig, 
         Map<Id, SObject> goalStepRecsMap, 
         Map<Id, SObject> sObjectMap,
         Map<Id, List<Datetime>> sortingDateTimeMap  // Added this parameter
@@ -244,7 +211,7 @@ global with sharing class ListenerFlowController {
                 ListenerFlowController trackFlowObj = new ListenerFlowController();
                 SObject SObj = historyRecordsMap.get(parentRecId)[count];  // Fetch the corresponding SObject
                 trackFlowObj.varHistoryRecordId = (Id)SObj.get('Id');
-                trackFlowObj.varCurrentFieldTracked = listenerConfig.Field_To_Track__c;
+                trackFlowObj.varCurrentFieldTracked = listenerConfig.Flowdometer__Field_To_Track__c;
                 result.lstListenerFlow.add(trackFlowObj);
                 count++;
             }

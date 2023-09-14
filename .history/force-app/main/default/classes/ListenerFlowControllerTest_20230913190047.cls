@@ -1,36 +1,23 @@
 /*
   Class: ListenerFlowControllerTest
-  Path: force-app\main\default\classes\ListenerFlowControllerTest.cls
   This class contains unit tests for the ListenerFlowController class.
-
-  Setup Methods:
-  - setupTestData(): Sets up test data. (Lines: 58-134)
-  
+  path: force-app\main\default\classes\ListenerFlowControllerTest.cls (Test class of the Controller) 
   Test Methods:
-  - testParseRecordsToFlow(): Tests the parseRecordsToFlow() method. (Lines: 203-236)
-  - testGetLatestHistoryValues(): Tests the getLatestHistoryValues() method. (Lines: 240-271)
+  - testGetLatestHistoryValues(): Tests the getLatestHistoryValues() method.
     - Invokes: getQueryModifiers()
-  - testQueryResponseLimit(): Tests the query response limit. (Lines: 274-284)
-  - testQueryResponseSortedByCreatedDateAndMillis(): Tests query response sorting. (Lines: 286-303)
-  - testCollectHistoryRecordsSinceLastQuery(): Tests collecting records since the last query. (Lines: 306-320)
-  - testCollectAllHistoryRecordsOnFirstRun(): Tests collecting all records on the first run. (Lines: 323-340)
-  - testBulkOperations(): Tests operations in bulk. (Lines: 343-356)
-  - testNoHistoryRecords(): Tests when no history records are available. (Lines: 359-373)
 
-  Utility Test Methods:
-  - testGetStringNotNull(): Tests the getStringNotNull() utility method. (Lines: 376-386)
+  - testGetStringNotNull(): Tests the getStringNotNull() utility method.
     - Invokes: getStringNotNull()
-  - testIsCustomObject(): Tests the isCustomObject() utility method. (Lines: 388-401)
+
+  - testIsCustomObject(): Tests the isCustomObject() utility method.
     - Invokes: isCustomObject()
-  
-  Scenario-based Test Methods:
-  - testPreparingResponse_Scenario1(): Scenario-based testing for the preparingResponse() method. (Lines: 408-458)
+
+  - testPreparingResponse_Scenario1(): Scenario-based testing for the preparingResponse() method.
     - Invokes: getLatestHistoryValues()
-  - testPreparingResponse_Scenario2(): Another scenario-based test for preparingResponse(). (Lines: 460-494)
-  - testPreparingResponse(): General test for preparingResponse(). (Lines: 496-545)
 
   Each test method is designed to call and validate the functionality of its corresponding method in ListenerFlowController.
 */
+
 
 @isTest
 public class ListenerFlowControllerTest {

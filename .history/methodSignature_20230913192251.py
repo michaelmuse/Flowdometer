@@ -16,18 +16,16 @@ def extract_method_signatures(code, methods_to_search):
         method_info = {}
         start_line = code[:match.start()].count('\n') + 1
         method_signature = match.group("signature").strip()
-        
-        # Initialize return_type to None
-        return_type = None  
-        
-        # Then look for it in the method signature
         return_type_match = re.search(r"(public|private|protected|global)?\s+(static)?\s*([\w.<>]+)(?=\s+\w+\s*\(.*\)\s*\{)", method_signature)
         if return_type_match:
             return_type = return_type_match.group(3)
 
+
         method_info["start"] = start_line
         method_info["signature"] = method_signature
         method_info["end"] = None  # Placeholder, will update later
+        if return_type != 'void':
+            method_info["return"] = return_type
 
         code_subset = code[match.start():]
         lines_with_methods = {}

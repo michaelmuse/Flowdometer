@@ -16,11 +16,6 @@ def extract_method_signatures(code, methods_to_search):
         method_info = {}
         start_line = code[:match.start()].count('\n') + 1
         method_signature = match.group("signature").strip()
-        
-        # Initialize return_type to None
-        return_type = None  
-        
-        # Then look for it in the method signature
         return_type_match = re.search(r"(public|private|protected|global)?\s+(static)?\s*([\w.<>]+)(?=\s+\w+\s*\(.*\)\s*\{)", method_signature)
         if return_type_match:
             return_type = return_type_match.group(3)
@@ -41,6 +36,12 @@ def extract_method_signatures(code, methods_to_search):
                     end_line = start_line + code_subset[:i].count('\n')
                     method_info["end"] = end_line
                     method_code = code_subset[:i]
+
+                    # Look for a return statement within the method
+                    return_statement_match = re.search(r"\breturn\b\s+([\w\[\].]+)\s*;", method_code)
+                    if return_statement_match:
+                        return_var = return_statement_match.group(1)
+                        method_info['return'] = {"type": return_type, "var": return_var}
 
                     for line_num, line in enumerate(method_code.split('\n'), start=start_line):
                         for method in methods_to_search:

@@ -4,33 +4,35 @@
   This class contains unit tests for the ListenerFlowController class.
 
   Setup Methods:
-  - setupTestData(): Sets up test data. (Lines: 58-134)
+  - setupTestData(): Sets up test data. Returns void.
   
   Test Methods:
-  - testParseRecordsToFlow(): Tests the parseRecordsToFlow() method. (Lines: 203-236)
-  - testGetLatestHistoryValues(): Tests the getLatestHistoryValues() method. (Lines: 240-271)
+  - testParseRecordsToFlow(): Tests the parseRecordsToFlow() method. Returns void.
+  - testGetLatestHistoryValues(): Tests the getLatestHistoryValues() method. Returns void.
     - Invokes: getQueryModifiers()
-  - testQueryResponseLimit(): Tests the query response limit. (Lines: 274-284)
-  - testQueryResponseSortedByCreatedDateAndMillis(): Tests query response sorting. (Lines: 286-303)
-  - testCollectHistoryRecordsSinceLastQuery(): Tests collecting records since the last query. (Lines: 306-320)
-  - testCollectAllHistoryRecordsOnFirstRun(): Tests collecting all records on the first run. (Lines: 323-340)
-  - testBulkOperations(): Tests operations in bulk. (Lines: 343-356)
-  - testNoHistoryRecords(): Tests when no history records are available. (Lines: 359-373)
+  - testQueryResponseLimit(): Tests the query response limit. Returns void.
+  - testQueryResponseSortedByCreatedDateAndMillis(): Tests query response sorting. Returns void.
+  - testCollectHistoryRecordsSinceLastQuery(): Tests collecting records since the last query. Returns void.
+  - testCollectAllHistoryRecordsOnFirstRun(): Tests collecting all records on the first run. Returns void.
+  - testBulkOperations(): Tests operations in bulk. Returns void.
+  - testNoHistoryRecords(): Tests when no history records are available. Returns void.
 
   Utility Test Methods:
-  - testGetStringNotNull(): Tests the getStringNotNull() utility method. (Lines: 376-386)
+  - testGetStringNotNull(): Tests the getStringNotNull() utility method. Returns void.
     - Invokes: getStringNotNull()
-  - testIsCustomObject(): Tests the isCustomObject() utility method. (Lines: 388-401)
+  - testIsCustomObject(): Tests the isCustomObject() utility method. Returns void.
     - Invokes: isCustomObject()
   
   Scenario-based Test Methods:
-  - testPreparingResponse_Scenario1(): Scenario-based testing for the preparingResponse() method. (Lines: 408-458)
+  - testPreparingResponse_Scenario1(): Scenario-based testing for the preparingResponse() method. Returns void.
     - Invokes: getLatestHistoryValues()
-  - testPreparingResponse_Scenario2(): Another scenario-based test for preparingResponse(). (Lines: 460-494)
-  - testPreparingResponse(): General test for preparingResponse(). (Lines: 496-545)
+  - testPreparingResponse_Scenario2(): Another scenario-based test for preparingResponse(). Returns void.
+  - testPreparingResponse(): General test for preparingResponse(). Returns void.
 
   Each test method is designed to call and validate the functionality of its corresponding method in ListenerFlowController.
 */
+
+
 
 @isTest
 public class ListenerFlowControllerTest {

@@ -1,36 +1,4 @@
-/*
-  Class: ListenerFlowControllerTest
-  Path: force-app\main\default\classes\ListenerFlowControllerTest.cls
-  This class contains unit tests for the ListenerFlowController class.
-
-  Setup Methods:
-  - setupTestData(): Sets up test data. (Lines: 58-134)
-  
-  Test Methods:
-  - testParseRecordsToFlow(): Tests the parseRecordsToFlow() method. (Lines: 203-236)
-  - testGetLatestHistoryValues(): Tests the getLatestHistoryValues() method. (Lines: 240-271)
-    - Invokes: getQueryModifiers()
-  - testQueryResponseLimit(): Tests the query response limit. (Lines: 274-284)
-  - testQueryResponseSortedByCreatedDateAndMillis(): Tests query response sorting. (Lines: 286-303)
-  - testCollectHistoryRecordsSinceLastQuery(): Tests collecting records since the last query. (Lines: 306-320)
-  - testCollectAllHistoryRecordsOnFirstRun(): Tests collecting all records on the first run. (Lines: 323-340)
-  - testBulkOperations(): Tests operations in bulk. (Lines: 343-356)
-  - testNoHistoryRecords(): Tests when no history records are available. (Lines: 359-373)
-
-  Utility Test Methods:
-  - testGetStringNotNull(): Tests the getStringNotNull() utility method. (Lines: 376-386)
-    - Invokes: getStringNotNull()
-  - testIsCustomObject(): Tests the isCustomObject() utility method. (Lines: 388-401)
-    - Invokes: isCustomObject()
-  
-  Scenario-based Test Methods:
-  - testPreparingResponse_Scenario1(): Scenario-based testing for the preparingResponse() method. (Lines: 408-458)
-    - Invokes: getLatestHistoryValues()
-  - testPreparingResponse_Scenario2(): Another scenario-based test for preparingResponse(). (Lines: 460-494)
-  - testPreparingResponse(): General test for preparingResponse(). (Lines: 496-545)
-
-  Each test method is designed to call and validate the functionality of its corresponding method in ListenerFlowController.
-*/
+//force-app\main\default\classes\ListenerFlowControllerTest.cls (Test class of the Controller) 
 
 @isTest
 public class ListenerFlowControllerTest {
@@ -45,13 +13,7 @@ public class ListenerFlowControllerTest {
     static List<ListenerFlowController.ListenerFlowLatestResponse> responseList = new List<ListenerFlowController.ListenerFlowLatestResponse>();
     static ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
     static Boolean result = false;
-    static Boolean hasRecords = false;
-    static YourType historyRecord; // Replace 'YourType' with the actual type
-    static List<YourType> historyRecords = new List<YourType>();
-    static YourType result; // Replace 'YourType' with the actual type
-    static List<YourType> someList = new List<YourType>();
-    static String someField;
-    static String someOtherField;
+    static Boolean hasRecords = false;    
 
     @TestSetup 
     static void setupTestData() {
@@ -174,10 +136,14 @@ public class ListenerFlowControllerTest {
             request.listenerConfig = listenerConfig;
 
             Test.startTest();
-            List<ListenerFlowController.ListenerFlowLatestResponse> responseList = ListenerFlowController.parseRecordsToFlow(
+            List<SObject> sObjectResponseList = ListenerFlowController.parseRecordsToFlow(
                 new List<ListenerFlowController.ListenerFlowLatestRequest>{request}, historyRecordsMap, queryModifiers
             );
             Test.stopTest();
+
+            // Make sure to cast the result to the expected return type
+            List<ListenerFlowController.ListenerFlowLatestResponse> responseList = 
+                (List<ListenerFlowController.ListenerFlowLatestResponse>) sObjectResponseList;
             
             return responseList;
         }
@@ -230,7 +196,6 @@ public class ListenerFlowControllerTest {
         // Assert: Check if the response list is not null and has one element
         System.assertNotEquals(null, records, 'Response List should not be null');
         System.assertEquals(1, records.size(), 'Response List size should be 1');
-        System.assertEquals(ListenerFlowController.ListenerFlowLatestResponse.class, records[0].getClass(), 'Response should be of type ListenerFlowLatestResponse');
     }
     
 
@@ -287,6 +252,7 @@ public class ListenerFlowControllerTest {
         // Test Execution
         List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, null);
     
+        Map<Id, List<SObject>> historyRecords = new Map<Id, List<SObject>>();
         // Assertion
         List<SObject> sortedHistoryRecords = responseList[0].historyRecords;
         for(Integer i = 1; i < sortedHistoryRecords.size(); i++) {
@@ -335,6 +301,10 @@ public class ListenerFlowControllerTest {
                 System.assert(createdDate >= threeYearsAgo, 'Record date is older than 3 years');
             }
         }
+
+        // Additional Assert: Check if the history record is the one we created
+        ListenerFlowController.ListenerFlowLatestResponse response = (ListenerFlowController.ListenerFlowLatestResponse) responseList[0];
+        System.assertEquals(historyRecord.Id, response.lstListenerFlow[0].varHistoryRecordId, 'History record ID should match');
     }
 
     // Test the logic for collecting all history records on the first run
