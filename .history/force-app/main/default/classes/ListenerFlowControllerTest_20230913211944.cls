@@ -137,17 +137,6 @@ public class ListenerFlowControllerTest {
 
     // Executes the main test logic and returns the response list
     // Optional parameters are Map<String, Object> additionalParams
-    /*
-     * Helper method to run tests for the ListenerFlowController class.
-     *
-     * @param listenerConfig The Listener__c configuration.
-     * @param historyRecordsMap A map of history records.
-     * @param response The response object for preparingResponse, null for other scenarios.
-     * @param additionalParams Additional parameters as a map.
-     * @param sObjectMap A map of SObjects.
-     * @param sortingDateTimeMap A map of sorting date and time values.
-     * @return List of ListenerFlowLatestResponse objects for scenarios other than preparingResponse, null for preparingResponse.
-     */
     static List<ListenerFlowController.ListenerFlowLatestResponse> runTest(
         Listener__c listenerConfig,
         Map<Id, List<SObject>> historyRecordsMap,
@@ -157,18 +146,18 @@ public class ListenerFlowControllerTest {
         Map<Id, List<Datetime>> sortingDateTimeMap
     ) {
         // Handle the default value for additionalParams inside the method
-        if (additionalParams == null) {
+        if(additionalParams == null) {
             additionalParams = new Map<String, Object>();
         }
 
         // Extract optional parameters; no need to check for additionalParams != null anymore
-        Map<String, Object> queryModifiers = (additionalParams.containsKey('queryModifiers'))
-                ? (Map<String, Object>) additionalParams.get('queryModifiers')
-                : new Map<String, Object>();
+        Map<String, Object> queryModifiers = (additionalParams.containsKey('queryModifiers')) 
+                                            ? (Map<String, Object>) additionalParams.get('queryModifiers') 
+                                            : new Map<String, Object>();
 
-        Map<Id, Map<String, Id>> goalStepRecsMap = (additionalParams.containsKey('goalStepRecsMap'))
-                ? (Map<Id, Map<String, Id>>) additionalParams.get('goalStepRecsMap')
-                : new Map<Id, Map<String, Id>>();
+        Map<Id, Map<String, Id>> goalStepRecsMap = (additionalParams.containsKey('goalStepRecsMap')) 
+                                                ? (Map<Id, Map<String, Id>>) additionalParams.get('goalStepRecsMap') 
+                                                : new Map<Id, Map<String, Id>>();
 
         // Using the sObjectMap and sortingDateTimeMap parameters directly in the code
         if (response != null) {
@@ -188,11 +177,11 @@ public class ListenerFlowControllerTest {
                 new List<ListenerFlowController.ListenerFlowLatestRequest>{request}
             );
             Test.stopTest();
-
+            
             return responseList;
         }
     }
-    
+
     // Validates the history records in the response list
     static void assertHistoryRecords(List<ListenerFlowController.ListenerFlowLatestResponse> responseList, Integer expectedCount, String expectedNewValue) {
         System.assertEquals(expectedCount, responseList.size(), 'The expected count of history records does not match.');
@@ -226,7 +215,12 @@ public class ListenerFlowControllerTest {
         
         // Run the test using the utility method
         Test.startTest();
-        List<ListenerFlowController.ListenerFlowLatestResponse> records = runTest(listenerConfig, historyRecordsMap, null, additionalParams, new Map<Id, SObject>(), new Map<Id, List<Datetime>>());
+        List<ListenerFlowController.ListenerFlowLatestResponse> records = runTest(
+            listenerConfig, 
+            historyRecordsMap, 
+            null,  // No response object for this test
+            additionalParams
+        );
         Test.stopTest();
     
         // Update listener configurations if needed
@@ -236,6 +230,8 @@ public class ListenerFlowControllerTest {
         System.assertNotEquals(null, records, 'Response List should not be null');
         System.assertEquals(1, records.size(), 'Response List size should be 1');
     
+        // Changed the getClass() check to use instanceof
+        System.assertEquals(true, (records[0] instanceof ListenerFlowController.ListenerFlowLatestResponse), 'Response should be of type ListenerFlowLatestResponse');
     }    
 
     // Test the logic for fetching the latest history values
@@ -279,7 +275,7 @@ public class ListenerFlowControllerTest {
         Listener__c listenerConfig = testListeners[0];
 
         // Run the test
-        List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, new Map<String, Object>(), new Map<Id, SObject>(), new Map<Id, List<Datetime>>());
+        List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, null);
     
         // Assert: Check if only 10,000 records are returned
         assertHistoryRecords(responseList, 10000, null);
@@ -289,7 +285,7 @@ public class ListenerFlowControllerTest {
     static void testQueryResponseSortedByCreatedDateAndMillis() {
 
         // Test Execution
-        List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, new Map<String, Object>(), new Map<Id, SObject>(), new Map<Id, List<Datetime>>());
+        List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, null);
     
         // Assertion
         List<SObject> sortedHistoryRecords = responseList[0].historyRecords;
@@ -310,7 +306,7 @@ public class ListenerFlowControllerTest {
         // Create test data
 
         // Run the test
-        List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, new Map<String, Object>(), new Map<Id, SObject>(), new Map<Id, List<Datetime>>());
+        List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, null);
 
         // Assertions
         for (List<SObject> historyList : historyRecordsMap.values()) {
@@ -328,7 +324,7 @@ public class ListenerFlowControllerTest {
         Listener__c listenerConfig = testListeners[0];
 
         // Run the test
-        List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, new Map<String, Object>(), new Map<Id, SObject>(), new Map<Id, List<Datetime>>());
+        List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, null);
 
         // Assert: Check if all history records are returned
         assertHistoryRecords(responseList, 1, 'Qualification');
@@ -345,7 +341,7 @@ public class ListenerFlowControllerTest {
     @isTest
     static void testBulkOperations() {
         Listener__c listenerConfig = new Listener__c();
-        List<SObject> tempResponseList = runTest(listenerConfig, null, null, new Map<String, Object>(), new Map<Id, SObject>(), new Map<Id, List<Datetime>>());
+        List<SObject> tempResponseList = runTest(listenerConfig, null, null, null);
         List<ListenerFlowController.ListenerFlowLatestResponse> responseList = 
             new List<ListenerFlowController.ListenerFlowLatestResponse>();
         for (SObject sobj : tempResponseList) {
@@ -361,7 +357,7 @@ public class ListenerFlowControllerTest {
     @isTest
     static void testNoHistoryRecords() {
         Listener__c listenerConfig = new Listener__c();
-        List<SObject> tempResponseList = runTest(listenerConfig, null, null, new Map<String, Object>(), new Map<Id, SObject>(), new Map<Id, List<Datetime>>());
+        List<SObject> tempResponseList = runTest(listenerConfig, null, null, null);
         List<ListenerFlowController.ListenerFlowLatestResponse> responseList = 
             new List<ListenerFlowController.ListenerFlowLatestResponse>();
         for (SObject sobj : tempResponseList) {
@@ -451,19 +447,23 @@ public class ListenerFlowControllerTest {
 
         // Create a ListenerFlowLatestResponse object for the test
         ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
+        String someField = 'stageName';
+        String someOtherField = 'Status';
+        String expectedValue = 'Status';
 
         // Call runTest() specifically for preparingResponse
         runTest(listenerConfig, historyRecordsMap, null, response, null, sObjectMap, sortingDateTimeMap);
 
         // Assertions
-
+        // System.assertNotEquals(null, response.someField, 'someField should not be null.');
+        // System.assertEquals('expectedValue', response.someOtherField, 'Mismatch in someOtherField.');
     }
 
     @IsTest
     static void testPreparingResponse_Scenario2() {
         // Create test data
         ListenerFlowLatestResponse result = new ListenerFlowController.ListenerFlowLatestResponse();
-        
+        Map<Id, List<SObject>> historyRecordsMap = new Map<Id, List<SObject>>();
         Listener__c listenerConfig = new Listener__c();
         // Initialize opportunity for this test
         Opportunity opportunity = new Opportunity(
@@ -529,7 +529,7 @@ public class ListenerFlowControllerTest {
         update opportunity;
 
         // Create a Map<Id, List<sObject>> for historyRecordsMap
-        
+        Map<Id, List<sObject>> historyRecordsMap = new Map<Id, List<sObject>>();
 
         // Create a sortingDateTimeMap for the test
         Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
@@ -538,6 +538,8 @@ public class ListenerFlowControllerTest {
         // Create a ListenerFlowLatestResponse object for the test
         ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
 
+        String someField = 'stageName';
+
         // Call runTest() specifically for preparingResponse
         runTest(listenerConfig, historyRecordsMap, null, response, null, sObjectMap, sortingDateTimeMap);
 
@@ -545,6 +547,7 @@ public class ListenerFlowControllerTest {
         result.hasRecords = !historyRecordsMap.isEmpty();
 
         // Assertions
+        System.assertNotEquals(null, response.someField, 'someField should not be null.');
         System.assertEquals(true, result.hasRecords, 'hasRecords should be true if historyRecordsMap is not empty.');
 
     }
