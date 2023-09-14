@@ -1,39 +1,41 @@
 /*
-  Class: ListenerFlowControllerTest
-  Path: force-app\main\default\classes\ListenerFlowControllerTest.cls
-  
-  Setup Methods:
-  - setupTestData(): Sets up the test data. (Lines: 56-132)
+Class: ListenerFlowControllerTest
+Path: force-app\main\default\classes\ListenerFlowControllerTest.cls
+This class contains unit tests for the ListenerFlowController class.
 
-  Test Methods:
-  - testParseRecordsToFlow(): Tests parseRecordsToFlow(). (Lines: 201-234)
-  - testGetLatestHistoryValues(): Tests getLatestHistoryValues(). (Lines: 238-269)
-    - Invokes: getQueryModifiers()
-  - testQueryResponseLimit(): Tests query response limit. (Lines: 272-282)
-  - testQueryResponseSortedByCreatedDateAndMillis(): Tests query sorting. (Lines: 284-301)
-  - testCollectHistoryRecordsSinceLastQuery(): Tests record collection since last query. (Lines: 304-318)
-  - testCollectAllHistoryRecordsOnFirstRun(): Tests first-run record collection. (Lines: 321-338)
-  - testBulkOperations(): Tests bulk operations. (Lines: 341-354)
-  - testNoHistoryRecords(): Tests no-history scenario. (Lines: 357-371)
+Setup Methods:
+- setupTestData(): Sets up test data. (Lines: 58-134)
 
-  Utility Test Methods:
-  - testGetStringNotNull(): Tests getStringNotNull(). (Lines: 374-384)
-    - Invokes: getStringNotNull()
-  - testIsCustomObject(): Tests isCustomObject(). (Lines: 386-399)
-    - Invokes: isCustomObject()
+Test Methods:
+- testParseRecordsToFlow(): Tests the parseRecordsToFlow() method. (Lines: 203-236)
+- testGetLatestHistoryValues(): Tests the getLatestHistoryValues() method. (Lines: 240-271)
+- Invokes: getQueryModifiers()
+- testQueryResponseLimit(): Tests the query response limit. (Lines: 274-284)
+- testQueryResponseSortedByCreatedDateAndMillis(): Tests query response sorting. (Lines: 286-303)
+- testCollectHistoryRecordsSinceLastQuery(): Tests collecting records since the last query. (Lines: 306-320)
+- testCollectAllHistoryRecordsOnFirstRun(): Tests collecting all records on the first run. (Lines: 323-340)
+- testBulkOperations(): Tests operations in bulk. (Lines: 343-356)
+- testNoHistoryRecords(): Tests when no history records are available. (Lines: 359-373)
 
-  Scenario-based Tests:
-  - testPreparingResponse_Scenario1(): Tests preparingResponse() in a specific scenario. (Lines: 406-456)
-    - Invokes: getLatestHistoryValues()
-  - testPreparingResponse_Scenario2(): Another scenario test for preparingResponse(). (Lines: 458-492)
-  - testPreparingResponse(): General test for preparingResponse(). (Lines: 494-543)
+Utility Test Methods:
+- testGetStringNotNull(): Tests the getStringNotNull() utility method. (Lines: 376-386)
+- Invokes: getStringNotNull()
+- testIsCustomObject(): Tests the isCustomObject() utility method. (Lines: 388-401)
+- Invokes: isCustomObject()
+
+Scenario-based Test Methods:
+- testPreparingResponse_Scenario1(): Scenario-based testing for the preparingResponse() method. (Lines: 408-458)
+- Invokes: getLatestHistoryValues()
+- testPreparingResponse_Scenario2(): Another scenario-based test for preparingResponse(). (Lines: 460-494)
+- testPreparingResponse(): General test for preparingResponse(). (Lines: 496-545)
+
+Each test method is designed to call and validate the functionality of its corresponding method in ListenerFlowController.
 */
 
 @isTest
 public class ListenerFlowControllerTest {
     // Class-level static variables for storing test data across methods
     static Map<Id, List<SObject>> historyRecordsMap;
-    static Map<Id, List<Datetime>> sortingDateTimeMap;
     static Listener__c listenerConfig;
     static Case parentCase;
     static List<Listener__c> testListeners;
@@ -44,9 +46,12 @@ public class ListenerFlowControllerTest {
     static ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
     static Boolean result = false;
     static Boolean hasRecords = false;
-    static Opportunity historyRecord;
-    static List<Opportunity> historyRecords = new List<Opportunity>();
-    static Opportunity result;
+    static YourType historyRecord; // Replace 'YourType' with the actual type
+    static List<YourType> historyRecords = new List<YourType>();
+    static YourType result; // Replace 'YourType' with the actual type
+    static List<YourType> someList = new List<YourType>();
+    static String someField;
+    static String someOtherField;
 
     @TestSetup 
     static void setupTestData() {
@@ -131,10 +136,8 @@ public class ListenerFlowControllerTest {
     static List<ListenerFlowController.ListenerFlowLatestResponse> runTest(
         Listener__c listenerConfig,
         Map<Id, List<SObject>> historyRecordsMap,
-        Flowdometer.ListenerFlowController.ListenerFlowLatestResponse response,
-        Map<String, Object> additionalParams,
-        Map<Id, SObject> sObjectMap,
-        Map<Id, List<Datetime>> sortingDateTimeMap
+        ListenerFlowController.ListenerFlowLatestResponse response,
+        Map<String, Object> additionalParams
     ) {
         // Handle the default value for additionalParams inside the method
         if(additionalParams == null) {
@@ -150,7 +153,14 @@ public class ListenerFlowControllerTest {
                                                 ? (Map<Id, Map<String, Id>>) additionalParams.get('goalStepRecsMap') 
                                                 : new Map<Id, Map<String, Id>>();
 
-        // Using the sObjectMap and sortingDateTimeMap parameters directly in the code
+        Map<Id, SObject> sObjectMap = (additionalParams.containsKey('sObjectMap')) 
+                                    ? (Map<Id, SObject>) additionalParams.get('sObjectMap') 
+                                    : new Map<Id, SObject>();
+
+        Map<Id, List<Datetime>> sortingDateTimeMap = (additionalParams.containsKey('sortingDateTimeMap')) 
+                                                    ? (Map<Id, List<Datetime>>) additionalParams.get('sortingDateTimeMap') 
+                                                    : new Map<Id, List<Datetime>>();
+
         if (response != null) {
             // If a response object is provided, it means we're testing preparingResponse
             Test.startTest();
@@ -165,7 +175,7 @@ public class ListenerFlowControllerTest {
 
             Test.startTest();
             List<ListenerFlowController.ListenerFlowLatestResponse> responseList = ListenerFlowController.parseRecordsToFlow(
-                new List<ListenerFlowController.ListenerFlowLatestRequest>{request}
+                new List<ListenerFlowController.ListenerFlowLatestRequest>{request}, historyRecordsMap, queryModifiers
             );
             Test.stopTest();
             
@@ -220,10 +230,9 @@ public class ListenerFlowControllerTest {
         // Assert: Check if the response list is not null and has one element
         System.assertNotEquals(null, records, 'Response List should not be null');
         System.assertEquals(1, records.size(), 'Response List size should be 1');
+        System.assertEquals(ListenerFlowController.ListenerFlowLatestResponse.class, records[0].getClass(), 'Response should be of type ListenerFlowLatestResponse');
+    }
     
-        // Changed the getClass() check to use instanceof
-        System.assertEquals(true, (records[0] instanceof ListenerFlowController.ListenerFlowLatestResponse), 'Response should be of type ListenerFlowLatestResponse');
-    }    
 
     // Test the logic for fetching the latest history values
     @isTest
@@ -406,12 +415,12 @@ public class ListenerFlowControllerTest {
             currentTime.minute(),
             currentTime.second()
         );
-        Map<String, Object> queryModifiers = new Map<String, Object>();
         Listener__c listenerConfig = testListeners[2];
         insert listenerConfig;
         Test.setCreatedDate(listenerConfig.id, oneHourBefore);
 
-        // Populate sortingDateTimeMap for this specific test
+        // Create a sortingDateTimeMap for the test
+        Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
         sortingDateTimeMap.put(parentCase.Id, new List<Datetime>{DateTime.now()});
 
         Opportunity opportunity = new Opportunity(
@@ -430,11 +439,7 @@ public class ListenerFlowControllerTest {
 
         Set<Id> targetRecords = new Set<Id>{opportunity.Id};
 
-        Map<Id, List<SObject>> historyRecordsMap = ListenerFlowController.getLatestHistoryValues(
-            new List<Id>{opportunity.Id}, 
-            listenerConfig, 
-            queryModifiers
-        );
+        Map<Id, List<SObject>> historyRecordsMap = ListenerFlowController.getLatestHistoryValues(targetRecords, listenerConfig);
 
         // Create a ListenerFlowLatestResponse object for the test
         ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
@@ -456,13 +461,6 @@ public class ListenerFlowControllerTest {
         ListenerFlowLatestResponse result = new ListenerFlowController.ListenerFlowLatestResponse();
         Map<Id, List<SObject>> historyRecordsMap = new Map<Id, List<SObject>>();
         Listener__c listenerConfig = new Listener__c();
-        // Initialize opportunity for this test
-        Opportunity opportunity = new Opportunity(
-            Name = 'Test Opportunity',
-            StageName = 'Prospecting',
-            CloseDate = Date.today().addDays(10)
-        );
-        insert opportunity;
         listenerConfig.Object_Name__c = 'Case';
         listenerConfig.Field_To_Track__c = 'Status';
         listenerConfig.TerminalStage__c = 'isClosed';

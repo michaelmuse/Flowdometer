@@ -1,28 +1,31 @@
 /*
-  Class: ListenerFlowController
-  Path: force-app\main\default\classes\ListenerFlowController.cls
-  
-  Core Methods:
-  - ListenerFlowLatestResponse(): Initializes the response object. (Lines: 54-59)
-  - getQueryModifiers(Listener__c listenerConfig): Modifies queries based on listener config. (Lines: 65-80)
-    - Invokes: getQueryModifiers()
-  - getLatestHistoryValues(...): Fetches the latest history records. (Lines: 138-238)
-    - Invokes: getLatestHistoryValues(), isCustomObject()
-  - parseRecordsToFlow(...): Transforms records for the flow. (Lines: 267-315)
-    - Invokes: getQueryModifiers(), getLatestHistoryValues(), preparingResponse()
+Class: ListenerFlowController (My Controller)
+Path: force-app\main\default\classes\ListenerFlowController.cls
+This class contains utility methods and the core logic for the Listener Flow.
 
-  Utility Methods:
-  - isCustomObject(String objectname): Checks if an object is a custom object. (Lines: 84-87)
-    - Invokes: isCustomObject()
-  - getStringNotNull(Object valueObj): Converts an object to a non-null string. (Lines: 91-95)
-    - Invokes: getStringNotNull()
+Core Methods:
+- ListenerFlowLatestResponse(): Constructor that initializes the response object. (Lines: 51-56)
+- getQueryModifiers(Listener__c listenerConfig): Modifies queries based on custom object types. (Lines: 62-77)
+- Invokes: getQueryModifiers()
+- getLatestHistoryValues(...): Retrieves the latest history records. (Lines: 125-225)
+- Invokes: isCustomObject()
+- parseRecordsToFlow(List<ListenerFlowLatestRequest> listenerConfigList): Transforms raw records to the format expected by the flow. (Lines: 264-312)
+- Invokes: getQueryModifiers(), getLatestHistoryValues(), preparingResponse()
 
-  Custom Datetime Sorting:
-  - CustomDatetimeSort(SObject record): Constructor for custom datetime sorting. (Lines: 100-104)
-  - compareTo(Object compareTo): Custom comparison logic. (Lines: 106-122)
+Utility Methods:
+- isCustomObject(String objectname): Determines if an object is a custom Salesforce object. (Lines: 81-84)
+- Invokes: isCustomObject()
+- getStringNotNull(Object valueObj): Safely converts an Object to its String representation, returning an empty string if null. (Lines: 88-92)
+- Invokes: getStringNotNull()
 
-  Control Flow:
-  - Various 'if' and 'for' statements for control flow. (Lines: 117-119, 169-172, 176-179, 191-195, 293-298)
+Custom Datetime Sorting:
+- CustomDatetimeSort(SObject record): Constructor for custom datetime sorting. (Lines: 97-101)
+- compareTo(Object compareTo): Method for custom comparison. (Lines: 103-119)
+
+Control Flow:
+- Various 'if' and 'for' statements for conditional and iterative logic. (Lines: 114-116, 156-159, 163-166, 178-182, 290-295)
+
+The methods are encapsulated and independent, making them good candidates for unit testing.
 */
 
 global with sharing class ListenerFlowController {

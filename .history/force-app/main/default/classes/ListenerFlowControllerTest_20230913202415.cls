@@ -33,7 +33,6 @@
 public class ListenerFlowControllerTest {
     // Class-level static variables for storing test data across methods
     static Map<Id, List<SObject>> historyRecordsMap;
-    static Map<Id, List<Datetime>> sortingDateTimeMap;
     static Listener__c listenerConfig;
     static Case parentCase;
     static List<Listener__c> testListeners;
@@ -44,9 +43,12 @@ public class ListenerFlowControllerTest {
     static ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
     static Boolean result = false;
     static Boolean hasRecords = false;
-    static Opportunity historyRecord;
-    static List<Opportunity> historyRecords = new List<Opportunity>();
-    static Opportunity result;
+    static YourType historyRecord; // Replace 'YourType' with the actual type
+    static List<YourType> historyRecords = new List<YourType>();
+    static YourType result; // Replace 'YourType' with the actual type
+    static List<YourType> someList = new List<YourType>();
+    static String someField;
+    static String someOtherField;
 
     @TestSetup 
     static void setupTestData() {
@@ -411,7 +413,8 @@ public class ListenerFlowControllerTest {
         insert listenerConfig;
         Test.setCreatedDate(listenerConfig.id, oneHourBefore);
 
-        // Populate sortingDateTimeMap for this specific test
+        // Create a sortingDateTimeMap for the test
+        Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
         sortingDateTimeMap.put(parentCase.Id, new List<Datetime>{DateTime.now()});
 
         Opportunity opportunity = new Opportunity(
@@ -456,13 +459,6 @@ public class ListenerFlowControllerTest {
         ListenerFlowLatestResponse result = new ListenerFlowController.ListenerFlowLatestResponse();
         Map<Id, List<SObject>> historyRecordsMap = new Map<Id, List<SObject>>();
         Listener__c listenerConfig = new Listener__c();
-        // Initialize opportunity for this test
-        Opportunity opportunity = new Opportunity(
-            Name = 'Test Opportunity',
-            StageName = 'Prospecting',
-            CloseDate = Date.today().addDays(10)
-        );
-        insert opportunity;
         listenerConfig.Object_Name__c = 'Case';
         listenerConfig.Field_To_Track__c = 'Status';
         listenerConfig.TerminalStage__c = 'isClosed';

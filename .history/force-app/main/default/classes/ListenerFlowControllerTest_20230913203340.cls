@@ -44,9 +44,12 @@ public class ListenerFlowControllerTest {
     static ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
     static Boolean result = false;
     static Boolean hasRecords = false;
-    static Opportunity historyRecord;
-    static List<Opportunity> historyRecords = new List<Opportunity>();
-    static Opportunity result;
+    static YourType historyRecord; // Replace 'YourType' with the actual type
+    static List<YourType> historyRecords = new List<YourType>();
+    static YourType result; // Replace 'YourType' with the actual type
+    static List<YourType> someList = new List<YourType>();
+    static String someField;
+    static String someOtherField;
 
     @TestSetup 
     static void setupTestData() {

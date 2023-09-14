@@ -47,6 +47,7 @@ public class ListenerFlowControllerTest {
     static Opportunity historyRecord;
     static List<Opportunity> historyRecords = new List<Opportunity>();
     static Opportunity result;
+    static List<YourType> someList = new List<YourType>();
 
     @TestSetup 
     static void setupTestData() {

@@ -33,7 +33,6 @@
 public class ListenerFlowControllerTest {
     // Class-level static variables for storing test data across methods
     static Map<Id, List<SObject>> historyRecordsMap;
-    static Map<Id, List<Datetime>> sortingDateTimeMap;
     static Listener__c listenerConfig;
     static Case parentCase;
     static List<Listener__c> testListeners;
@@ -44,9 +43,12 @@ public class ListenerFlowControllerTest {
     static ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
     static Boolean result = false;
     static Boolean hasRecords = false;
-    static Opportunity historyRecord;
-    static List<Opportunity> historyRecords = new List<Opportunity>();
-    static Opportunity result;
+    static YourType historyRecord; // Replace 'YourType' with the actual type
+    static List<YourType> historyRecords = new List<YourType>();
+    static YourType result; // Replace 'YourType' with the actual type
+    static List<YourType> someList = new List<YourType>();
+    static String someField;
+    static String someOtherField;
 
     @TestSetup 
     static void setupTestData() {
@@ -131,10 +133,8 @@ public class ListenerFlowControllerTest {
     static List<ListenerFlowController.ListenerFlowLatestResponse> runTest(
         Listener__c listenerConfig,
         Map<Id, List<SObject>> historyRecordsMap,
-        Flowdometer.ListenerFlowController.ListenerFlowLatestResponse response,
-        Map<String, Object> additionalParams,
-        Map<Id, SObject> sObjectMap,
-        Map<Id, List<Datetime>> sortingDateTimeMap
+        ListenerFlowController.ListenerFlowLatestResponse response,
+        Map<String, Object> additionalParams
     ) {
         // Handle the default value for additionalParams inside the method
         if(additionalParams == null) {
@@ -150,7 +150,14 @@ public class ListenerFlowControllerTest {
                                                 ? (Map<Id, Map<String, Id>>) additionalParams.get('goalStepRecsMap') 
                                                 : new Map<Id, Map<String, Id>>();
 
-        // Using the sObjectMap and sortingDateTimeMap parameters directly in the code
+        Map<Id, SObject> sObjectMap = (additionalParams.containsKey('sObjectMap')) 
+                                    ? (Map<Id, SObject>) additionalParams.get('sObjectMap') 
+                                    : new Map<Id, SObject>();
+
+        Map<Id, List<Datetime>> sortingDateTimeMap = (additionalParams.containsKey('sortingDateTimeMap')) 
+                                                    ? (Map<Id, List<Datetime>>) additionalParams.get('sortingDateTimeMap') 
+                                                    : new Map<Id, List<Datetime>>();
+
         if (response != null) {
             // If a response object is provided, it means we're testing preparingResponse
             Test.startTest();
@@ -165,7 +172,7 @@ public class ListenerFlowControllerTest {
 
             Test.startTest();
             List<ListenerFlowController.ListenerFlowLatestResponse> responseList = ListenerFlowController.parseRecordsToFlow(
-                new List<ListenerFlowController.ListenerFlowLatestRequest>{request}
+                new List<ListenerFlowController.ListenerFlowLatestRequest>{request}, historyRecordsMap, queryModifiers
             );
             Test.stopTest();
             
@@ -220,10 +227,9 @@ public class ListenerFlowControllerTest {
         // Assert: Check if the response list is not null and has one element
         System.assertNotEquals(null, records, 'Response List should not be null');
         System.assertEquals(1, records.size(), 'Response List size should be 1');
+        System.assertEquals(ListenerFlowController.ListenerFlowLatestResponse.class, records[0].getClass(), 'Response should be of type ListenerFlowLatestResponse');
+    }
     
-        // Changed the getClass() check to use instanceof
-        System.assertEquals(true, (records[0] instanceof ListenerFlowController.ListenerFlowLatestResponse), 'Response should be of type ListenerFlowLatestResponse');
-    }    
 
     // Test the logic for fetching the latest history values
     @isTest
@@ -406,12 +412,12 @@ public class ListenerFlowControllerTest {
             currentTime.minute(),
             currentTime.second()
         );
-        Map<String, Object> queryModifiers = new Map<String, Object>();
         Listener__c listenerConfig = testListeners[2];
         insert listenerConfig;
         Test.setCreatedDate(listenerConfig.id, oneHourBefore);
 
-        // Populate sortingDateTimeMap for this specific test
+        // Create a sortingDateTimeMap for the test
+        Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
         sortingDateTimeMap.put(parentCase.Id, new List<Datetime>{DateTime.now()});
 
         Opportunity opportunity = new Opportunity(
@@ -430,11 +436,7 @@ public class ListenerFlowControllerTest {
 
         Set<Id> targetRecords = new Set<Id>{opportunity.Id};
 
-        Map<Id, List<SObject>> historyRecordsMap = ListenerFlowController.getLatestHistoryValues(
-            new List<Id>{opportunity.Id}, 
-            listenerConfig, 
-            queryModifiers
-        );
+        Map<Id, List<SObject>> historyRecordsMap = ListenerFlowController.getLatestHistoryValues(targetRecords, listenerConfig);
 
         // Create a ListenerFlowLatestResponse object for the test
         ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
@@ -456,13 +458,6 @@ public class ListenerFlowControllerTest {
         ListenerFlowLatestResponse result = new ListenerFlowController.ListenerFlowLatestResponse();
         Map<Id, List<SObject>> historyRecordsMap = new Map<Id, List<SObject>>();
         Listener__c listenerConfig = new Listener__c();
-        // Initialize opportunity for this test
-        Opportunity opportunity = new Opportunity(
-            Name = 'Test Opportunity',
-            StageName = 'Prospecting',
-            CloseDate = Date.today().addDays(10)
-        );
-        insert opportunity;
         listenerConfig.Object_Name__c = 'Case';
         listenerConfig.Field_To_Track__c = 'Status';
         listenerConfig.TerminalStage__c = 'isClosed';
