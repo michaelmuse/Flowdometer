@@ -174,7 +174,7 @@ public class ListenerFlowControllerTest {
         if (response != null) {
             // If a response object is provided, it means we're testing preparingResponse
             Test.startTest();
-            ListenerFlowController.preparingResponse(response, historyRecordsMap, listenerConfig, goalStepRecsMap, sObjectMap, sortingDateTimeMap);
+            ListenerFlowController.preparingResponse(result, historyRecordsMap, listenerConfig, goalStepRecsMap, sObjectMap, sortingDateTimeMap);
             Test.stopTest();
             // No value is returned for preparingResponse scenarios
             return null; // preparingResponse doesn't return a value, so we return null here
@@ -463,14 +463,7 @@ public class ListenerFlowControllerTest {
         };
 
         // Call runTest
-        static List<ListenerFlowController.ListenerFlowLatestResponse> runTest(
-            Listener__c listenerConfig,
-            Map<Id, List<SObject>> historyRecordsMap,
-            ListenerFlowController.ListenerFlowLatestResponse response,
-            Map<String, Object> additionalParams,
-            Map<String, SObject> sObjectMap,
-            Map<Id, List<Datetime>> sortingDateTimeMap
-        )
+        runTest(listenerConfig, historyRecordsMap, null, new Map<String, Object>(), sObjectMap, sortingDateTimeMap);
 
         // Assertions
 

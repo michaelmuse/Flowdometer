@@ -174,7 +174,7 @@ public class ListenerFlowControllerTest {
         if (response != null) {
             // If a response object is provided, it means we're testing preparingResponse
             Test.startTest();
-            ListenerFlowController.preparingResponse(response, historyRecordsMap, listenerConfig, goalStepRecsMap, sObjectMap, sortingDateTimeMap);
+            ListenerFlowController.preparingResponse(result, historyRecordsMap, listenerConfig, goalStepRecsMap, sObjectMap, sortingDateTimeMap);
             Test.stopTest();
             // No value is returned for preparingResponse scenarios
             return null; // preparingResponse doesn't return a value, so we return null here
@@ -256,15 +256,15 @@ public class ListenerFlowControllerTest {
         };
 
         // Call runTest
-        static List<ListenerFlowController.ListenerFlowLatestResponse> runTest(
-            Listener__c listenerConfig,
-            Map<Id, List<SObject>> historyRecordsMap,
-            ListenerFlowController.ListenerFlowLatestResponse response,
-            Map<String, Object> additionalParams,
-            Map<Id, SObject> sObjectMap,
-            Map<Id, List<Datetime>> sortingDateTimeMap,
-            Map<String, Object> queryModifiers
-        )
+        List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(
+            listenerConfig, 
+            historyRecordsMap, 
+            null,  // No response object for this test
+            additionalParams,
+            new Map<Id, SObject>(),
+            new Map<Id, List<Datetime>>(),
+            queryModifiers
+        );
 
         // Assert: Check if all history records are returned
         for (List<SObject> historyList : historyRecordsMap.values()) {
@@ -455,6 +455,8 @@ public class ListenerFlowControllerTest {
         // Create a ListenerFlowLatestResponse object for the test
         ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
 
+        // Get the queryModifiers
+        Map<String, Object> queryModifiers = ListenerFlowController.getQueryModifiers(listenerConfig);
 
         // Create additionalParams map
         Map<String, Object> additionalParams = new Map<String, Object>{
@@ -463,14 +465,7 @@ public class ListenerFlowControllerTest {
         };
 
         // Call runTest
-        static List<ListenerFlowController.ListenerFlowLatestResponse> runTest(
-            Listener__c listenerConfig,
-            Map<Id, List<SObject>> historyRecordsMap,
-            ListenerFlowController.ListenerFlowLatestResponse response,
-            Map<String, Object> additionalParams,
-            Map<String, SObject> sObjectMap,
-            Map<Id, List<Datetime>> sortingDateTimeMap
-        )
+        runTest(listenerConfig, historyRecordsMap, null, new Map<String, Object>(), sObjectMap, sortingDateTimeMap);
 
         // Assertions
 
