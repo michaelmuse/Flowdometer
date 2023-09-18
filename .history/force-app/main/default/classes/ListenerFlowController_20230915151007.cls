@@ -135,6 +135,27 @@ global with sharing class ListenerFlowController {
     }
   }
 
+    //Needs revised comment
+    @TestVisible
+    private static Map<String, Object> getQueryModifiers(
+    Listener__c listenerConfig,
+    Boolean isHistoryQuery  // Renamed from includeCreatedDate
+    ) {
+    Map<String, Object> queryModifiers = new Map<String, Object>();
+    queryModifiers.put('includeOrderBy', true);  // Always include ORDER BY
+    queryModifiers.put('includeLimit', true);    // Always include LIMIT
+
+    // Generate the whereClause
+    String whereClause = '';
+    if (isHistoryQuery) {  // Condition updated to reflect the new variable name
+        // existing logic for adding whereClause
+        whereClause += ' AND (Field = :fieldValue OR Field = :fieldName) AND ParentId IN :mParent';  // Added
+    }
+    queryModifiers.put('whereClause', whereClause);
+
+    return queryModifiers;
+    }
+
   // Called by: getLatestHistoryValues
   // This method returns a boolean value of whether the object passed in is a custom object or not.
   public static Boolean isCustomObject(String objectname) {
@@ -161,40 +182,28 @@ global with sharing class ListenerFlowController {
 
     public Integer compareTo(Object compareTo) {
       CustomDatetimeSort compareToRecord = (CustomDatetimeSort) compareTo;
-  
-      Datetime thisDate = (Datetime) this.record.get('CreatedDate');
+
+      Datetime thisDate = (Datetime) record.get('CreatedDate');
       Datetime otherDate = (Datetime) compareToRecord.record.get('CreatedDate');
-  
+
       Long thisMillis = thisDate.getTime();
       Long otherMillis = otherDate.getTime();
-  
+
       if (thisMillis > otherMillis) {
-          return 1;
+        return 1;
       } else if (thisMillis < otherMillis) {
-          return -1;
+        return -1;
       } else {
-          // if the CreatedDate is the same, use the ID as secondary sorting criterion
-          ID thisID = (ID) this.record.get('Id');
-          ID otherID = (ID) compareToRecord.record.get('Id');
-  
-          if (thisID > otherID) {
-              return 1;
-          } else if (thisID < otherID) {
-              return -1;
-          } else {
-              return 0;
-          }
+        return 0;
       }
     }
   }
 
   // Define the ListenerFlowLatestRequest class only once
   global class ListenerFlowLatestRequest {
+    // Request class members here
     @InvocableVariable
     global Listener__c listenerConfig;
-
-    @InvocableVariable
-    global DateTime lastExecutionOn;
   }
 
   // Define the listenerConfigList variable
@@ -222,83 +231,6 @@ global with sharing class ListenerFlowController {
     // If no matching history object is found, return null or throw an exception.
     return null;
   }
-  
-  private static String buildQuery(
-    String objHistoryName,
-    String parentFieldName,
-    String fieldValue,
-    String fieldName,
-    List<Id> mParent,
-    Map<String, Object> queryModifiers
-  ) {
-    String queryStr = 'SELECT Id, Field, OldValue, NewValue, CreatedDate, ' + parentFieldName +
-      ' FROM ' + objHistoryName +
-      ' WHERE (Field =:fieldValue OR Field =:fieldName) AND ' +
-      parentFieldName + ' IN :mParent';
-  
-    String whereClause = (String) queryModifiers.get('whereClause');
-    if (whereClause != null && whereClause != '') {
-      queryStr += ' AND ' + whereClause;
-    }
-  
-    if ((Boolean) queryModifiers.get('includeOrderBy')) {
-      queryStr += ' ORDER BY ' + parentFieldName + ', CreatedDate ASC';
-    }
-  
-    if ((Boolean) queryModifiers.get('includeLimit')) {
-      queryStr += ' LIMIT 10000';
-    }
-  
-    return queryStr;
-  }
-    // Called by: getLatestHistoryValues
-    // This method returns a map of query modifiers based on the listener configuration and other parameters
-    @TestVisible
-    private static Map<String, Object> getQueryModifiers(
-        Listener__c listenerConfig,
-        Boolean isHistoryQuery,
-        DateTime lastExecutionOn
-    ) {
-        Map<String, Object> queryModifiers = new Map<String, Object>();
-        queryModifiers.put('includeOrderBy', true); // Always include ORDER BY
-        queryModifiers.put('includeLimit', true);   // Always include LIMIT
-
-        // Generate the whereClause
-        String whereClause = '';  
-        if (isHistoryQuery && lastExecutionOn != null) {
-            whereClause += ' AND CreatedDate > :lastExecutionOn';
-        }
-        queryModifiers.put('whereClause', whereClause);
-
-      return queryModifiers;
-    }
-
-    public void sortHistoryList(List<SObject> historyList) {
-      // Prepare a list of CustomDatetimeSort
-      List<CustomDatetimeSort> toSort = new List<CustomDatetimeSort>();
-      for(SObject record : historyList) {
-        toSort.add(new CustomDatetimeSort(record));
-      } 
-  
-      // Now sort the list with custom sorting
-      toSort.sort();
-  
-      // Additional sorting logic based on order of creation
-      Datetime previousDateTime = null;
-      Integer count = 1;
-      for (CustomDatetimeSort sortedRecord : toSort) {
-          SObject record = sortedRecord.record;
-          Datetime recordDatetime = (Datetime) record.get('CreatedDate');
-          if (previousDateTime != null && recordDatetime == previousDateTime) {
-              count++;
-              // record.put('Order_of_Creation__c', count); 
-          } else {
-              count = 1;
-              // record.put('Order_of_Creation__c', count);
-          }
-          previousDateTime = recordDatetime;
-      }
-    }
 
   // /**
   //  * Fetches the latest history records for given parent records based on listener configuration and query modifiers.
@@ -317,8 +249,7 @@ global with sharing class ListenerFlowController {
   private static HistoryValuesResult getLatestHistoryValues(
     List<Id> mParent,
     Listener__c listenerConfig,
-    Map<String, Object> queryModifiers,
-    DateTime lastExecutionOn
+    Map<String, Object> queryModifiers
   ) {
     sortingDateTimeMap.clear();
     String fieldValue = 'created';
@@ -330,13 +261,28 @@ global with sharing class ListenerFlowController {
       ? 'ParentId'
       : (objName + 'Id');
 
-    // Generate query modifiers for history
+    // Construct the query string based on queryModifiers
     Map<String, Object> historyQueryModifiers = getQueryModifiers(
-        listenerConfig,
-        true,
-        lastExecutionOn  // pass along the new parameter
-    );
-    String queryStr = buildQuery(objHistoryName, parentFieldName, fieldValue, fieldName, mParent, historyQueryModifiers);
+      listenerConfig,
+      true
+    ); // Enable CreatedDate for history
+    String queryStr =
+      'SELECT Id, Field, OldValue, NewValue, CreatedDate, ' +
+      parentFieldName +
+      ' FROM ' +
+      objHistoryName +
+      ' WHERE (Field =:fieldValue OR Field =:fieldName) AND ' +
+      parentFieldName +
+      ' IN :mParent AND ' +
+      (String) historyQueryModifiers.get('whereClause');
+
+    if ((Boolean) historyQueryModifiers.get('includeOrderBy')) {
+      queryStr += ' ORDER BY ' + parentFieldName + ', CreatedDate ASC';
+    }
+
+    if ((Boolean) historyQueryModifiers.get('includeLimit')) {
+      queryStr += ' LIMIT 10000';
+    }
 
     // Debug for queryStr
     System.debug('Executing history query: ' + queryStr);
@@ -361,15 +307,17 @@ global with sharing class ListenerFlowController {
       }
     }
     if (!historyRecordsMap.isEmpty()) {
-      // Create an instance of ListenerFlowController
-      ListenerFlowController controller = new ListenerFlowController();
-
-      // Sort using your sortHistoryList method
       for (Id parentId : historyRecordsMap.keySet()) {
-        List<SObject> specificHistoryList = (List<SObject>) historyRecordsMap.get(parentId);
-        controller.sortHistoryList(specificHistoryList);
-        historyRecordsMap.put(parentId, specificHistoryList);
+        List<SObject> histories = historyRecordsMap.get(parentId);
+        fieldValue = String.valueOf(histories[0].get(fieldName));
+        break; // exit after one iteration as we just want to populate fieldValue
       }
+    }
+
+    // Sort by CreatedDate and then by Id
+    for (Id parentId : sortingDateTimeMap.keySet()) {
+      List<Datetime> dateTimes = sortingDateTimeMap.get(parentId);
+      dateTimes.sort();
     }
 
     Set<Id> oneHistoryParentIds = new Set<Id>();
@@ -412,6 +360,12 @@ global with sharing class ListenerFlowController {
           historyRecordsMap.put(parentId, tempList);
         }
       }
+    }
+
+    // Sort by CreatedDate and then by Id
+    for (Id parentId : sortingDateTimeMap.keySet()) {
+      List<Datetime> dateTimes = sortingDateTimeMap.get(parentId);
+      dateTimes.sort();
     }
 
     // Return both maps in a wrapper class
@@ -460,35 +414,33 @@ global with sharing class ListenerFlowController {
   //  */
   @InvocableMethod(
     label='Query & Parse History Records'
-    description='Used to query History Records in Flow'
+    description=''
     category='ListenerFlowController'
   )
   public static List<ListenerFlowLatestResponse> parseRecordsToFlow(
-  List<ListenerFlowLatestRequest> listenerConfigList) {
-    Listener__c listenerConfigRec = listenerConfigList[0].listenerConfig;
-    DateTime lastExecutionOn = listenerConfigList[0].lastExecutionOn;
+    List<ListenerFlowLatestRequest> listenerConfigList
+  ) {
     List<ListenerFlowLatestResponse> responseList = new List<ListenerFlowLatestResponse>();
     ListenerFlowLatestResponse response = new ListenerFlowLatestResponse();
 
     // Debug for initial conditions
     System.debug('Initial listenerConfigList: ' + listenerConfigList);
 
-    if (listenerConfigList.isEmpty()) {
+    if (listenerConfigList.isEmpty())
       return responseList;
-    }
 
     Set<Id> targetRecords = new Set<Id>(); // Initialized here
     List<Id> targetRecordIds;
 
     Map<String, SObject> sObjectMap = new Map<String, SObject>();
+    Listener__c listenerConfigRec = listenerConfigList[0].listenerConfig;
 
     // Debug for listenerConfigRec
     System.debug('listenerConfigRec: ' + listenerConfigRec);
 
     Map<String, Object> queryModifiers = getQueryModifiers(
-        listenerConfigRec,
-        false,
-        lastExecutionOn
+      listenerConfigRec,
+      false
     );
 
     // Debug for queryModifiers
@@ -509,19 +461,11 @@ global with sharing class ListenerFlowController {
       if (String.isNotBlank(terminalStageField))
         queryString += ', ' + terminalStageField;
 
-      // Build the initial part of the queryString
-      queryString += ' FROM ' + listenerConfigRec.Object_Name__c;
-
-      // Retrieve whereClause from queryModifiers
-      String whereClause = (String) queryModifiers.get('whereClause');
-
-      // Debug log to check whereClause
-      System.debug('whereClause: ' + whereClause);
-
-      // Check if whereClause is not empty before appending
-      if (String.isNotBlank(whereClause)) {
-          queryString += ' WHERE ' + whereClause;
-      }
+      queryString +=
+        ' FROM ' +
+        listenerConfigRec.Object_Name__c +
+        ' WHERE ' +
+        (String) queryModifiers.get('whereClause');
 
       // Debug for queryString
       System.debug('Executing query: ' + queryString);
@@ -532,15 +476,14 @@ global with sharing class ListenerFlowController {
       // Debug for queryString
       System.debug('Executing query: ' + queryString);
 
-      targetRecordIds = new List<Id>(targetRecords); 
+      targetRecordIds = new List<Id>(targetRecords); // Correct conversion here
       // Debug for targetRecordIds
       System.debug('targetRecordIds: ' + targetRecordIds);
 
       HistoryValuesResult historyResult = getLatestHistoryValues(
         targetRecordIds,
         listenerConfigRec,
-        queryModifiers,
-        lastExecutionOn 
+        queryModifiers
       );
       Map<Id, List<SObject>> historyRecordsMap = historyResult.historyRecordsMap;
       Map<Id, List<Datetime>> sortingDateTimeMap = historyResult.sortingDateTimeMap;

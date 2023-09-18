@@ -509,19 +509,11 @@ global with sharing class ListenerFlowController {
       if (String.isNotBlank(terminalStageField))
         queryString += ', ' + terminalStageField;
 
-      // Build the initial part of the queryString
-      queryString += ' FROM ' + listenerConfigRec.Object_Name__c;
-
-      // Retrieve whereClause from queryModifiers
-      String whereClause = (String) queryModifiers.get('whereClause');
-
-      // Debug log to check whereClause
-      System.debug('whereClause: ' + whereClause);
-
-      // Check if whereClause is not empty before appending
-      if (String.isNotBlank(whereClause)) {
-          queryString += ' WHERE ' + whereClause;
-      }
+      queryString +=
+        ' FROM ' +
+        listenerConfigRec.Object_Name__c +
+        ' WHERE ' +
+        (String) queryModifiers.get('whereClause');
 
       // Debug for queryString
       System.debug('Executing query: ' + queryString);

@@ -264,13 +264,18 @@ global with sharing class ListenerFlowController {
         queryModifiers.put('includeLimit', true);   // Always include LIMIT
 
         // Generate the whereClause
-        String whereClause = '';  
-        if (isHistoryQuery && lastExecutionOn != null) {
-            whereClause += ' AND CreatedDate > :lastExecutionOn';
-        }
-        queryModifiers.put('whereClause', whereClause);
+        String whereClause = null;  // Changed from ''
 
-      return queryModifiers;
+        if (isHistoryQuery) {
+            // Add a check for lastExecutionOn, to see if this is isn't the first time we query, and include it in whereClause
+            if (lastExecutionOn != null) {
+                whereClause = ' AND CreatedDate > :lastExecutionOn';  // adding AND here
+            }
+
+            queryModifiers.put('whereClause', whereClause);
+        }
+
+        return queryModifiers;
     }
 
     public void sortHistoryList(List<SObject> historyList) {
@@ -509,19 +514,11 @@ global with sharing class ListenerFlowController {
       if (String.isNotBlank(terminalStageField))
         queryString += ', ' + terminalStageField;
 
-      // Build the initial part of the queryString
-      queryString += ' FROM ' + listenerConfigRec.Object_Name__c;
-
-      // Retrieve whereClause from queryModifiers
-      String whereClause = (String) queryModifiers.get('whereClause');
-
-      // Debug log to check whereClause
-      System.debug('whereClause: ' + whereClause);
-
-      // Check if whereClause is not empty before appending
-      if (String.isNotBlank(whereClause)) {
-          queryString += ' WHERE ' + whereClause;
-      }
+      queryString +=
+        ' FROM ' +
+        listenerConfigRec.Object_Name__c +
+        ' WHERE ' +
+        (String) queryModifiers.get('whereClause');
 
       // Debug for queryString
       System.debug('Executing query: ' + queryString);

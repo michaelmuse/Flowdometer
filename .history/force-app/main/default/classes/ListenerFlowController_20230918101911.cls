@@ -255,22 +255,28 @@ global with sharing class ListenerFlowController {
     // This method returns a map of query modifiers based on the listener configuration and other parameters
     @TestVisible
     private static Map<String, Object> getQueryModifiers(
-        Listener__c listenerConfig,
-        Boolean isHistoryQuery,
-        DateTime lastExecutionOn
+    Listener__c listenerConfig,
+    Boolean isHistoryQuery,
+    DateTime lastExecutionOn 
     ) {
-        Map<String, Object> queryModifiers = new Map<String, Object>();
-        queryModifiers.put('includeOrderBy', true); // Always include ORDER BY
-        queryModifiers.put('includeLimit', true);   // Always include LIMIT
+    Map<String, Object> queryModifiers = new Map<String, Object>();
+    queryModifiers.put('includeOrderBy', true); // Always include ORDER BY
+    queryModifiers.put('includeLimit', true);   // Always include LIMIT
 
-        // Generate the whereClause
-        String whereClause = '';  
-        if (isHistoryQuery && lastExecutionOn != null) {
-            whereClause += ' AND CreatedDate > :lastExecutionOn';
+    // Generate the whereClause
+    String whereClause = '';
+
+    if (isHistoryQuery) {
+
+        // Add a check for lastExecutionOn, to see if this is isnt the first time we query, and include it in whereClause
+        if (lastExecutionOn != null) {
+        whereClause += ' AND CreatedDate > :lastExecutionOn';
         }
-        queryModifiers.put('whereClause', whereClause);
 
-      return queryModifiers;
+        queryModifiers.put('whereClause', whereClause);
+    }
+
+    return queryModifiers;
     }
 
     public void sortHistoryList(List<SObject> historyList) {
@@ -481,6 +487,7 @@ global with sharing class ListenerFlowController {
     List<Id> targetRecordIds;
 
     Map<String, SObject> sObjectMap = new Map<String, SObject>();
+    // listenerConfigRec = listenerConfigList[0].listenerConfig;
 
     // Debug for listenerConfigRec
     System.debug('listenerConfigRec: ' + listenerConfigRec);
@@ -509,19 +516,11 @@ global with sharing class ListenerFlowController {
       if (String.isNotBlank(terminalStageField))
         queryString += ', ' + terminalStageField;
 
-      // Build the initial part of the queryString
-      queryString += ' FROM ' + listenerConfigRec.Object_Name__c;
-
-      // Retrieve whereClause from queryModifiers
-      String whereClause = (String) queryModifiers.get('whereClause');
-
-      // Debug log to check whereClause
-      System.debug('whereClause: ' + whereClause);
-
-      // Check if whereClause is not empty before appending
-      if (String.isNotBlank(whereClause)) {
-          queryString += ' WHERE ' + whereClause;
-      }
+      queryString +=
+        ' FROM ' +
+        listenerConfigRec.Object_Name__c +
+        ' WHERE ' +
+        (String) queryModifiers.get('whereClause');
 
       // Debug for queryString
       System.debug('Executing query: ' + queryString);
