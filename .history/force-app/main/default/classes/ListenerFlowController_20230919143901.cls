@@ -308,16 +308,14 @@ global with sharing class ListenerFlowController {
       String queryStr = 'SELECT Id';
 
       if (isHistoryQuery) {
-          // Build the History Query
-          queryStr += ', Field, OldValue, NewValue, CreatedDate, ' + parentIdField;
+          queryStr += ', Field, OldValue, NewValue, CreatedDate, ' + parentIdField;  // History table specific fields
       } else {
-        // Build the Parent Record Query
-        String parentNameField = listenerConfig.Object_Name__c != NULL && listenerConfig.Object_Name__c == 'Case' ? 'CaseNumber' : 'Name';
-        String terminalStageField = listenerConfig.TerminalStage__c != NULL ? listenerConfig.TerminalStage__c : '';
-        String trackingField = listenerConfig.Field_To_Track__c;
-        if (String.isNotBlank(parentNameField)) queryStr += ', ' + parentNameField;
-        if (String.isNotBlank(terminalStageField)) queryStr += ', ' + terminalStageField;
-        if (String.isNotBlank(trackingField)) queryStr += ', ' + trackingField;
+          // For non-history queries, add specific fields you need. For example, 'Name' or 'CaseNumber'
+          String parentNameField = listenerConfig.Object_Name__c != NULL && listenerConfig.Object_Name__c == 'Case' ? 'CaseNumber' : 'Name';
+          String terminalStageField = listenerConfig.TerminalStage__c != NULL ? listenerConfig.TerminalStage__c : '';
+          if (String.isNotBlank(parentNameField)) queryStr += ', ' + parentNameField;
+          if (String.isNotBlank(terminalStageField)) queryStr += ', ' + terminalStageField;
+          // queryStr += ', Id';
       }
 
       queryStr += ' FROM ' + tableName;
