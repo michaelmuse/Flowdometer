@@ -570,7 +570,6 @@ global with sharing class ListenerFlowController {
         SObject SObj = listSObj[count];
         
         String fieldValue;
-        String newValue;
         
         if (SObj.get('Field') == 'created') {
           if (listSObj.size() > 1 && listSObj.size() > count + 1 && listSObj[count + 1].get('Field') == listenerConfig.Field_To_Track__c) {
