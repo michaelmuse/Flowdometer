@@ -1,82 +1,77 @@
-/*
-Class: ListenerFlowController
-Path: force-app\main\default\classes\ListenerFlowController.cls
+// Class: ListenerFlowController
+// Path: force-app\main\default\classes\ListenerFlowController.cls
 
-Purpose:
-This managed class helps in tracking the changes made in specified field of Salesforce objects. The changes are recorded in real-time based on Listener__c custom object configurations.
+// Purpose: Manages Salesforce object history tracking for specified objects and fields based on Listener__c custom object configurations.
+// Functionality Overview:
+// - Uses Listener__c custom object to define object and field to track.
+// - Dynamically constructs SOQL queries based on Listener__c settings and additional query modifiers.
+// - Queries the main object to get target records, then queries corresponding history records.
+// - Sorts history records based on CreatedDate.
+// - Populates and returns a list of ListenerFlowLatestResponse objects, each containing related history data.
+//
+// How it Works:
+// 1. Takes a list of ListenerFlowLatestRequest objects, each containing a Listener__c configuration.
+// 2. Based on Listener__c settings, constructs query to fetch target records.
+//    - Utilizes 'getQueryModifiers' to dynamically modify the query.
+// 3. Queries history records for fetched target records.
+//    - Utilizes 'getLatestHistoryValues' to perform this query.
+// 4. Processes the fetched history records and target records.
+//    - Utilizes 'preparingResponse' to populate ListenerFlowLatestResponse objects.
+// 5. Returns a list of ListenerFlowLatestResponse objects to an Invocable Action for Flows via the parseRecordsToFlow method.
+//
+// Exception Handling:
+// - Catches any exceptions during execution, updates 'Error_Message__c' field on Listener__c and sets 'isCheckSuccess' to false in the response.
+// Note: Optionally includes terminal stage and parent name fields in the query if specified in Listener__c.
+/*  
+  Core Methods:
+  - ListenerFlowLatestResponse(): Initializes the response object.
+    - Return: ListenerFlowLatestResponse
+    - Variables in Scope: isCheckSuccess, hasRecords, lstListenerFlow
+    - Lines: 54-59
 
-Functionality Overview:
-ListenerFlowController dynamically constructs SOQL queries based on Listener__c configurations and additional query modifiers.
-The class performs queries on the main objects to fetch target records and further obtains their corresponding historical records.
-This in turn facilitates sorting of historical records by their CreatedDate.
-It consolidates and returns a list of ListenerFlowLatestResponse objects, containing each related historical data.
+  - getQueryModifiers(Listener__c listenerConfig): Modifies queries based on listener config.
+    - Return: Map<String, Object>
+    - Variables in Scope: queryModifiers, whereClause
+    - Lines: 65-80
 
-How it Works:
-1. Accepts a list of ListenerFlowLatestRequest objects, each containing Listener__c configurations.
-2. Dynamically builds SOQL query fetching target records using Listener__c configurations in-hand (utilizing 'getQueryModifiers' to modify as per need).
-3. Further queries the corresponding history records for the fetched target records using 'getLatestHistoryValues'.
-4. The historical records and parent records fetched are processed, utilizing 'preparingResponse' to populate ListenerFlowLatestResponse objects.
-5. Returns a consolidated list of ListenerFlowLatestResponse objects for an Invocable Action in Salesforce Flows via parseRecordsToFlow method.
+  - getLatestHistoryValues(List<Id> mParent, Listener__c listenerConfig, Map<String, Object> queryModifiers): Fetches the latest history records.
+    - Return: HistoryValuesResult (wrapper class with historyRecordsMap and sortingDateTimeMap)
+    - Variables in Scope: sortingDateTimeMap, fieldValue, objName, fieldName, objectSuffix, objHistoryName, parentIdField, queryStr
+    - Lines: 138-238
 
-Exception Handling:
-Upon experiencing any exceptions during execution, the class updates 'Error_Message__c' field on Listener__c and sets 'isCheckSuccess' to false in the response.
+  - parseRecordsToFlow(List<ListenerFlowLatestRequest> listenerConfigList): Transforms records for the flow.
+    - Return: List<ListenerFlowLatestResponse>
+    - Variables in Scope: listenerConfig, targetRecordIds, queryModifiers, responseList, targetRecords, sObjectMap, historyRecordsMap, sortingDateTimeMap
+    - Lines: 267-315
+    - Invokes: 
+        1. getQueryModifiers() 
+        2. getLatestHistoryValues()
+        3. preparingResponse()
 
-Note: Optionally includes terminal stage and parent name fields in the output if specified in the Listener__c objects.
+  Utility Methods:
+  - isCustomObject(String objectname): Checks if an object is a custom object.
+    - Return: Boolean
+    - Variables in Scope: objToken
+    - Lines: 84-87
 
-Core Methods:
+  - getStringNotNull(Object valueObj): Converts an object to a non-null string.
+    - Return: String
+    - Variables in Scope: valueObj
+    - Lines: 91-95
 
-ListenerFlowLatestResponse(): Initializes the response object.
+  Custom Datetime Sorting:
+  - CustomDatetimeSort(SObject record): Constructor for custom datetime sorting.
+    - Return: void
+    - Variables in Scope: record
+    - Lines: 100-104
 
-Return: ListenerFlowLatestResponse object
-Variables in Scope: isCheckSuccess, hasRecords, lstListenerFlow
-Lines: 57-62
-getQueryModifiers(Boolean isHistoryQuery, DateTime lastExecutionOn): Modifies queries based on listener config.
+  - compareTo(Object compareTo): Custom comparison logic.
+    - Return: Integer
+    - Variables in Scope: compareToRecord, thisDate, otherDate, thisMillis, otherMillis
+    - Lines: 106-122
 
-Return: Map<String, Object>
-Variables in Scope: queryModifiers, whereClause
-Lines: 417-432
-getLatestHistoryValues(List<Id> targetRecordIds, Listener__c listenerConfig, DateTime lastExecutionOn, ListenerFlowController controllerInstance, String objHistoryName, String parentIdField): Fetches the latest history records.
-
-Return: HistoryValuesResult (Wrapper class with historyRecordsMap and sortingDateTimeMap)
-Variables in Scope: sortingDateTimeMap, fieldValue, fieldName, objectSuffix, queryStr, historyRecordsMap
-Lines: 1017-1174
-parseRecordsToFlow(List<ListenerFlowLatestRequest> listenerConfigList): Transforms records for the flow.
-
-Return: List<ListenerFlowLatestResponse>
-Variables in Scope: listenerConfig, targetRecordIds, queryModifiers, responseList, targetRecords, sObjectMap, historyRecordsMap, sortingDateTimeMap
-Lines: 1287-1433
-Invokes:
-ListenerFlowLatestResponse()
-buildQuery()
-getLatestHistoryValues()
-preparingResponse()
-Utility Methods:
-
-isCustomObject(String objectname): Checks if an object is a custom object.
-
-Return: Boolean
-Variables in Scope: objToken
-Lines: 470-473
-getStringNotNull(Object valueObj): Converts an object to a non-null string.
-
-Return: String
-Variables in Scope: valueObj
-Lines: 491-495
-Custom Datetime Sorting:
-
-CustomDatetimeSort(SObject record): Constructor for custom datetime sorting.
-
-Return: void
-Variables in Scope: record
-Lines: 605-609
-compareTo(Object compareTo): Custom comparison logic.
-
-Return: Integer
-Variables in Scope: compareToRecord, thisDate, otherDate, thisMillis, otherMillis
-Lines: 611-628
-Control Flow:
-
-Various 'if' and 'for' statements for control flow. (Lines: 950-953, 994-998, 1165-1174, 1032-1034) 
+  Control Flow:
+  - Various 'if' and 'for' statements for control flow. (Lines: 117-119, 169-172, 176-179, 191-195, 293-298)
 */
 
 global with sharing class ListenerFlowController {
