@@ -245,13 +245,13 @@ global with sharing class ListenerFlowController {
     String parentIdField,
     String fieldValue,
     String fieldName,
-    List<Id> targetRecordIds,
+    List<Id> mParent,
     Map<String, Object> queryModifiers
   ) {
     String queryStr = 'SELECT Id, Field, OldValue, NewValue, CreatedDate, ' + parentIdField +
       ' FROM ' + objHistoryName +
       ' WHERE (Field =:fieldValue OR Field =:fieldName) AND ' +
-      parentIdField + ' IN :targetRecordIds';
+      parentIdField + ' IN :mParent';
   
     String whereClause = (String) queryModifiers.get('whereClause');
     if (whereClause != null && whereClause != '') {
@@ -330,7 +330,7 @@ global with sharing class ListenerFlowController {
   //  */
   @TestVisible
   private static HistoryValuesResult getLatestHistoryValues(
-    List<Id> targetRecordIds,
+    List<Id> mParent,
     Listener__c listenerConfig,
     Map<String, Object> queryModifiers,
     DateTime lastExecutionOn,
@@ -350,7 +350,7 @@ global with sharing class ListenerFlowController {
         true,
         lastExecutionOn  // pass along the new parameter
     );
-    String queryStr = buildQuery(objHistoryName, parentIdField, fieldValue, fieldName, targetRecordIds, historyQueryModifiers);
+    String queryStr = buildQuery(objHistoryName, parentIdField, fieldValue, fieldName, mParent, historyQueryModifiers);
 
     // Debug for queryStr
     System.debug('Executing history query: ' + queryStr);
@@ -366,7 +366,7 @@ global with sharing class ListenerFlowController {
       } else {
         historyRecordsMap.put(parentId, new List<SObject>{ obj });
       }
-      System.debug('historyRecordsMap from history query: ' + queryStr);
+
       // Populate sortingDateTimeMap
       if (controllerInstance.sortingDateTimeMap.containsKey(parentId)) {
         controllerInstance.sortingDateTimeMap.get(parentId).add(createdDate);

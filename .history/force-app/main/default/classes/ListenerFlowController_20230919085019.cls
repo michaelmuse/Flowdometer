@@ -245,13 +245,13 @@ global with sharing class ListenerFlowController {
     String parentIdField,
     String fieldValue,
     String fieldName,
-    List<Id> targetRecordIds,
+    List<Id> mParent,
     Map<String, Object> queryModifiers
   ) {
     String queryStr = 'SELECT Id, Field, OldValue, NewValue, CreatedDate, ' + parentIdField +
       ' FROM ' + objHistoryName +
       ' WHERE (Field =:fieldValue OR Field =:fieldName) AND ' +
-      parentIdField + ' IN :targetRecordIds';
+      parentIdField + ' IN :mParent';
   
     String whereClause = (String) queryModifiers.get('whereClause');
     if (whereClause != null && whereClause != '') {
@@ -330,7 +330,7 @@ global with sharing class ListenerFlowController {
   //  */
   @TestVisible
   private static HistoryValuesResult getLatestHistoryValues(
-    List<Id> targetRecordIds,
+    List<Id> mParent,
     Listener__c listenerConfig,
     Map<String, Object> queryModifiers,
     DateTime lastExecutionOn,
@@ -350,12 +350,12 @@ global with sharing class ListenerFlowController {
         true,
         lastExecutionOn  // pass along the new parameter
     );
-    String queryStr = buildQuery(objHistoryName, parentIdField, fieldValue, fieldName, targetRecordIds, historyQueryModifiers);
+    String queryStr = buildQuery(objHistoryName, parentIdField, fieldValue, fieldName, mParent, historyQueryModifiers);
 
     // Debug for queryStr
     System.debug('Executing history query: ' + queryStr);
     Map<Id, List<SObject>> historyRecordsMap = controllerInstance.historyRecordsMap;
-    // HISTORY RECORDS QUERY to populate historyRecordsMap and sortingDateTimeMap
+    // Populate historyRecordsMap and sortingDateTimeMap
     for (SObject obj : Database.query(queryStr)) {
       Id parentId = (Id) obj.get(parentIdField);
       Datetime createdDate = (Datetime) obj.get('CreatedDate');
@@ -366,7 +366,7 @@ global with sharing class ListenerFlowController {
       } else {
         historyRecordsMap.put(parentId, new List<SObject>{ obj });
       }
-      System.debug('historyRecordsMap from history query: ' + queryStr);
+
       // Populate sortingDateTimeMap
       if (controllerInstance.sortingDateTimeMap.containsKey(parentId)) {
         controllerInstance.sortingDateTimeMap.get(parentId).add(createdDate);
@@ -408,7 +408,6 @@ global with sharing class ListenerFlowController {
         ' ORDER BY ' +
         parentIdField +
         ', CreatedDate ASC';
-      System.debug('Executing PARENT query: ' + parentQueryStr);
       for (SObject sObj : Database.query(parentQueryStr)) {
         Id parentId = (Id) sObj.get(parentIdField);
         createdHistoryMap.put(parentId, sObj);
@@ -574,11 +573,13 @@ global with sharing class ListenerFlowController {
       }
 
       // Debug for queryStr
-      System.debug('Executing targetRecordIds query in parseRecordsToFlow: ' + queryStr);
+      System.debug('Executing query: ' + queryStr);
       for (SObject sob : Database.query(queryStr)) {
         targetRecords.add(sob.Id);
         sObjectMap.put(sob.Id, sob);
       }
+      // Debug for queryStr
+      System.debug('Executing query: ' + queryStr);
 
       targetRecordIds = new List<Id>(targetRecords); 
       // Debug for targetRecordIds
