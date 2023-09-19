@@ -415,6 +415,7 @@ null
         <scale>1</scale>
     </formulas>
     <interviewLabel>Set Goal for Steps in Object Field {!$Flow.CurrentDateTime}</interviewLabel>
+    <isTemplate>true</isTemplate>
     <label>Flowdometer - Set Goal for Steps in Object Field</label>
     <loops>
         <name>GetNextCloneStep</name>

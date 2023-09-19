@@ -17,12 +17,14 @@
 //    - Utilizes 'getLatestHistoryValues' to perform this query.
 // 4. Processes the fetched history records and target records.
 //    - Utilizes 'preparingResponse' to populate ListenerFlowLatestResponse objects.
-// 5. Returns a list of ListenerFlowLatestResponse objects to an Invocable Action for Flows via the parseRecordsToFlow method.
 //
 // Exception Handling:
 // - Catches any exceptions during execution, updates 'Error_Message__c' field on Listener__c and sets 'isCheckSuccess' to false in the response.
 // Note: Optionally includes terminal stage and parent name fields in the query if specified in Listener__c.
-/*  
+/*
+  Class: ListenerFlowController
+  Path: force-app\main\default\classes\ListenerFlowController.cls
+  
   Core Methods:
   - ListenerFlowLatestResponse(): Initializes the response object.
     - Return: ListenerFlowLatestResponse
@@ -116,11 +118,7 @@ global with sharing class ListenerFlowController {
     }
   }
 
-  //Constructor class
   public ListenerFlowController() {
-    // Initialize our collection of history records and the sorting map
-    this.historyRecordsMap = new Map<Id, List<SObject>>();
-    this.sortingDateTimeMap = new Map<Id, List<Datetime>>();
   }
 
   // Wrapper class to hold the result of getLatestHistoryValues
@@ -173,21 +171,6 @@ global with sharing class ListenerFlowController {
   
       // If no matching history object is found, return null or throw an exception.
       return null;
-    }
-    private static String getNameFieldName(String objectName) {
-      Map<String, String> objectToNameFieldMap = new Map<String, String> {
-          'Case' => 'CaseNumber',
-          'Solution' => 'SolutionNumber',
-          'Contract' => 'ContractNumber'
-          // add more entries here as needed
-      };
-  
-      if (objectToNameFieldMap.containsKey(objectName)) {
-          return objectToNameFieldMap.get(objectName);
-      }
-  
-      // Return 'Name' by default, because it's used by majority of standard objects and all custom objects
-      return 'Name';
     }
 
   // Called by: getLatestHistoryValues
@@ -308,8 +291,10 @@ global with sharing class ListenerFlowController {
           Datetime recordDatetime = (Datetime) record.get('CreatedDate');
           if (previousDateTime != null && recordDatetime == previousDateTime) {
               count++;
+              // record.put('Order_of_Creation__c', count); 
           } else {
               count = 1;
+              // record.put('Order_of_Creation__c', count);
           }
           previousDateTime = recordDatetime;
       }
@@ -333,16 +318,17 @@ global with sharing class ListenerFlowController {
     List<Id> mParent,
     Listener__c listenerConfig,
     Map<String, Object> queryModifiers,
-    DateTime lastExecutionOn,
-    ListenerFlowController controllerInstance,
-    String objHistoryName,
-    String parentFieldName
-    ) {
-    controllerInstance.sortingDateTimeMap.clear();
+    DateTime lastExecutionOn
+  ) {
+    sortingDateTimeMap.clear();
     String fieldValue = 'created';
     String objName = listenerConfig.Object_Name__c;
     String fieldName = listenerConfig.Field_To_Track__c;
     String objectSuffix = '__c';
+    String objHistoryName = getHistoryObjectName(objName);
+    String parentFieldName = isCustomObject(objName)
+      ? 'ParentId'
+      : (objName + 'Id');
 
     // Generate query modifiers for history
     Map<String, Object> historyQueryModifiers = getQueryModifiers(
@@ -354,7 +340,7 @@ global with sharing class ListenerFlowController {
 
     // Debug for queryStr
     System.debug('Executing history query: ' + queryStr);
-    Map<Id, List<SObject>> historyRecordsMap = controllerInstance.historyRecordsMap;
+    Map<Id, List<SObject>> historyRecordsMap = new Map<Id, List<SObject>>();
     // Populate historyRecordsMap and sortingDateTimeMap
     for (SObject obj : Database.query(queryStr)) {
       Id parentId = (Id) obj.get(parentFieldName);
@@ -368,17 +354,20 @@ global with sharing class ListenerFlowController {
       }
 
       // Populate sortingDateTimeMap
-      if (controllerInstance.sortingDateTimeMap.containsKey(parentId)) {
-        controllerInstance.sortingDateTimeMap.get(parentId).add(createdDate);
+      if (sortingDateTimeMap.containsKey(parentId)) {
+        sortingDateTimeMap.get(parentId).add(createdDate);
       } else {
-        controllerInstance.sortingDateTimeMap.put(parentId, new List<Datetime>{ createdDate });
+        sortingDateTimeMap.put(parentId, new List<Datetime>{ createdDate });
       }
     }
     if (!historyRecordsMap.isEmpty()) {
+      // Create an instance of ListenerFlowController
+      ListenerFlowController controller = new ListenerFlowController();
+
       // Sort using your sortHistoryList method
       for (Id parentId : historyRecordsMap.keySet()) {
         List<SObject> specificHistoryList = (List<SObject>) historyRecordsMap.get(parentId);
-        controllerInstance.sortHistoryList(specificHistoryList);
+        controller.sortHistoryList(specificHistoryList);
         historyRecordsMap.put(parentId, specificHistoryList);
       }
     }
@@ -426,62 +415,50 @@ global with sharing class ListenerFlowController {
     }
 
     // Return both maps in a wrapper class
-    return new HistoryValuesResult(controllerInstance.historyRecordsMap, controllerInstance.sortingDateTimeMap);
+    return new HistoryValuesResult(historyRecordsMap, sortingDateTimeMap);
   }
 
   // Called by: parseRecordsToFlow
   // This method takes in a listener flow record, a map of parent record ids and a list of history records for each parent record id, a map of goal step records, and a map of parent record ids and parent records.
   // It returns a response object with a list of listener flow controller objects.
   @TestVisible
-  public void preparingResponse(
+  public static void preparingResponse(
     ListenerFlowLatestResponse response,
+    Map<Id, List<SObject>> historyRecordsMap,
     Listener__c listenerConfig,
     Map<String, SObject> sObjectMap,
-    ListenerFlowController controllerInstance
+    Map<Id, List<Datetime>> sortingDateTimeMap
   ) {
-    System.debug('Entering preparingResponse with historyRecordsMap: ' + controllerInstance.historyRecordsMap);
-    for (Id parentRecId : controllerInstance.sortingDateTimeMap.keySet()) {
+    System.debug('Entering preparingResponse with historyRecordsMap: ' + historyRecordsMap);
+    for (Id parentRecId : sortingDateTimeMap.keySet()) {
+      System.debug('Inside loop with parentRecId: ' + parentRecId);
       Integer count = 0;
+      // loop
       if(response.lstListenerFlow == null) {
         response.lstListenerFlow = new List<ListenerFlowController>();
       }
-      for (Datetime dt : controllerInstance.sortingDateTimeMap.get(parentRecId)) {
+      for (Datetime dt : sortingDateTimeMap.get(parentRecId)) {
         ListenerFlowController trackFlowObj = new ListenerFlowController();
-        List<SObject> listSObj = controllerInstance.historyRecordsMap.get(parentRecId);
-        SObject SObj = listSObj[count];
+        System.debug('State of trackFlowObj: ' + trackFlowObj);
+        SObject SObj = historyRecordsMap.get(parentRecId)[count];
         
-        String fieldValue;
-        
-        if (SObj.get('Field') == 'created') {
-          if (listSObj.size() > 1 && listSObj.size() > count + 1 && listSObj[count + 1].get('Field') == listenerConfig.Field_To_Track__c) {
-              fieldValue = String.valueOf(listSObj[count + 1].get('OldValue')); 
-          } else {
-              // Fetching the current value directly from the parent object
-              fieldValue = String.valueOf(sObjectMap.get(parentRecId).get(listenerConfig.Field_To_Track__c));
-          }
-        } else {
-          fieldValue = String.valueOf(SObj.get('NewValue'));
-        }
-        
-        // Populating trackFlowObj 
+        // Populating trackFlowObj based on old logic
         trackFlowObj.varHistoryRecordId = (Id) SObj.get('Id');
         trackFlowObj.varCurrentFieldTracked = listenerConfig.Field_To_Track__c;
-        trackFlowObj.varCurrentFieldValue = fieldValue;
+        trackFlowObj.varCurrentFieldValue = String.valueOf(SObj.get('NewValue')); // Assuming NewValue is the field you're interested in
         trackFlowObj.varCurrentObjectID = parentRecId;
-        String objectNameField = getNameFieldName(listenerConfig.Object_Name__c);
-        trackFlowObj.varNameofTrackedRecord = (String) sObjectMap.get(parentRecId).get(parentNameField);
-        trackFlowObj.varTerminalStage = false; 
-        trackFlowObj.varTrackedCustomObjectName = listenerConfig.Object_Name__c; 
+        trackFlowObj.varNameofTrackedRecord = (String) sObjectMap.get(parentRecId).get('Name'); // Assuming 'Name' is the field you're interested in
+        trackFlowObj.varTerminalStage = false; // You can set this based on your business logic
+        trackFlowObj.varTrackedCustomObjectName = listenerConfig.Object_Name__c; // Assuming Object_Name__c is the field you're interested in
         trackFlowObj.varEditStartTime = dt;
-        trackFlowObj.varEditEndTime = null; 
-        trackFlowObj.varType = listenerConfig.Type__c; 
+        trackFlowObj.varEditEndTime = null; // You can set this based on your business logic
+        trackFlowObj.varType = listenerConfig.Type__c; // Assuming Type__c is the field you're interested in
 
         System.debug('trackFlowObj.varHistoryRecordId: ' + trackFlowObj.varHistoryRecordId);
         System.debug('trackFlowObj.varCurrentFieldTracked: ' + trackFlowObj.varCurrentFieldTracked);
-        System.debug('trackFlowObj.varCurrentFieldValue: ' + trackFlowObj.varCurrentFieldValue); 
-        System.debug('trackFlowObj: ' + trackFlowObj);
         
         response.lstListenerFlow.add(trackFlowObj);
+        System.debug('State of response.lstListenerFlow inside loop: ' + response.lstListenerFlow);
         count++;
       }
     }
@@ -495,7 +472,7 @@ global with sharing class ListenerFlowController {
   //  * This method serves as the main entry point for the ListenerFlowController. It performs the following steps:
   //  * 1. It fetches target records based on the listener configuration and query modifiers.
   //  * 2. It then retrieves the history records for these target records.
-  //  * 3. Finally, it prepares a response object with the fetched data.stenerConfigRec
+  //  * 3. Finally, it prepares a response object with the fetched data.
   //  *
   //  * The method uses the 'getQueryModifiers' and 'getLatestHistoryValues' utility methods for query modification
   //  * and history record retrieval, respectively. It also updates the 'Error_Message__c' field in the listener
@@ -511,14 +488,8 @@ global with sharing class ListenerFlowController {
   )
   public static List<ListenerFlowLatestResponse> parseRecordsToFlow(
   List<ListenerFlowLatestRequest> listenerConfigList) {
-    // Create an instance of ListenerFlowController
-    ListenerFlowController controllerInstance = new ListenerFlowController();
     System.debug('parseRecordsToFlow called');
     Listener__c listenerConfigRec = listenerConfigList[0].listenerConfig;
-    // Get the history object name based on the object name in the listener config
-    String objHistoryName = getHistoryObjectName(listenerConfigRec.Object_Name__c);
-    // Get parentFieldName using your existing method
-    String parentNameField = getNameFieldName(listenerConfigRec.Object_Name__c);
     DateTime lastExecutionOn = listenerConfigList[0].lastExecutionOn;
     List<ListenerFlowLatestResponse> responseList = new List<ListenerFlowLatestResponse>();
     ListenerFlowLatestResponse response = new ListenerFlowLatestResponse();
@@ -548,17 +519,22 @@ global with sharing class ListenerFlowController {
     System.debug('queryModifiers: ' + queryModifiers);
 
     try {
-      String parentNameField = getNameFieldName(listenerConfigRec.Object_Name__c);
-      System.debug('parentNameField: ' + parentNameField);
+      String parentNameField = (listenerConfigRec.Object_Name__c != null &&
+        listenerConfigRec.Object_Name__c == 'Case')
+        ? 'CaseNumber'
+        : 'Name';
       String terminalStageField = (listenerConfigRec.TerminalStage__c != null)
         ? listenerConfigRec.TerminalStage__c
         : '';
-      String queryStr = 'SELECT Id, Field, OldValue, NewValue, CreatedDate, ' + parentFieldName +
-      ' FROM ' + objHistoryName +
-      ' WHERE (Field =:fieldValue OR Field =:fieldName) AND ' +
-      parentFieldName + ' IN :mParent';
+      String queryString = 'SELECT Id';
+
+      if (String.isNotBlank(parentNameField))
+        queryString += ', ' + parentNameField;
       if (String.isNotBlank(terminalStageField))
-        queryStr += ', ' + terminalStageField;
+        queryString += ', ' + terminalStageField;
+
+      // Build the initial part of the queryString
+      queryString += ' FROM ' + listenerConfigRec.Object_Name__c;
 
       // Retrieve whereClause from queryModifiers
       String whereClause = (String) queryModifiers.get('whereClause');
@@ -568,17 +544,17 @@ global with sharing class ListenerFlowController {
 
       // Check if whereClause is not empty before appending
       if (String.isNotBlank(whereClause)) {
-          queryStr += ' WHERE ' + whereClause;
+          queryString += ' WHERE ' + whereClause;
       }
 
-      // Debug for queryStr
-      System.debug('Executing query: ' + queryStr);
-      for (SObject sob : Database.query(queryStr)) {
+      // Debug for queryString
+      System.debug('Executing query: ' + queryString);
+      for (SObject sob : Database.query(queryString)) {
         targetRecords.add(sob.Id);
         sObjectMap.put(sob.Id, sob);
       }
-      // Debug for queryStr
-      System.debug('Executing query: ' + queryStr);
+      // Debug for queryString
+      System.debug('Executing query: ' + queryString);
 
       targetRecordIds = new List<Id>(targetRecords); 
       // Debug for targetRecordIds
@@ -588,31 +564,34 @@ global with sharing class ListenerFlowController {
         targetRecordIds,
         listenerConfigRec,
         queryModifiers,
-        lastExecutionOn,
-        controllerInstance,
-        objHistoryName,
-        parentFieldName
+        lastExecutionOn 
       );
-
-
       System.debug('historyResult: ' + historyResult);
       Map<Id, List<SObject>> historyRecordsMap = historyResult.historyRecordsMap;
       Map<Id, List<Datetime>> sortingDateTimeMap = historyResult.sortingDateTimeMap;
       System.debug('History Records Map: ' + historyRecordsMap);
 
-      controllerInstance.preparingResponse(response, listenerConfigRec, sObjectMap, controllerInstance);
-
+      preparingResponse(
+        response,
+        historyRecordsMap,
+        listenerConfigRec,
+        sObjectMap,
+        sortingDateTimeMap
+      );
       System.debug('State of response.lstListenerFlow: ' + response.lstListenerFlow);
       listenerConfigRec.Error_Message__c = '';
     } catch (Exception e) {
       response.isCheckSuccess = false;
-      listenerConfigRec.Error_Message__c = 'Error: ' + e.getMessage() + ' Trace: ' + e.getStackTraceString();
+      listenerConfigRec.Error_Message__c =
+        'Error: ' +
+        e.getMessage() +
+        ' Trace: ' +
+        e.getStackTraceString();
       // Debug for exception
       System.debug('Exception caught: ' + e);
       update listenerConfigRec;
-    } // close catch block
-
-    responseList.add(response);
+      responseList.add(response);
+    }
     System.debug('Return value from parseRecordsToFlow: ' + responseList);
     return responseList;
   }

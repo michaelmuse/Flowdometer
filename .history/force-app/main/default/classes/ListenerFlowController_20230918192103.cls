@@ -468,7 +468,7 @@ global with sharing class ListenerFlowController {
         trackFlowObj.varCurrentFieldTracked = listenerConfig.Field_To_Track__c;
         trackFlowObj.varCurrentFieldValue = fieldValue;
         trackFlowObj.varCurrentObjectID = parentRecId;
-        String objectNameField = getNameFieldName(listenerConfig.Object_Name__c);
+        String parentNameField = getNameFieldName(listenerConfig.Object_Name__c);
         trackFlowObj.varNameofTrackedRecord = (String) sObjectMap.get(parentRecId).get(parentNameField);
         trackFlowObj.varTerminalStage = false; 
         trackFlowObj.varTrackedCustomObjectName = listenerConfig.Object_Name__c; 
@@ -518,7 +518,7 @@ global with sharing class ListenerFlowController {
     // Get the history object name based on the object name in the listener config
     String objHistoryName = getHistoryObjectName(listenerConfigRec.Object_Name__c);
     // Get parentFieldName using your existing method
-    String parentNameField = getNameFieldName(listenerConfigRec.Object_Name__c);
+    String parentFieldName = getNameFieldName(listenerConfigRec.Object_Name__c);
     DateTime lastExecutionOn = listenerConfigList[0].lastExecutionOn;
     List<ListenerFlowLatestResponse> responseList = new List<ListenerFlowLatestResponse>();
     ListenerFlowLatestResponse response = new ListenerFlowLatestResponse();
@@ -559,6 +559,9 @@ global with sharing class ListenerFlowController {
       parentFieldName + ' IN :mParent';
       if (String.isNotBlank(terminalStageField))
         queryStr += ', ' + terminalStageField;
+
+      // Build the initial part of the queryStr
+      queryStr += ' FROM ' + listenerConfigRec.Object_Name__c;
 
       // Retrieve whereClause from queryModifiers
       String whereClause = (String) queryModifiers.get('whereClause');

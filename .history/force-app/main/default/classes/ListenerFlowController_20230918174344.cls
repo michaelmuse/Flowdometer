@@ -178,7 +178,7 @@ global with sharing class ListenerFlowController {
       Map<String, String> objectToNameFieldMap = new Map<String, String> {
           'Case' => 'CaseNumber',
           'Solution' => 'SolutionNumber',
-          'Contract' => 'ContractNumber'
+          'Contract' => 'ContractNumber' // Added entry
           // add more entries here as needed
       };
   
@@ -308,8 +308,10 @@ global with sharing class ListenerFlowController {
           Datetime recordDatetime = (Datetime) record.get('CreatedDate');
           if (previousDateTime != null && recordDatetime == previousDateTime) {
               count++;
+              // record.put('Order_of_Creation__c', count); 
           } else {
               count = 1;
+              // record.put('Order_of_Creation__c', count);
           }
           previousDateTime = recordDatetime;
       }
@@ -330,19 +332,21 @@ global with sharing class ListenerFlowController {
   //  */
   @TestVisible
   private static HistoryValuesResult getLatestHistoryValues(
-    List<Id> mParent,
-    Listener__c listenerConfig,
-    Map<String, Object> queryModifiers,
-    DateTime lastExecutionOn,
-    ListenerFlowController controllerInstance,
-    String objHistoryName,
-    String parentFieldName
-    ) {
+  List<Id> mParent,
+  Listener__c listenerConfig,
+  Map<String, Object> queryModifiers,
+  DateTime lastExecutionOn,
+  ListenerFlowController controllerInstance,
+  String objHistoryName,  // New parameter
+  String parentFieldName  // New parameter
+  ) {
     controllerInstance.sortingDateTimeMap.clear();
     String fieldValue = 'created';
     String objName = listenerConfig.Object_Name__c;
     String fieldName = listenerConfig.Field_To_Track__c;
     String objectSuffix = '__c';
+    String objHistoryName = getHistoryObjectName(objName);
+    String parentFieldName = getNameFieldName(objName);
 
     // Generate query modifiers for history
     Map<String, Object> historyQueryModifiers = getQueryModifiers(
@@ -468,7 +472,7 @@ global with sharing class ListenerFlowController {
         trackFlowObj.varCurrentFieldTracked = listenerConfig.Field_To_Track__c;
         trackFlowObj.varCurrentFieldValue = fieldValue;
         trackFlowObj.varCurrentObjectID = parentRecId;
-        String objectNameField = getNameFieldName(listenerConfig.Object_Name__c);
+        String parentNameField = getNameFieldName(listenerConfig.Object_Name__c);
         trackFlowObj.varNameofTrackedRecord = (String) sObjectMap.get(parentRecId).get(parentNameField);
         trackFlowObj.varTerminalStage = false; 
         trackFlowObj.varTrackedCustomObjectName = listenerConfig.Object_Name__c; 
@@ -515,10 +519,6 @@ global with sharing class ListenerFlowController {
     ListenerFlowController controllerInstance = new ListenerFlowController();
     System.debug('parseRecordsToFlow called');
     Listener__c listenerConfigRec = listenerConfigList[0].listenerConfig;
-    // Get the history object name based on the object name in the listener config
-    String objHistoryName = getHistoryObjectName(listenerConfigRec.Object_Name__c);
-    // Get parentFieldName using your existing method
-    String parentNameField = getNameFieldName(listenerConfigRec.Object_Name__c);
     DateTime lastExecutionOn = listenerConfigList[0].lastExecutionOn;
     List<ListenerFlowLatestResponse> responseList = new List<ListenerFlowLatestResponse>();
     ListenerFlowLatestResponse response = new ListenerFlowLatestResponse();
@@ -549,7 +549,6 @@ global with sharing class ListenerFlowController {
 
     try {
       String parentNameField = getNameFieldName(listenerConfigRec.Object_Name__c);
-      System.debug('parentNameField: ' + parentNameField);
       String terminalStageField = (listenerConfigRec.TerminalStage__c != null)
         ? listenerConfigRec.TerminalStage__c
         : '';
@@ -558,7 +557,10 @@ global with sharing class ListenerFlowController {
       ' WHERE (Field =:fieldValue OR Field =:fieldName) AND ' +
       parentFieldName + ' IN :mParent';
       if (String.isNotBlank(terminalStageField))
-        queryStr += ', ' + terminalStageField;
+        queryString += ', ' + terminalStageField;
+
+      // Build the initial part of the queryString
+      queryString += ' FROM ' + listenerConfigRec.Object_Name__c;
 
       // Retrieve whereClause from queryModifiers
       String whereClause = (String) queryModifiers.get('whereClause');
@@ -568,17 +570,17 @@ global with sharing class ListenerFlowController {
 
       // Check if whereClause is not empty before appending
       if (String.isNotBlank(whereClause)) {
-          queryStr += ' WHERE ' + whereClause;
+          queryString += ' WHERE ' + whereClause;
       }
 
-      // Debug for queryStr
-      System.debug('Executing query: ' + queryStr);
-      for (SObject sob : Database.query(queryStr)) {
+      // Debug for queryString
+      System.debug('Executing query: ' + queryString);
+      for (SObject sob : Database.query(queryString)) {
         targetRecords.add(sob.Id);
         sObjectMap.put(sob.Id, sob);
       }
-      // Debug for queryStr
-      System.debug('Executing query: ' + queryStr);
+      // Debug for queryString
+      System.debug('Executing query: ' + queryString);
 
       targetRecordIds = new List<Id>(targetRecords); 
       // Debug for targetRecordIds
@@ -589,11 +591,8 @@ global with sharing class ListenerFlowController {
         listenerConfigRec,
         queryModifiers,
         lastExecutionOn,
-        controllerInstance,
-        objHistoryName,
-        parentFieldName
+        controllerInstance
       );
-
 
       System.debug('historyResult: ' + historyResult);
       Map<Id, List<SObject>> historyRecordsMap = historyResult.historyRecordsMap;
