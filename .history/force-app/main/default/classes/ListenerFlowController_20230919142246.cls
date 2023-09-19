@@ -337,11 +337,7 @@ global with sharing class ListenerFlowController {
 
       // Common query modifiers
       if ((Boolean) queryModifiers.get('includeOrderBy')) {
-        if (isHistoryQuery) {
-            queryStr += ' ORDER BY ' + parentIdField + ', CreatedDate ASC';
-        } else {
-            queryStr += ' ORDER BY Id, CreatedDate ASC';
-        }
+          queryStr += ' ORDER BY ' + parentIdField + ', CreatedDate ASC';
       }
 
       if ((Boolean) queryModifiers.get('includeLimit')) {

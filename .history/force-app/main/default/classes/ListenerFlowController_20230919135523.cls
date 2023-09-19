@@ -302,7 +302,7 @@ global with sharing class ListenerFlowController {
       String fieldName = listenerConfig.Field_To_Track__c;
 
       // Get query modifiers
-      Map<String, Object> queryModifiers = getQueryModifiers(isHistoryQuery, lastExecutionOn);
+      Map<String, Object> queryModifiers = getQueryModifiers(listenerConfig, isHistoryQuery, lastExecutionOn);
 
       // Initialize the query string
       String queryStr = 'SELECT Id';
@@ -315,7 +315,6 @@ global with sharing class ListenerFlowController {
           String terminalStageField = listenerConfig.TerminalStage__c != NULL ? listenerConfig.TerminalStage__c : '';
           if (String.isNotBlank(parentNameField)) queryStr += ', ' + parentNameField;
           if (String.isNotBlank(terminalStageField)) queryStr += ', ' + terminalStageField;
-          // queryStr += ', Id';
       }
 
       queryStr += ' FROM ' + tableName;
@@ -337,11 +336,7 @@ global with sharing class ListenerFlowController {
 
       // Common query modifiers
       if ((Boolean) queryModifiers.get('includeOrderBy')) {
-        if (isHistoryQuery) {
-            queryStr += ' ORDER BY ' + parentIdField + ', CreatedDate ASC';
-        } else {
-            queryStr += ' ORDER BY Id, CreatedDate ASC';
-        }
+          queryStr += ' ORDER BY ' + parentIdField + ', CreatedDate ASC';
       }
 
       if ((Boolean) queryModifiers.get('includeLimit')) {
@@ -414,7 +409,7 @@ global with sharing class ListenerFlowController {
   private static HistoryValuesResult getLatestHistoryValues(
     List<Id> targetRecordIds,
     Listener__c listenerConfig,
-    //Map<String, Object> queryModifiers,
+    Map<String, Object> queryModifiers,
     DateTime lastExecutionOn,
     ListenerFlowController controllerInstance,
     String objHistoryName,
@@ -422,7 +417,7 @@ global with sharing class ListenerFlowController {
     ) {
     controllerInstance.sortingDateTimeMap.clear();
     String fieldValue = 'created';
-    // String objName = listenerConfig.Object_Name__c;
+    String objName = listenerConfig.Object_Name__c;
     String fieldName = listenerConfig.Field_To_Track__c;
     String objectSuffix = '__c';
     Boolean isHistoryQuery = true;
@@ -451,6 +446,7 @@ global with sharing class ListenerFlowController {
       } else {
         historyRecordsMap.put(parentId, new List<SObject>{ obj });
       }
+      System.debug('historyRecordsMap from history query: ' + queryStr);
       // Populate sortingDateTimeMap
       if (controllerInstance.sortingDateTimeMap.containsKey(parentId)) {
         controllerInstance.sortingDateTimeMap.get(parentId).add(createdDate);
@@ -458,7 +454,6 @@ global with sharing class ListenerFlowController {
         controllerInstance.sortingDateTimeMap.put(parentId, new List<Datetime>{ createdDate });
       }
     }
-    System.debug('historyRecordsMap from history query: ' + historyRecordsMap);
     if (!historyRecordsMap.isEmpty()) {
       // Sort using your sortHistoryList method
       for (Id parentId : historyRecordsMap.keySet()) {
@@ -656,14 +651,14 @@ global with sharing class ListenerFlowController {
     // );
 
     // Debug for queryModifiers
-    // System.debug('queryModifiers: ' + queryModifiers);
+    System.debug('queryModifiers: ' + queryModifiers);
 
     try {
       String terminalStageField = (listenerConfig.TerminalStage__c != null)
         ? listenerConfig.TerminalStage__c
         : '';
       // String queryStr = buildQuery(objName, parentIdField, fieldValue, fieldName, targetRecordIds, queryModifiers, isHistoryQuery);
-      String queryStr = buildQuery(objName, parentIdField, targetRecordIds, listenerConfig, isHistoryQuery, lastExecutionOn);
+      String queryStr = buildQuery(objName, parentIdField, targetRecordIds, listenerConfig, false, lastExecutionOn);
 
       // String queryStr = 'SELECT Id, Field, OldValue, NewValue, CreatedDate, ' + parentIdField +
       // ' FROM ' + objHistoryName +
@@ -673,22 +668,22 @@ global with sharing class ListenerFlowController {
         queryStr += ', ' + terminalStageField;
 
       // Retrieve whereClause from queryModifiers
-      // String whereClause = (String) queryModifiers.get('whereClause');
+      String whereClause = (String) queryModifiers.get('whereClause');
 
       // Debug log to check whereClause
-      // System.debug('whereClause: ' + whereClause);
+      System.debug('whereClause: ' + whereClause);
 
       // Check if whereClause is not empty before appending
-      // if (String.isNotBlank(whereClause)) {
-      //     queryStr += ' WHERE ' + whereClause;
-      // }
+      if (String.isNotBlank(whereClause)) {
+          queryStr += ' WHERE ' + whereClause;
+      }
 
       // Debug for queryStr
       System.debug('Executing targetRecordIds query in parseRecordsToFlow: ' + queryStr);
-      // for (SObject sob : Database.query(queryStr)) {
-      //   targetRecords.add(sob.Id);
-      //   sObjectMap.put(sob.Id, sob);
-      // }
+      for (SObject sob : Database.query(queryStr)) {
+        targetRecords.add(sob.Id);
+        sObjectMap.put(sob.Id, sob);
+      }
       for (Id recordId : sObjectMap.keySet()) {
         SObject record = sObjectMap.get(recordId);
         sObjectMapForParse.put(recordId, record);
@@ -701,7 +696,7 @@ global with sharing class ListenerFlowController {
       HistoryValuesResult historyResult = getLatestHistoryValues(
         targetRecordIds,
         listenerConfig,
-        //queryModifiers,
+        queryModifiers,
         lastExecutionOn,
         controllerInstance,
         objHistoryName,

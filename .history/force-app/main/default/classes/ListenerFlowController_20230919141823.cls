@@ -315,7 +315,7 @@ global with sharing class ListenerFlowController {
           String terminalStageField = listenerConfig.TerminalStage__c != NULL ? listenerConfig.TerminalStage__c : '';
           if (String.isNotBlank(parentNameField)) queryStr += ', ' + parentNameField;
           if (String.isNotBlank(terminalStageField)) queryStr += ', ' + terminalStageField;
-          // queryStr += ', Id';
+          queryStr += ', Id';
       }
 
       queryStr += ' FROM ' + tableName;
@@ -337,11 +337,7 @@ global with sharing class ListenerFlowController {
 
       // Common query modifiers
       if ((Boolean) queryModifiers.get('includeOrderBy')) {
-        if (isHistoryQuery) {
-            queryStr += ' ORDER BY ' + parentIdField + ', CreatedDate ASC';
-        } else {
-            queryStr += ' ORDER BY Id, CreatedDate ASC';
-        }
+          queryStr += ' ORDER BY ' + parentIdField + ', CreatedDate ASC';
       }
 
       if ((Boolean) queryModifiers.get('includeLimit')) {
@@ -451,6 +447,7 @@ global with sharing class ListenerFlowController {
       } else {
         historyRecordsMap.put(parentId, new List<SObject>{ obj });
       }
+      System.debug('historyRecordsMap from history query: ' + queryStr);
       // Populate sortingDateTimeMap
       if (controllerInstance.sortingDateTimeMap.containsKey(parentId)) {
         controllerInstance.sortingDateTimeMap.get(parentId).add(createdDate);
@@ -458,7 +455,6 @@ global with sharing class ListenerFlowController {
         controllerInstance.sortingDateTimeMap.put(parentId, new List<Datetime>{ createdDate });
       }
     }
-    System.debug('historyRecordsMap from history query: ' + historyRecordsMap);
     if (!historyRecordsMap.isEmpty()) {
       // Sort using your sortHistoryList method
       for (Id parentId : historyRecordsMap.keySet()) {
