@@ -245,105 +245,47 @@ global with sharing class ListenerFlowController {
 // ------------------------------------------------------------------------------------------------
   // Called by: getLatestHistoryValues
   // This method builds the query string based on the listener configuration and other parameters
+  private static String buildQuery(
+    String tableName,
+    String parentIdField,
+    String fieldValue,
+    String fieldName,
+    List<Id> targetRecordIds,
+    Listener__c listenerConfig,
+    Boolean isHistoryQuery,
+    DateTime lastExecutionOn
+  ) {
+      Map<String, Object> queryModifiers = getQueryModifiers(listenerConfig, isHistoryQuery, lastExecutionOn);
   // private static String buildQuery(
   //   String tableName,
   //   String parentIdField,
+  //   String fieldValue,
+  //   String fieldName,
   //   List<Id> targetRecordIds,
-  //   Listener__c listenerConfig,
-  //   Boolean isHistoryQuery,
-  //   DateTime lastExecutionOn
+  //   Map<String, Object> queryModifiers,
+  //   Boolean isHistoryQuery
   // ) {
-  //   String fieldValue = 'created';
-  //   String fieldName = listenerConfig.Field_To_Track__c;
-
-  //   Map<String, Object> queryModifiers = getQueryModifiers(listenerConfig, isHistoryQuery, lastExecutionOn);
-  // // private static String buildQuery(
-  // //   String tableName,
-  // //   String parentIdField,
-  // //   String fieldValue,
-  // //   String fieldName,
-  // //   List<Id> targetRecordIds,
-  // //   Map<String, Object> queryModifiers,
-  // //   Boolean isHistoryQuery
-  // // ) {
-  //   String queryStr = 'SELECT Id, Field, OldValue, NewValue, CreatedDate, ' + parentIdField +
-  //     ' FROM ' + tableName +
-  //     ' WHERE (Field =:fieldValue OR Field =:fieldName)';
-  //   if(isHistoryQuery && targetRecordIds != null && !targetRecordIds.isEmpty()) {
-  //     queryStr += ' AND ' + parentIdField + ' IN :targetRecordIds';
-  //   }
+    String queryStr = 'SELECT Id, Field, OldValue, NewValue, CreatedDate, ' + parentIdField +
+      ' FROM ' + tableName +
+      ' WHERE (Field =:fieldValue OR Field =:fieldName)';
+    if(isHistoryQuery && targetRecordIds != null && !targetRecordIds.isEmpty()) {
+      queryStr += ' AND ' + parentIdField + ' IN :targetRecordIds';
+    }
       
-  //   String whereClause = (String) queryModifiers.get('whereClause');
-  //   if (whereClause != null && whereClause != '') {
-  //     queryStr += ' AND ' + whereClause;
-  //   }
+    String whereClause = (String) queryModifiers.get('whereClause');
+    if (whereClause != null && whereClause != '') {
+      queryStr += ' AND ' + whereClause;
+    }
   
-  //   if ((Boolean) queryModifiers.get('includeOrderBy')) {
-  //     queryStr += ' ORDER BY ' + parentIdField + ', CreatedDate ASC';
-  //   }
+    if ((Boolean) queryModifiers.get('includeOrderBy')) {
+      queryStr += ' ORDER BY ' + parentIdField + ', CreatedDate ASC';
+    }
   
-  //   if ((Boolean) queryModifiers.get('includeLimit')) {
-  //     queryStr += ' LIMIT 10000';
-  //   }
+    if ((Boolean) queryModifiers.get('includeLimit')) {
+      queryStr += ' LIMIT 10000';
+    }
   
-  //   return queryStr;
-  // }
-// Old version above
-  private static String buildQuery(
-      String tableName,
-      String parentIdField,
-      List<Id> targetRecordIds,
-      Listener__c listenerConfig,
-      Boolean isHistoryQuery,
-      DateTime lastExecutionOn
-  ) {
-      // Initialize field values based on listenerConfig
-      String fieldValue = 'created';
-      String fieldName = listenerConfig.Field_To_Track__c;
-
-      // Get query modifiers
-      Map<String, Object> queryModifiers = getQueryModifiers(listenerConfig, isHistoryQuery, lastExecutionOn);
-
-      // Initialize the query string
-      String queryStr = 'SELECT Id';
-
-      if (isHistoryQuery) {
-          queryStr += ', Field, OldValue, NewValue, CreatedDate, ' + parentIdField;  // History table specific fields
-      } else {
-          // For non-history queries, add specific fields you need. For example, 'Name' or 'CaseNumber'
-          String parentNameField = listenerConfig.Object_Name__c != NULL && listenerConfig.Object_Name__c == 'Case' ? 'CaseNumber' : 'Name';
-          String terminalStageField = listenerConfig.TerminalStage__c != NULL ? listenerConfig.TerminalStage__c : '';
-          if (String.isNotBlank(parentNameField)) queryStr += ', ' + parentNameField;
-          if (String.isNotBlank(terminalStageField)) queryStr += ', ' + terminalStageField;
-      }
-
-      queryStr += ' FROM ' + tableName;
-
-      // Append WHERE conditions
-      String whereClause = (String) queryModifiers.get('whereClause');
-      if ((isHistoryQuery && targetRecordIds != null && !targetRecordIds.isEmpty()) || String.isNotBlank(whereClause)) {
-          queryStr += ' WHERE ';
-          if (isHistoryQuery) {
-              queryStr += '(Field =:fieldValue OR Field =:fieldName)';
-              if (!targetRecordIds.isEmpty()) {
-                  queryStr += ' AND ' + parentIdField + ' IN :targetRecordIds';
-              }
-          }
-          if (String.isNotBlank(whereClause)) {
-              queryStr += (queryStr.endsWith('WHERE ') ? '' : ' AND ') + whereClause;
-          }
-      }
-
-      // Common query modifiers
-      if ((Boolean) queryModifiers.get('includeOrderBy')) {
-          queryStr += ' ORDER BY ' + parentIdField + ', CreatedDate ASC';
-      }
-
-      if ((Boolean) queryModifiers.get('includeLimit')) {
-          queryStr += ' LIMIT 10000';
-      }
-
-      return queryStr;
+    return queryStr;
   }
     // Called by: getLatestHistoryValues
     // This method returns a map of query modifiers based on the listener configuration and other parameters
@@ -422,14 +364,13 @@ global with sharing class ListenerFlowController {
     String objectSuffix = '__c';
     Boolean isHistoryQuery = true;
     // Generate query modifiers for history
-    // Map<String, Object> historyQueryModifiers = getQueryModifiers(
-    //     listenerConfig,
-    //     isHistoryQuery,
-    //     lastExecutionOn  // pass along the new parameter
-    // );
+    Map<String, Object> historyQueryModifiers = getQueryModifiers(
+        listenerConfig,
+        isHistoryQuery,
+        lastExecutionOn  // pass along the new parameter
+    );
     //String queryStr = buildQuery(objHistoryName, parentIdField, fieldValue, fieldName, targetRecordIds, historyQueryModifiers);
-    // String queryStr = buildQuery(objHistoryName, parentIdField, fieldValue, fieldName, targetRecordIds, queryModifiers, isHistoryQuery);
-    String queryStr = buildQuery(objHistoryName, parentIdField, targetRecordIds, listenerConfig, true, lastExecutionOn);
+    String queryStr = buildQuery(objHistoryName, parentIdField, fieldValue, fieldName, targetRecordIds, queryModifiers, isHistoryQuery);
 
 
     // Query for history records
@@ -644,11 +585,11 @@ global with sharing class ListenerFlowController {
     System.debug('listenerConfig: ' + listenerConfig);
 
     Boolean isHistoryQuery = false;
-    // Map<String, Object> queryModifiers = getQueryModifiers(
-    //     listenerConfig,
-    //     isHistoryQuery,
-    //     lastExecutionOn
-    // );
+    Map<String, Object> queryModifiers = getQueryModifiers(
+        listenerConfig,
+        isHistoryQuery,
+        lastExecutionOn
+    );
 
     // Debug for queryModifiers
     System.debug('queryModifiers: ' + queryModifiers);
@@ -657,9 +598,8 @@ global with sharing class ListenerFlowController {
       String terminalStageField = (listenerConfig.TerminalStage__c != null)
         ? listenerConfig.TerminalStage__c
         : '';
-      // String queryStr = buildQuery(objName, parentIdField, fieldValue, fieldName, targetRecordIds, queryModifiers, isHistoryQuery);
-      String queryStr = buildQuery(objName, parentIdField, targetRecordIds, listenerConfig, false, lastExecutionOn);
-
+      String queryStr = buildQuery(objName, parentIdField, fieldValue, fieldName, targetRecordIds, queryModifiers, isHistoryQuery);
+        
       // String queryStr = 'SELECT Id, Field, OldValue, NewValue, CreatedDate, ' + parentIdField +
       // ' FROM ' + objHistoryName +
       // ' WHERE (Field =:fieldValue OR Field =:fieldName) AND ' +

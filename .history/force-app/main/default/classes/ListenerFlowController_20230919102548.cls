@@ -85,7 +85,6 @@ global with sharing class ListenerFlowController {
   @AuraEnabled
   public Map<Id, List<SObject>> historyRecordsMap;
   public Map<Id, List<Datetime>> sortingDateTimeMap;
-  public Map<Id, SObject> parentRecordsMap = new Map<Id, SObject>();
   @AuraEnabled
   global String varNameofTrackedRecord;
   @AuraEnabled
@@ -241,109 +240,33 @@ global with sharing class ListenerFlowController {
   // Define the listenerConfigList variable
   public static List<ListenerFlowLatestRequest> listenerConfigList;
   
-// Section where we build and call the query ------------------------------------------------------
-// ------------------------------------------------------------------------------------------------
-  // Called by: getLatestHistoryValues
-  // This method builds the query string based on the listener configuration and other parameters
-  // private static String buildQuery(
-  //   String tableName,
-  //   String parentIdField,
-  //   List<Id> targetRecordIds,
-  //   Listener__c listenerConfig,
-  //   Boolean isHistoryQuery,
-  //   DateTime lastExecutionOn
-  // ) {
-  //   String fieldValue = 'created';
-  //   String fieldName = listenerConfig.Field_To_Track__c;
-
-  //   Map<String, Object> queryModifiers = getQueryModifiers(listenerConfig, isHistoryQuery, lastExecutionOn);
-  // // private static String buildQuery(
-  // //   String tableName,
-  // //   String parentIdField,
-  // //   String fieldValue,
-  // //   String fieldName,
-  // //   List<Id> targetRecordIds,
-  // //   Map<String, Object> queryModifiers,
-  // //   Boolean isHistoryQuery
-  // // ) {
-  //   String queryStr = 'SELECT Id, Field, OldValue, NewValue, CreatedDate, ' + parentIdField +
-  //     ' FROM ' + tableName +
-  //     ' WHERE (Field =:fieldValue OR Field =:fieldName)';
-  //   if(isHistoryQuery && targetRecordIds != null && !targetRecordIds.isEmpty()) {
-  //     queryStr += ' AND ' + parentIdField + ' IN :targetRecordIds';
-  //   }
-      
-  //   String whereClause = (String) queryModifiers.get('whereClause');
-  //   if (whereClause != null && whereClause != '') {
-  //     queryStr += ' AND ' + whereClause;
-  //   }
-  
-  //   if ((Boolean) queryModifiers.get('includeOrderBy')) {
-  //     queryStr += ' ORDER BY ' + parentIdField + ', CreatedDate ASC';
-  //   }
-  
-  //   if ((Boolean) queryModifiers.get('includeLimit')) {
-  //     queryStr += ' LIMIT 10000';
-  //   }
-  
-  //   return queryStr;
-  // }
-// Old version above
   private static String buildQuery(
-      String tableName,
-      String parentIdField,
-      List<Id> targetRecordIds,
-      Listener__c listenerConfig,
-      Boolean isHistoryQuery,
-      DateTime lastExecutionOn
+    String objHistoryName,
+    String parentIdField,
+    String fieldValue,
+    String fieldName,
+    List<Id> targetRecordIds,
+    Map<String, Object> queryModifiers
   ) {
-      // Initialize field values based on listenerConfig
-      String fieldValue = 'created';
-      String fieldName = listenerConfig.Field_To_Track__c;
-
-      // Get query modifiers
-      Map<String, Object> queryModifiers = getQueryModifiers(listenerConfig, isHistoryQuery, lastExecutionOn);
-
-      // Initialize the query string
-      String queryStr = 'SELECT Id';
-
-      if (isHistoryQuery) {
-          queryStr += ', Field, OldValue, NewValue, CreatedDate, ' + parentIdField;  // History table specific fields
-      } else {
-          // For non-history queries, add specific fields you need. For example, 'Name' or 'CaseNumber'
-          String parentNameField = listenerConfig.Object_Name__c != NULL && listenerConfig.Object_Name__c == 'Case' ? 'CaseNumber' : 'Name';
-          String terminalStageField = listenerConfig.TerminalStage__c != NULL ? listenerConfig.TerminalStage__c : '';
-          if (String.isNotBlank(parentNameField)) queryStr += ', ' + parentNameField;
-          if (String.isNotBlank(terminalStageField)) queryStr += ', ' + terminalStageField;
-      }
-
-      queryStr += ' FROM ' + tableName;
-
-      // Append WHERE conditions
-      String whereClause = (String) queryModifiers.get('whereClause');
-      if ((isHistoryQuery && targetRecordIds != null && !targetRecordIds.isEmpty()) || String.isNotBlank(whereClause)) {
-          queryStr += ' WHERE ';
-          if (isHistoryQuery) {
-              queryStr += '(Field =:fieldValue OR Field =:fieldName)';
-              if (!targetRecordIds.isEmpty()) {
-                  queryStr += ' AND ' + parentIdField + ' IN :targetRecordIds';
-              }
-          }
-          if (String.isNotBlank(whereClause)) {
-              queryStr += (queryStr.endsWith('WHERE ') ? '' : ' AND ') + whereClause;
-          }
-      }
-
-      // Common query modifiers
-      if ((Boolean) queryModifiers.get('includeOrderBy')) {
-          queryStr += ' ORDER BY ' + parentIdField + ', CreatedDate ASC';
-      }
-
-      if ((Boolean) queryModifiers.get('includeLimit')) {
-          queryStr += ' LIMIT 10000';
-      }
-
-      return queryStr;
+    String queryStr = 'SELECT Id, Field, OldValue, NewValue, CreatedDate, ' + parentIdField +
+      ' FROM ' + objHistoryName +
+      ' WHERE (Field =:fieldValue OR Field =:fieldName) AND ' +
+      parentIdField + ' IN :targetRecordIds';
+  
+    String whereClause = (String) queryModifiers.get('whereClause');
+    if (whereClause != null && whereClause != '') {
+      queryStr += ' AND ' + whereClause;
+    }
+  
+    if ((Boolean) queryModifiers.get('includeOrderBy')) {
+      queryStr += ' ORDER BY ' + parentIdField + ', CreatedDate ASC';
+    }
+  
+    if ((Boolean) queryModifiers.get('includeLimit')) {
+      queryStr += ' LIMIT 10000';
+    }
+  
+    return queryStr;
   }
     // Called by: getLatestHistoryValues
     // This method returns a map of query modifiers based on the listener configuration and other parameters
@@ -420,19 +343,16 @@ global with sharing class ListenerFlowController {
     String objName = listenerConfig.Object_Name__c;
     String fieldName = listenerConfig.Field_To_Track__c;
     String objectSuffix = '__c';
-    Boolean isHistoryQuery = true;
+
     // Generate query modifiers for history
-    // Map<String, Object> historyQueryModifiers = getQueryModifiers(
-    //     listenerConfig,
-    //     isHistoryQuery,
-    //     lastExecutionOn  // pass along the new parameter
-    // );
-    //String queryStr = buildQuery(objHistoryName, parentIdField, fieldValue, fieldName, targetRecordIds, historyQueryModifiers);
-    // String queryStr = buildQuery(objHistoryName, parentIdField, fieldValue, fieldName, targetRecordIds, queryModifiers, isHistoryQuery);
-    String queryStr = buildQuery(objHistoryName, parentIdField, targetRecordIds, listenerConfig, true, lastExecutionOn);
+    Map<String, Object> historyQueryModifiers = getQueryModifiers(
+        listenerConfig,
+        true,
+        lastExecutionOn  // pass along the new parameter
+    );
+    String queryStr = buildQuery(objHistoryName, parentIdField, fieldValue, fieldName, targetRecordIds, historyQueryModifiers);
 
-
-    // Query for history records
+    // Debug for queryStr
     System.debug('Executing history query: ' + queryStr);
     Map<Id, List<SObject>> historyRecordsMap = controllerInstance.historyRecordsMap;
     // HISTORY RECORDS QUERY to populate historyRecordsMap and sortingDateTimeMap
@@ -462,8 +382,7 @@ global with sharing class ListenerFlowController {
         historyRecordsMap.put(parentId, specificHistoryList);
       }
     }
-    
-    // Handle the oneHistoryParentIds logic
+
     Set<Id> oneHistoryParentIds = new Set<Id>();
     Map<Id, SObject> createdHistoryMap = new Map<Id, SObject>();
     for (Id parentId : historyRecordsMap.keySet()) {
@@ -472,46 +391,29 @@ global with sharing class ListenerFlowController {
         oneHistoryParentIds.add(parentId);
       }
     }
-    // Handle special case for parents with only one 'created' history record
     if (!oneHistoryParentIds.isEmpty()) {
-      for (Id oneHistoryParentId : oneHistoryParentIds) {
-        List<SObject> historyList = historyRecordsMap.get(oneHistoryParentId);
-        SObject createdHistoryRecord = historyList[0]; // Only one record exists, so taking the first
-        
-        // Fetch the current value from the parent record map
-        SObject parentRecord = controllerInstance.parentRecordsMap.get(oneHistoryParentId);
-        Object currentFieldValue = parentRecord.get(fieldName); // Assuming fieldName holds the field you're interested in
-        
-        // Update the 'NewValue' of the history record with the current value from parent
-        createdHistoryRecord.put('NewValue', currentFieldValue);
-        
-        // Optionally, update the historyRecordsMap
-        historyRecordsMap.put(oneHistoryParentId, new List<SObject>{ createdHistoryRecord });
+      String parentTrackedField = isCustomObject(objName)
+        ? ('Parent.' + fieldName)
+        : (objName + '.' + fieldName);
+      String parentQueryStr =
+        'SELECT Id, Field, OldValue, NewValue, CreatedDate, ' +
+        parentTrackedField +
+        ', ' +
+        parentIdField +
+        ' FROM ' +
+        objHistoryName +
+        ' WHERE Field =: fieldValue AND ' +
+        parentIdField +
+        '=: oneHistoryParentIds' +
+        ' ORDER BY ' +
+        parentIdField +
+        ', CreatedDate ASC';
+      System.debug('Executing PARENT query: ' + parentQueryStr);
+      for (SObject sObj : Database.query(parentQueryStr)) {
+        Id parentId = (Id) sObj.get(parentIdField);
+        createdHistoryMap.put(parentId, sObj);
       }
     }
-    // if (!oneHistoryParentIds.isEmpty()) {
-    //   String parentTrackedField = isCustomObject(objName)
-    //     ? ('Parent.' + fieldName)
-    //     : (objName + '.' + fieldName);
-    //   String parentQueryStr =
-    //     'SELECT Id, Field, OldValue, NewValue, CreatedDate, ' +
-    //     parentTrackedField +
-    //     ', ' +
-    //     parentIdField +
-    //     ' FROM ' +
-    //     objHistoryName +
-    //     ' WHERE Field =: fieldValue AND ' +
-    //     parentIdField +
-    //     '=: oneHistoryParentIds' +
-    //     ' ORDER BY ' +
-    //     parentIdField +
-    //     ', CreatedDate ASC';
-    //   System.debug('Executing PARENT query: ' + parentQueryStr);
-    //   for (SObject sObj : Database.query(parentQueryStr)) {
-    //     Id parentId = (Id) sObj.get(parentIdField);
-    //     createdHistoryMap.put(parentId, sObj);
-    //   }
-    // }
     // Handle the createdHistoryMap logic
     if (!createdHistoryMap.isEmpty()) {
       for (Id parentId : createdHistoryMap.keySet()) {
@@ -620,13 +522,10 @@ global with sharing class ListenerFlowController {
     // Get parentIdField using your existing method
     String parentName = getParentName(listenerConfig.Object_Name__c);
     String parentIdField = isCustomObject(objName) ? 'ParentId' : (objName + 'Id');
-    String fieldValue = 'created';
-    String fieldName = listenerConfig.Field_To_Track__c;
     System.debug('parentName: ' + parentName);
     DateTime lastExecutionOn = listenerConfigList[0].lastExecutionOn;
     List<ListenerFlowLatestResponse> responseList = new List<ListenerFlowLatestResponse>();
     ListenerFlowLatestResponse response = new ListenerFlowLatestResponse();
-    Map<Id, SObject> sObjectMapForParse = new Map<Id, SObject>();
 
     // Debug for initial conditions
     System.debug('Initial listenerConfigList: ' + listenerConfigList);
@@ -635,20 +534,19 @@ global with sharing class ListenerFlowController {
       return responseList;
     }
 
-    Set<Id> targetRecords = new Set<Id>();
-    List<Id> targetRecordIds = new List<Id>(targetRecords);
+    Set<Id> targetRecords = new Set<Id>(); // Initialized here
+    List<Id> targetRecordIds;
 
     Map<String, SObject> sObjectMap = new Map<String, SObject>();
 
     // Debug for listenerConfig
     System.debug('listenerConfig: ' + listenerConfig);
 
-    Boolean isHistoryQuery = false;
-    // Map<String, Object> queryModifiers = getQueryModifiers(
-    //     listenerConfig,
-    //     isHistoryQuery,
-    //     lastExecutionOn
-    // );
+    Map<String, Object> queryModifiers = getQueryModifiers(
+        listenerConfig,
+        false,
+        lastExecutionOn
+    );
 
     // Debug for queryModifiers
     System.debug('queryModifiers: ' + queryModifiers);
@@ -657,13 +555,10 @@ global with sharing class ListenerFlowController {
       String terminalStageField = (listenerConfig.TerminalStage__c != null)
         ? listenerConfig.TerminalStage__c
         : '';
-      // String queryStr = buildQuery(objName, parentIdField, fieldValue, fieldName, targetRecordIds, queryModifiers, isHistoryQuery);
-      String queryStr = buildQuery(objName, parentIdField, targetRecordIds, listenerConfig, false, lastExecutionOn);
-
-      // String queryStr = 'SELECT Id, Field, OldValue, NewValue, CreatedDate, ' + parentIdField +
-      // ' FROM ' + objHistoryName +
-      // ' WHERE (Field =:fieldValue OR Field =:fieldName) AND ' +
-      // parentIdField + ' IN :targetRecordIds';
+      String queryStr = 'SELECT Id, Field, OldValue, NewValue, CreatedDate, ' + parentIdField +
+      ' FROM ' + objHistoryName +
+      ' WHERE (Field =:fieldValue OR Field =:fieldName) AND ' +
+      parentIdField + ' IN :targetRecordIds';
       if (String.isNotBlank(terminalStageField))
         queryStr += ', ' + terminalStageField;
 
@@ -684,11 +579,7 @@ global with sharing class ListenerFlowController {
         targetRecords.add(sob.Id);
         sObjectMap.put(sob.Id, sob);
       }
-      for (Id recordId : sObjectMap.keySet()) {
-        SObject record = sObjectMap.get(recordId);
-        sObjectMapForParse.put(recordId, record);
-      } 
-      controllerInstance.parentRecordsMap = sObjectMapForParse;
+
       targetRecordIds = new List<Id>(targetRecords); 
       // Debug for targetRecordIds
       System.debug('targetRecordIds: ' + targetRecordIds);
@@ -708,13 +599,6 @@ global with sharing class ListenerFlowController {
       Map<Id, List<SObject>> historyRecordsMap = historyResult.historyRecordsMap;
       Map<Id, List<Datetime>> sortingDateTimeMap = historyResult.sortingDateTimeMap;
       System.debug('History Records Map: ' + historyRecordsMap);
-      Set<Id> oneHistoryParentIds = new Set<Id>();
-      for (Id parentId : historyRecordsMap.keySet()) {
-        List<SObject> tempHistoryLst = historyRecordsMap.get(parentId);
-        if (tempHistoryLst.size() == 1) {
-          oneHistoryParentIds.add(parentId);
-        }
-      }
 
       controllerInstance.preparingResponse(response, listenerConfig, sObjectMap, controllerInstance);
 
