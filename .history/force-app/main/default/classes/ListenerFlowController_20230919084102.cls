@@ -515,7 +515,6 @@ global with sharing class ListenerFlowController {
     ListenerFlowController controllerInstance = new ListenerFlowController();
     System.debug('parseRecordsToFlow called');
     Listener__c listenerConfigRec = listenerConfigList[0].listenerConfig;
-    String objName = listenerConfig.Object_Name__c;
     // Get the history object name based on the object name in the listener config
     String objHistoryName = getHistoryObjectName(listenerConfigRec.Object_Name__c);
     // Get parentIdField using your existing method
