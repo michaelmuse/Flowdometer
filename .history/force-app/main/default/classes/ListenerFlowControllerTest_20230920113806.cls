@@ -153,6 +153,7 @@ public class ListenerFlowControllerTest {
         Map<String, SObject> sObjectMap,
         Map<Id, List<Datetime>> sortingDateTimeMap
     ) {
+        setupTestData();
         // Create an instance of ListenerFlowController
         ListenerFlowController controllerInstance = new ListenerFlowController();
         System.debug('controllerInstance: ' + controllerInstance);
@@ -167,27 +168,9 @@ public class ListenerFlowControllerTest {
                 ? (Map<String, Object>) additionalParams.get('queryModifiers')
                 : new Map<String, Object>();
 
-        Map<Id, Map<String, Id>> goalStepRecsMap = new Map<Id, Map<String, Id>>();
-        if (additionalParams.containsKey('goalStepRecsMap')) {
-            Object rawData = additionalParams.get('goalStepRecsMap');
-            
-            if (rawData instanceof Map<Id, Map<String, Id>>) {
-                goalStepRecsMap = (Map<Id, Map<String, Id>>) rawData;
-            } else if (rawData instanceof Map<String, List<Object>>) {
-                Map<String, List<Object>> originalMap = (Map<String, List<Object>>) rawData;
-                for (String key : originalMap.keySet()) {
-                    Id newKey = Id.valueOf(key);
-                    Map<String, Id> newValue = new Map<String, Id>();
-                    for (Object objValue : originalMap.get(key)) {
-                        // Convert 'objValue' to 'Id' if needed
-                        newValue.put('record', (Id)objValue);  // Using 'record' to parallel sObjectMap in the controller
-                    }
-                    goalStepRecsMap.put(newKey, newValue);
-                }
-            }
-        } else {
-            goalStepRecsMap = new Map<Id, Map<String, Id>>();
-        }
+        Map<Id, Map<String, Id>> goalStepRecsMap = (additionalParams.containsKey('goalStepRecsMap'))
+                ? (Map<Id, Map<String, Id>>) additionalParams.get('goalStepRecsMap')
+                : new Map<Id, Map<String, Id>>();
 
         // Using the sObjectMap and sortingDateTimeMap parameters directly in the code
         // If a response object is provided, it means we're testing preparingResponse
@@ -257,89 +240,44 @@ public class ListenerFlowControllerTest {
     //     System.assertEquals(1, records.size(), 'Response List size should be 1');
     
     // } 
-    // @isTest
-    // static void testParseRecordsToFlow() {
-    //     // Initialize other required parameters
-    //     Map<String, Object> additionalParams = new Map<String, Object> {
-    //         'queryModifiers' => new Map<String, Object>(),
-    //         'goalStepRecsMap' => new Map<String, List<Object>>(),
-    //         'sObjectMap' => new Map<String, SObject>(),
-    //         'sortingDateTimeMap' => new Map<Id, List<Datetime>>()
-    //     };
-        
-    //     // Scenario 1: Last_Execution_On__c is empty// Query back the ListenerConfig record
-    //     Listener__c queriedListenerConfig = [SELECT Id, Last_Execution_On__c, Object_Name__c, Field_To_Track__c, TerminalStage__c FROM Listener__c LIMIT 1];
-    //     queriedListenerConfig.Last_Execution_On__c = null;
-    //     // listenerConfig.Last_Execution_On__c = null;  
-    //     // update new List<Listener__c> {listenerConfig};
-    
-    //     // Run the test using the utility method
-    //     List<ListenerFlowController.ListenerFlowLatestResponse> records = runTest(queriedListenerConfig, historyRecordsMap, null, additionalParams, new Map<String, SObject>(), new Map<Id, List<Datetime>>());
-    
-    //     // Assert: Check if a 'created' history record has a stage name.
-    //     if (records.size() > 0 && records[0].lstListenerFlow.size() > 0) {
-    //     ListenerFlowController listenerFlowController = records[0].lstListenerFlow[0];
-    //     System.assertNotEquals(null, listenerFlowController.varCurrentFieldValue, 'Stage name should not be null');
-    //     }
-
-    //     // Scenario 2: Last_Execution_On__c is not empty
-    //     queriedListenerConfig.Last_Execution_On__c = DateTime.now().addDays(-1); // Set it to 1 day ago
-    //     // update new List<Listener__c> {listenerConfig};
-    
-    //     // Run the test using the utility method
-    //     records = runTest(queriedListenerConfig, historyRecordsMap, null, additionalParams, new Map<String, SObject>(), new Map<Id, List<Datetime>>());
-
-    //     // Assert: Check if the response list is not null and has one element
-    //     System.assertNotEquals(null, records, 'Response List should not be null');
-    //     System.assertEquals(1, records.size(), 'Response List size should be 1');
-    // }
     @isTest
-    static void testParseRecordsToFlow_Scenario1() {
+    static void testParseRecordsToFlow() {
         // Initialize other required parameters
         Map<String, Object> additionalParams = new Map<String, Object> {
             'queryModifiers' => new Map<String, Object>(),
             'goalStepRecsMap' => new Map<String, List<Object>>(),
-            'sObjectMap' => new Map<String, SObject>(),
+            'sObjectMap' => new Map<Id, SObject>(),
             'sortingDateTimeMap' => new Map<Id, List<Datetime>>()
         };
-
-        // Query back the ListenerConfig record
-        Listener__c queriedListenerConfig = [SELECT Id, Last_Execution_On__c, Object_Name__c, Field_To_Track__c, TerminalStage__c FROM Listener__c LIMIT 1];
-        queriedListenerConfig.Last_Execution_On__c = null;
-
+        
+        // Scenario 1: Last_Execution_On__c is empty
+        listenerConfig.Last_Execution_On__c = null;  
+        update new List<Listener__c> {listenerConfig};
+    
         // Run the test using the utility method
-        List<ListenerFlowController.ListenerFlowLatestResponse> records = runTest(queriedListenerConfig, historyRecordsMap, null, additionalParams, new Map<String, SObject>(), new Map<Id, List<Datetime>>());
-
+        Test.startTest();
+        List<ListenerFlowController.ListenerFlowLatestResponse> records = runTest(listenerConfig, historyRecordsMap, null, additionalParams, new Map<String, SObject>(), new Map<Id, List<Datetime>>());
+        Test.stopTest();
+    
         // Assert: Check if a 'created' history record has a stage name.
         if (records.size() > 0 && records[0].lstListenerFlow.size() > 0) {
-            ListenerFlowController listenerFlowController = records[0].lstListenerFlow[0];
-            System.assertNotEquals(null, listenerFlowController.varCurrentFieldValue, 'Stage name should not be null');
+        ListenerFlowController listenerFlowController = records[0].lstListenerFlow[0];
+        System.assertNotEquals(null, listenerFlowController.varCurrentFieldValue, 'Stage name should not be null');
         }
-    }
 
-    @isTest
-    static void testParseRecordsToFlow_Scenario2() {
-        // Initialize other required parameters
-        Map<String, Object> additionalParams = new Map<String, Object> {
-            'queryModifiers' => new Map<String, Object>(),
-            'goalStepRecsMap' => new Map<String, List<Object>>(),
-            'sObjectMap' => new Map<String, SObject>(),
-            'sortingDateTimeMap' => new Map<Id, List<Datetime>>()
-        };
-
-        // Query back the ListenerConfig record
-        Listener__c queriedListenerConfig = [SELECT Id, Last_Execution_On__c, Object_Name__c, Field_To_Track__c, TerminalStage__c FROM Listener__c LIMIT 1];
-        queriedListenerConfig.Last_Execution_On__c = DateTime.now().addDays(-1); // Set it to 1 day ago
-
+        // Scenario 2: Last_Execution_On__c is not empty
+        listenerConfig.Last_Execution_On__c = DateTime.now().addDays(-1); // Set it to 1 day ago
+        update new List<Listener__c> {listenerConfig};
+    
         // Run the test using the utility method
-        List<ListenerFlowController.ListenerFlowLatestResponse> records = runTest(queriedListenerConfig, historyRecordsMap, null, additionalParams, new Map<String, SObject>(), new Map<Id, List<Datetime>>());
+        Test.startTest();
+        records = runTest(listenerConfig, historyRecordsMap, null, additionalParams, new Map<String, SObject>(), new Map<Id, List<Datetime>>());
+        Test.stopTest();
 
         // Assert: Check if the response list is not null and has one element
         System.assertNotEquals(null, records, 'Response List should not be null');
         System.assertEquals(1, records.size(), 'Response List size should be 1');
     }
-
-
 
     // // Test the logic for fetching the latest history values
     // @isTest

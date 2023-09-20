@@ -3,7 +3,7 @@
     <actionCalls>
         <name>Query_and_Parse_History_Records_Latest</name>
         <label>Query and Parse History Records</label>
-        <locationX>182</locationX>
+        <locationX>314</locationX>
         <locationY>350</locationY>
         <actionName>ListenerFlowController</actionName>
         <actionType>apex</actionType>
@@ -33,6 +33,40 @@
         <versionSegment>1</versionSegment>
     </actionCalls>
     <apiVersion>55.0</apiVersion>
+    <assignments>
+        <name>Set_Error_Message_Get_All_Record_Types</name>
+        <label>Set Error Message (Get All Record Types)</label>
+        <locationX>842</locationX>
+        <locationY>350</locationY>
+        <assignmentItems>
+            <assignToReference>varFlowDoConfig.Latest_Flow_Error_Message__c</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>$Flow.FaultMessage</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <isGoTo>true</isGoTo>
+            <targetReference>Update_FlowdoConfig_0</targetReference>
+        </connector>
+    </assignments>
+    <assignments>
+        <name>Set_Error_Message_Update_Listener_after_History_Query</name>
+        <label>Set Error Message (Update Listener after History Query)</label>
+        <locationX>314</locationX>
+        <locationY>1190</locationY>
+        <assignmentItems>
+            <assignToReference>varFlowDoConfig.Latest_Flow_Error_Message__c</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>$Flow.FaultMessage</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <isGoTo>true</isGoTo>
+            <targetReference>Update_FlowdoConfig_0</targetReference>
+        </connector>
+    </assignments>
     <assignments>
         <description>Assign the Flowdometer Configurator record param from Batch to the Flow</description>
         <name>Set_Last_Check</name>
@@ -68,7 +102,7 @@
         <description>Assign the Flowdometer Configurator record param from Batch to the Flow</description>
         <name>Set_Last_Check_0</name>
         <label>Set Last Check</label>
-        <locationX>314</locationX>
+        <locationX>578</locationX>
         <locationY>674</locationY>
         <assignmentItems>
             <assignToReference>updateFlowdoConfig.Id</assignToReference>
@@ -92,7 +126,7 @@
         <name>Limit_Collection</name>
         <elementSubtype>SortCollectionProcessor</elementSubtype>
         <label>Limit Collection</label>
-        <locationX>182</locationX>
+        <locationX>314</locationX>
         <locationY>458</locationY>
         <collectionProcessorType>SortCollectionProcessor</collectionProcessorType>
         <collectionReference>lstListenerFlow</collectionReference>
@@ -109,7 +143,7 @@
     <decisions>
         <name>Check_FlowdoConfig</name>
         <label>Check FlowdoConfig</label>
-        <locationX>380</locationX>
+        <locationX>710</locationX>
         <locationY>134</locationY>
         <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
         <rules>
@@ -131,7 +165,7 @@
     <decisions>
         <name>Check_Records</name>
         <label>Check Records</label>
-        <locationX>182</locationX>
+        <locationX>314</locationX>
         <locationY>566</locationY>
         <defaultConnector>
             <targetReference>Set_Last_Check_0</targetReference>
@@ -163,7 +197,7 @@
     <description>Triggered by: Flowdometer - Listener Tracking Trigger. Flowdometer handler to query for untracked changes</description>
     <environments>Default</environments>
     <interviewLabel>Listener Configuration Main Flow {!$Flow.CurrentDateTime}</interviewLabel>
-    <label>Flowdometer - (2) Listener Finds Changed Records</label>
+    <label>Flowdometer - Listener Finds Changed Records</label>
     <loops>
         <name>Loop_Through_Parsed_Records</name>
         <label>Loop Through Parsed Records</label>
@@ -200,12 +234,15 @@
     <recordLookups>
         <name>Get_ALL_Record_Types</name>
         <label>Get ALL Record Types</label>
-        <locationX>182</locationX>
+        <locationX>314</locationX>
         <locationY>242</locationY>
         <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
         <connector>
             <targetReference>Query_and_Parse_History_Records_Latest</targetReference>
         </connector>
+        <faultConnector>
+            <targetReference>Set_Error_Message_Get_All_Record_Types</targetReference>
+        </faultConnector>
         <filterLogic>(1 OR 4) AND (2 OR 3)</filterLogic>
         <filters>
             <field>DeveloperName</field>
@@ -249,23 +286,26 @@
         <label>Update FlowdoConfig</label>
         <locationX>50</locationX>
         <locationY>1082</locationY>
+        <faultConnector>
+            <targetReference>Set_Error_Message_Update_Listener_after_History_Query</targetReference>
+        </faultConnector>
         <inputReference>updateFlowdoConfig</inputReference>
     </recordUpdates>
     <recordUpdates>
         <name>Update_FlowdoConfig_0</name>
         <label>Update FlowdoConfig</label>
-        <locationX>314</locationX>
+        <locationX>578</locationX>
         <locationY>782</locationY>
         <inputReference>updateFlowdoConfig</inputReference>
     </recordUpdates>
     <start>
-        <locationX>254</locationX>
+        <locationX>584</locationX>
         <locationY>0</locationY>
         <connector>
             <targetReference>Check_FlowdoConfig</targetReference>
         </connector>
     </start>
-    <status>Draft</status>
+    <status>Active</status>
     <subflows>
         <name>Create_Listener_Records_Using_Parsed_History_Records</name>
         <label>Create Tracker Records Using Parsed History Records</label>
@@ -309,6 +349,12 @@
             <name>varCurrentObjectID</name>
             <value>
                 <elementReference>Loop_Through_Parsed_Records.varCurrentObjectID</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>varListenerId</name>
+            <value>
+                <elementReference>varFlowDoConfig.Id</elementReference>
             </value>
         </inputAssignments>
         <inputAssignments>
@@ -396,5 +442,12 @@
         <isInput>true</isInput>
         <isOutput>false</isOutput>
         <objectType>Listener__c</objectType>
+    </variables>
+    <variables>
+        <name>varFlowErrorMessage</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
     </variables>
 </Flow>
