@@ -156,8 +156,6 @@ public class ListenerFlowControllerTest {
         Map<Id, SObject> sObjectMap,
         Map<Id, List<Datetime>> sortingDateTimeMap
     ) {
-        // Create an instance of ListenerFlowController
-        ListenerFlowController controllerInstance = new Flowdometer.ListenerFlowController();
         // Handle the default value for additionalParams inside the method
         if (additionalParams == null) {
             additionalParams = new Map<String, Object>();
@@ -173,10 +171,10 @@ public class ListenerFlowControllerTest {
                 : new Map<Id, Map<String, Id>>();
 
         // Using the sObjectMap and sortingDateTimeMap parameters directly in the code
-        // If a response object is provided, it means we're testing preparingResponse
         if (response != null) {
+            // If a response object is provided, it means we're testing preparingResponse
             Test.startTest();
-            ListenerFlowController.preparingResponse(response, listenerConfig, sObjectMap, controllerInstance);
+            ListenerFlowController.preparingResponse(response, historyRecordsMap, listenerConfig, goalStepRecsMap, sObjectMap, sortingDateTimeMap);
             Test.stopTest();
             // No value is returned for preparingResponse scenarios
             return null; // preparingResponse doesn't return a value, so we return null here

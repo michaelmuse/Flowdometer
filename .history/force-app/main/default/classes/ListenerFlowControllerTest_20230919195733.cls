@@ -157,7 +157,7 @@ public class ListenerFlowControllerTest {
         Map<Id, List<Datetime>> sortingDateTimeMap
     ) {
         // Create an instance of ListenerFlowController
-        ListenerFlowController controllerInstance = new Flowdometer.ListenerFlowController();
+        ListenerFlowController controllerInstance = new ListenerFlowController();
         // Handle the default value for additionalParams inside the method
         if (additionalParams == null) {
             additionalParams = new Map<String, Object>();
