@@ -336,7 +336,7 @@ public class ListenerFlowControllerTest {
     @isTest
     static void testBuildQuery_Scenario1() {
         // Query for the Listener__c record where Last_Execution_On__c is null
-        Listener__c queriedListenerConfig = [SELECT Id, Last_Execution_On__c, Object_Name__c, Field_To_Track__c, TerminalStage__c FROM Listener__c WHERE Last_Execution_On__c = null LIMIT 1];
+        Listener__c listenerConfig = [SELECT Id, Last_Execution_On__c, Object_Name__c, Field_To_Track__c, TerminalStage__c FROM Listener__c WHERE Last_Execution_On__c = null LIMIT 1];
         
         // Query for the Opportunity IDs to use as targetRecordIds
         List<Id> targetRecordIds = new List<Id>();
@@ -345,14 +345,14 @@ public class ListenerFlowControllerTest {
         }
         
         // Determine parentIdField based on object name
-        String objName = queriedListenerConfig.Object_Name__c;
+        String objName = listenerConfig.Object_Name__c;
         String parentIdField = (objName.endsWith('__c')) ? 'ParentId' : (objName + 'Id');
         
         DateTime lastExecutionOn = null;  // Last Execution On is blank
         Boolean isHistoryQuery = true;    // isHistoryQuery is true
         
         // Call the method to build the query
-        String queryStr = ListenerFlowController.buildQuery(objName, parentIdField, targetRecordIds, queriedListenerConfig, isHistoryQuery, lastExecutionOn);
+        String queryStr = ListenerFlowController.buildQuery(objName, parentIdField, targetRecordIds, listenerConfig, isHistoryQuery, lastExecutionOn);
     
         // Now make assertions to ensure the query string is built correctly
         System.assert(queryStr.contains('SELECT Id, Field, OldValue, NewValue, CreatedDate, ' + parentIdField + ' FROM ' + objName), 'The SELECT clause is incorrect');

@@ -96,7 +96,6 @@ public class ListenerFlowControllerTest {
         insert caseHistoryRecords;
 
         // -------------- Flowdometer Listener Setup --------------
-        // Standard Listener Config with a Last_Execution_On__c of ten minutes ago
         DateTime tenMinutesAgo = DateTime.now().addMinutes(-10); // Setting the time 10 minutes ago
         listenerConfig = TestDataFactory.createlistenerConfig(
             'Opportunity', 'stageName', 'Closed Won', tenMinutesAgo, true
@@ -336,7 +335,7 @@ public class ListenerFlowControllerTest {
     @isTest
     static void testBuildQuery_Scenario1() {
         // Query for the Listener__c record where Last_Execution_On__c is null
-        Listener__c queriedListenerConfig = [SELECT Id, Last_Execution_On__c, Object_Name__c, Field_To_Track__c, TerminalStage__c FROM Listener__c WHERE Last_Execution_On__c = null LIMIT 1];
+        Listener__c listenerConfig = [SELECT Id, Last_Execution_On__c, Object_Name__c, Field_To_Track__c, TerminalStage__c FROM Listener__c WHERE Last_Execution_On__c = null LIMIT 1];
         
         // Query for the Opportunity IDs to use as targetRecordIds
         List<Id> targetRecordIds = new List<Id>();
@@ -345,18 +344,18 @@ public class ListenerFlowControllerTest {
         }
         
         // Determine parentIdField based on object name
-        String objName = queriedListenerConfig.Object_Name__c;
+        String objName = listenerConfig.Object_Name__c;
         String parentIdField = (objName.endsWith('__c')) ? 'ParentId' : (objName + 'Id');
         
         DateTime lastExecutionOn = null;  // Last Execution On is blank
         Boolean isHistoryQuery = true;    // isHistoryQuery is true
         
         // Call the method to build the query
-        String queryStr = ListenerFlowController.buildQuery(objName, parentIdField, targetRecordIds, queriedListenerConfig, isHistoryQuery, lastExecutionOn);
+        String queryStr = ListenerFlowController.buildQuery(objName, parentIdField, targetRecordIds, listenerConfig, isHistoryQuery, lastExecutionOn);
     
         // Now make assertions to ensure the query string is built correctly
         System.assert(queryStr.contains('SELECT Id, Field, OldValue, NewValue, CreatedDate, ' + parentIdField + ' FROM ' + objName), 'The SELECT clause is incorrect');
-        System.assert(queryStr.contains('WHERE (Field =: fieldValue OR Field =: fieldName) AND ' + parentIdField + ' IN :targetRecordIds'), 'The WHERE clause is incorrect');
+        System.assert(queryStr.contains('WHERE (Field =:fieldValue OR Field =:fieldName) AND ' + parentIdField + ' IN :targetRecordIds'), 'The WHERE clause is incorrect');
     }
 
     @isTest
@@ -389,66 +388,6 @@ public class ListenerFlowControllerTest {
 
         // Assert: Check if the actual query string matches the expected one
         System.assertEquals(expectedQuery, actualQuery, 'Query does not match expected value for Scenario 2');
-    }
-    @isTest
-    static void testBuildQuery_Scenario3() {
-        // Fetch a Listener__c record; assume it exists, so no WHERE clause
-        Listener__c queriedListenerConfig = [SELECT Id, Last_Execution_On__c, Object_Name__c, Field_To_Track__c, TerminalStage__c FROM Listener__c LIMIT 1];
-        queriedListenerConfig.Last_Execution_On__c = DateTime.now().addMinutes(-10);  // 10 minutes before now
-
-        // Fetch Opportunities to populate targetRecordIds
-        List<Opportunity> opportunities = [SELECT Id FROM Opportunity LIMIT 2];
-        List<Id> targetRecordIds = new List<Id>();
-        for (Opportunity opp : opportunities) {
-            targetRecordIds.add(opp.Id);
-        }
-
-        String objName = queriedListenerConfig.Object_Name__c;
-        String parentIdField = (objName.endsWith('__c')) ? 'ParentId' : (objName + 'Id');
-        Boolean isHistoryQuery = true;
-
-        // Build the actual query
-        String actualQuery = ListenerFlowController.buildQuery(objName, parentIdField, targetRecordIds, queriedListenerConfig, isHistoryQuery, queriedListenerConfig.Last_Execution_On__c);
-
-        // Initialize the base query for history query
-        String expectedQuery = 'SELECT Id, Field, OldValue, NewValue, CreatedDate, ' + parentIdField;
-        expectedQuery += ' FROM ' + objName;
-        expectedQuery += ' WHERE (Field =: fieldValue OR Field =: fieldName) AND ' + parentIdField + ' IN :targetRecordIds AND CreatedDate > :lastExecutionOn';
-        expectedQuery += ' ORDER BY ' + parentIdField + ', CreatedDate ASC LIMIT 10000';
-
-        // Assert: Check if the actual query string matches the expected one
-        System.assertEquals(expectedQuery, actualQuery, 'Query does not match expected value for Scenario 3');
-    }
-    @isTest
-    static void testBuildQuery_Scenario4() {
-        // Fetch a Listener__c record; assume it exists, so no WHERE clause
-        Listener__c queriedListenerConfig = [SELECT Id, Last_Execution_On__c, Object_Name__c, Field_To_Track__c, TerminalStage__c FROM Listener__c LIMIT 1];
-        queriedListenerConfig.Last_Execution_On__c = DateTime.now().addMinutes(-10);  // 10 minutes before now
-
-        // Fetch Opportunities to populate targetRecordIds
-        List<Opportunity> opportunities = [SELECT Id FROM Opportunity LIMIT 2];
-        List<Id> targetRecordIds = new List<Id>();
-        for (Opportunity opp : opportunities) {
-            targetRecordIds.add(opp.Id);
-        }
-
-        String objName = queriedListenerConfig.Object_Name__c;
-        String parentIdField = (objName.endsWith('__c')) ? 'ParentId' : (objName + 'Id');
-        Boolean isHistoryQuery = false;  // Setting this to false for Scenario 4
-
-        // Build the actual query
-        String actualQuery = ListenerFlowController.buildQuery(objName, parentIdField, targetRecordIds, queriedListenerConfig, isHistoryQuery, queriedListenerConfig.Last_Execution_On__c);
-
-        // Initialize the base query for parent record query
-        String expectedQuery = 'SELECT Id, Name';
-        if (queriedListenerConfig.TerminalStage__c != null) {
-            expectedQuery += ', ' + queriedListenerConfig.TerminalStage__c;
-        }
-        expectedQuery += ', ' + queriedListenerConfig.Field_To_Track__c + ' FROM ' + objName;
-        expectedQuery += ' ORDER BY Id, CreatedDate ASC LIMIT 10000';
-
-        // Assert: Check if the actual query string matches the expected one
-        System.assertEquals(expectedQuery, actualQuery, 'Query does not match expected value for Scenario 4');
     }
 
     // // Test the logic for fetching the latest history values

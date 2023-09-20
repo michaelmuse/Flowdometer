@@ -327,6 +327,7 @@ global with sharing class ListenerFlowController {
         return queryModifiers;
     }
 
+
     public void sortHistoryList(List<SObject> historyList) {
       // Prepare a list of CustomDatetimeSort
       List<CustomDatetimeSort> toSort = new List<CustomDatetimeSort>();

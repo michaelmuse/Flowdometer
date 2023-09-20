@@ -255,76 +255,88 @@ global with sharing class ListenerFlowController {
 // ------------------------------------------------------------------------------------------------
   // Called by: getLatestHistoryValues
   // This method builds the query string based on the listener configuration and query modifiers.
-    @TestVisible
-    private static String buildQuery(
-        String tableName,
-        String parentIdField,
-        List<Id> targetRecordIds,
-        Listener__c listenerConfig,
-        Boolean isHistoryQuery,
-        DateTime lastExecutionOn
-    ) {
-        List<String> selectFields = new List<String>{'Id'};
-        List<String> whereConditions = new List<String>();
-        
-        // Handle the fields to select and the WHERE conditions based on query type
+  private static String buildQuery(
+      String tableName,
+      String parentIdField,
+      List<Id> targetRecordIds,
+      Listener__c listenerConfig,
+      Boolean isHistoryQuery,
+      DateTime lastExecutionOn
+  ) {
+      // Initialize field values based on listenerConfig
+      String fieldValue = 'created';
+      String fieldName = listenerConfig.Field_To_Track__c;
+
+      // Get query modifiers
+      Map<String, Object> queryModifiers = getQueryModifiers(isHistoryQuery, lastExecutionOn);
+
+      // Initialize the query string
+      String queryStr = 'SELECT Id';
+
+      if (isHistoryQuery) {
+          // Build the History Query
+          queryStr += ', Field, OldValue, NewValue, CreatedDate, ' + parentIdField;
+      } else {
+        // Build the Parent Record Query
+        String parentNameField = listenerConfig.Object_Name__c != NULL && listenerConfig.Object_Name__c == 'Case' ? 'CaseNumber' : 'Name';
+        String terminalStageField = listenerConfig.TerminalStage__c != NULL ? listenerConfig.TerminalStage__c : '';
+        String trackingField = listenerConfig.Field_To_Track__c;
+        if (String.isNotBlank(parentNameField)) queryStr += ', ' + parentNameField;
+        if (String.isNotBlank(terminalStageField)) queryStr += ', ' + terminalStageField;
+        if (String.isNotBlank(trackingField)) queryStr += ', ' + trackingField;
+      }
+
+      queryStr += ' FROM ' + tableName;
+
+      // Append WHERE conditions
+      String whereClause = (String) queryModifiers.get('whereClause');
+      if ((isHistoryQuery && targetRecordIds != null && !targetRecordIds.isEmpty()) || String.isNotBlank(whereClause)) {
+          queryStr += ' WHERE ';
+          if (isHistoryQuery) {
+              queryStr += '(Field =:fieldValue OR Field =:fieldName)';
+              if (!targetRecordIds.isEmpty()) {
+                  queryStr += ' AND ' + parentIdField + ' IN :targetRecordIds';
+              }
+          }
+          if (String.isNotBlank(whereClause)) {
+              queryStr += (queryStr.endsWith('WHERE ') ? '' : ' AND ') + whereClause;
+          }
+      }
+
+      // Common query modifiers
+      if ((Boolean) queryModifiers.get('includeOrderBy')) {
         if (isHistoryQuery) {
-            selectFields.addAll(new List<String>{'Field', 'OldValue', 'NewValue', 'CreatedDate', parentIdField});
-            whereConditions.add('(Field =: fieldValue OR Field =: fieldName)');
-            if (!targetRecordIds.isEmpty()) {
-                whereConditions.add(parentIdField + ' IN :targetRecordIds');
-            }
+            queryStr += ' ORDER BY ' + parentIdField + ', CreatedDate ASC';
         } else {
-            if (listenerConfig.Object_Name__c == 'Case') {
-                selectFields.add('CaseNumber');
-            } else {
-                selectFields.add('Name');
-            }
-            if (listenerConfig.TerminalStage__c != null) {
-                selectFields.add(listenerConfig.TerminalStage__c);
-            }
-            selectFields.add(listenerConfig.Field_To_Track__c);
+            queryStr += ' ORDER BY Id, CreatedDate ASC';
         }
+      }
 
-        // Get query modifiers
-        Map<String, Object> queryModifiers = getQueryModifiers(isHistoryQuery, lastExecutionOn);
-        if (String.isNotBlank((String)queryModifiers.get('whereClause'))) {
-            whereConditions.add((String)queryModifiers.get('whereClause'));
-        }
-        
-        // Construct the query
-        String queryStr = 'SELECT ' + String.join(selectFields, ', ') + ' FROM ' + tableName;
-        if (!whereConditions.isEmpty()) {
-            queryStr += ' WHERE ' + String.join(whereConditions, ' AND ');
-        }
+      if ((Boolean) queryModifiers.get('includeLimit')) {
+          queryStr += ' LIMIT 10000';
+      }
 
-        // Common query modifiers
-        if ((Boolean)queryModifiers.get('includeOrderBy')) {
-            queryStr += isHistoryQuery ? ' ORDER BY ' + parentIdField + ', CreatedDate ASC' : ' ORDER BY Id, CreatedDate ASC';
-        }
-        if ((Boolean)queryModifiers.get('includeLimit')) {
-            queryStr += ' LIMIT 10000';
-        }
-
-        return queryStr;
-    }
-    
+      return queryStr;
+  }
+    // Called by: getLatestHistoryValues
+    // This method returns a map of query modifiers based on the listener configuration and other parameters
     @TestVisible
     private static Map<String, Object> getQueryModifiers(
         Boolean isHistoryQuery,
         DateTime lastExecutionOn
     ) {
-        Map<String, Object> queryModifiers = new Map<String, Object>{
-            'includeOrderBy' => true,
-            'includeLimit' => true,
-            'whereClause' => ''
-        };
-        
+        Map<String, Object> queryModifiers = new Map<String, Object>();
+        queryModifiers.put('includeOrderBy', true); // Always include ORDER BY
+        queryModifiers.put('includeLimit', true);   // Always include LIMIT
+
+        // Generate the whereClause
+        String whereClause = '';  
         if (isHistoryQuery && lastExecutionOn != null) {
-            queryModifiers.put('whereClause', 'CreatedDate > :lastExecutionOn');
+            whereClause += ' AND CreatedDate > :lastExecutionOn';
         }
-        
-        return queryModifiers;
+        queryModifiers.put('whereClause', whereClause);
+
+      return queryModifiers;
     }
 
     public void sortHistoryList(List<SObject> historyList) {
@@ -380,7 +392,7 @@ global with sharing class ListenerFlowController {
     String objectSuffix = '__c';
     Boolean isHistoryQuery = true;
     String queryStr = buildQuery(objHistoryName, parentIdField, targetRecordIds, listenerConfig, true, lastExecutionOn);
-    System.debug('queryStr: ' + queryStr);
+
 
     // Query for history records
     Map<Id, List<SObject>> historyRecordsMap = controllerInstance.historyRecordsMap;
@@ -569,7 +581,7 @@ global with sharing class ListenerFlowController {
 
       if (String.isNotBlank(terminalStageField))
         queryStr += ', ' + terminalStageField;
-      System.debug('queryStr: ' + queryStr);
+
       for (SObject sob : Database.query(queryStr)) {
         targetRecords.add(sob.Id);
         sObjectMap.put(sob.Id, sob);

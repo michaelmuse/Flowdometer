@@ -308,7 +308,26 @@ global with sharing class ListenerFlowController {
 
         return queryStr;
     }
-    
+    // Called by: getLatestHistoryValues
+    // This method returns a map of query modifiers based on the listener configuration and other parameters
+    // @TestVisible
+    // private static Map<String, Object> getQueryModifiers(
+    //     Boolean isHistoryQuery,
+    //     DateTime lastExecutionOn
+    // ) {
+    //     Map<String, Object> queryModifiers = new Map<String, Object>();
+    //     queryModifiers.put('includeOrderBy', true); // Always include ORDER BY
+    //     queryModifiers.put('includeLimit', true);   // Always include LIMIT
+
+    //     // Generate the whereClause
+    //     String whereClause = '';  
+    //     if (isHistoryQuery && lastExecutionOn != null) {
+    //         whereClause += ' AND CreatedDate > :lastExecutionOn';
+    //     }
+    //     queryModifiers.put('whereClause', whereClause);
+
+    //   return queryModifiers;
+    // }
     @TestVisible
     private static Map<String, Object> getQueryModifiers(
         Boolean isHistoryQuery,
@@ -326,6 +345,7 @@ global with sharing class ListenerFlowController {
         
         return queryModifiers;
     }
+
 
     public void sortHistoryList(List<SObject> historyList) {
       // Prepare a list of CustomDatetimeSort
