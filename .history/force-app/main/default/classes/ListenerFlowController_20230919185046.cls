@@ -3,19 +3,20 @@ Class: ListenerFlowController
 Path: force-app\main\default\classes\ListenerFlowController.cls
 
 Purpose:
-This managed class primarily aids in the real-time monitoring and recording of changes occurring in specified fields of Salesforce objects, driven by configurations in the Listener__c custom object. 
-Its critical function is to construct SOQL queries intelligently, fetch and sort historical records, and encapsulate these results in a list of ListenerFlowLatestResponse objects.
+This managed class helps in tracking the changes made in specified field of Salesforce objects. The changes are recorded in real-time based on Listener__c custom object configurations.
 
-The strength of this class lies in its dynamic response to Invocable Actions called in Salesforce Flows via the parseRecordsToFlow method. 
-It performs two significant queries based on the Listener__c.Last_Execution_On__c field in the Listener__c custom object.
+Functionality Overview:
+ListenerFlowController dynamically constructs SOQL queries based on Listener__c configurations and additional query modifiers.
+The class performs queries on the main objects to fetch target records and further obtains their corresponding historical records.
+This in turn facilitates sorting of historical records by their CreatedDate.
+It consolidates and returns a list of ListenerFlowLatestResponse objects, containing each related historical data.
 
-If the Listener__c.Last_Execution_On__c field is void (indicating the query has not run before), the class queries all records of the object type, as specified by Listener.Object_Name__c. 
-It then queries all corresponding history records that match Listener__c.Field_To_Track__c, effectively syncing the "Created" history records with the values from the parent (tracked) record. 
-The results provide a comprehensive history of the creation and changes to the specified field for each record.
-
-If the Listener__c.Last_Execution_On__c is populated (indicating the query has run before), it executes similar queries but specifically focuses on records created since Listener__c.Last_Execution_On__c.
-
-The class then returns the complete or updated history to the flow, hence providing a robust and efficient way to monitor field changes of Salesforce objects based on listener configurations.
+How it Works:
+1. Accepts a list of ListenerFlowLatestRequest objects, each containing Listener__c configurations.
+2. Dynamically builds SOQL query fetching target records using Listener__c configurations in-hand (utilizing 'getQueryModifiers' to modify as per need).
+3. Further queries the corresponding history records for the fetched target records using 'getLatestHistoryValues'.
+4. The historical records and parent records fetched are processed, utilizing 'preparingResponse' to populate ListenerFlowLatestResponse objects.
+5. Returns a consolidated list of ListenerFlowLatestResponse objects for an Invocable Action in Salesforce Flows via parseRecordsToFlow method.
 
 Exception Handling:
 Upon experiencing any exceptions during execution, the class updates 'Error_Message__c' field on Listener__c and sets 'isCheckSuccess' to false in the response.
