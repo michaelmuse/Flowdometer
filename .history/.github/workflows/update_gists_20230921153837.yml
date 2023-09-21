@@ -32,7 +32,5 @@ jobs:
         gh gist edit 8bd43794f17e72112704184ee04ddd7b --add force-app/main/default/flows/Listener_Configuration_Main_Flow.flow-meta.xml
         gh gist edit 0cb1f81bb578cc10cd4f9c0189cc1793 --add force-app/main/default/flows/Listener_Flow_Sub_Flow.flow-meta.xml
         for file in $(find force-app/main/default/objects -type f); do
-          # Replace slashes with underscores to mimic directory structure
-          gist_filename=$(echo $file | sed 's/\//_/g')
-          gh gist edit ef3ccbd0692b0c633f5428168442dd9f --add $file --filename $gist_filename
+          gh gist edit ef3ccbd0692b0c633f5428168442dd9f --add $file
         done
