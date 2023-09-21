@@ -31,7 +31,7 @@ jobs:
           fetch-depth: 0
 
       - name: Parse XML and Convert to JSON
-        run: python parse_and_convert.py 
+        run: python parse_and_convert.py  # This will generate gist_content.json
 
       - name: Update Gists with JSON
         run: gh gist edit ef3ccbd0692b0c633f5428168442dd9f --add gist_content.json
