@@ -137,17 +137,12 @@ global with sharing class ListenerFlowController {
   }
   // Wrapper class to hold the result of getLatestHistoryValues
   @TestVisible
-  public class HistoryValuesResult {
-    public Map<Id, List<SObject>> historyRecordsMap;
-    public Map<Id, List<Datetime>> sortingDateTimeMap;
-
-    public HistoryValuesResult(
-      Map<Id, List<SObject>> historyRecordsMap,
-      Map<Id, List<Datetime>> sortingDateTimeMap
-    ) {
-      this.historyRecordsMap = historyRecordsMap;
-      this.sortingDateTimeMap = sortingDateTimeMap;
-    }
+  public HistoryValuesResult(
+    Map<Id, List<SObject>> historyRecordsMap,
+    Map<Id, List<Datetime>> sortingDateTimeMap
+  ) {
+    this.historyRecordsMap = historyRecordsMap;
+    this.sortingDateTimeMap = sortingDateTimeMap;
   }
 
   // Called by: getLatestHistoryValues

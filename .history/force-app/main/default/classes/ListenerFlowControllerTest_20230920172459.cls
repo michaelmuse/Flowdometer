@@ -44,7 +44,6 @@ public class ListenerFlowControllerTest {
     static Map<Id, List<SObject>> historyRecordsMap;
     static Map<Id, List<Datetime>> sortingDateTimeMap;
     static Listener__c listenerConfig;
-    static Listener__c listenerConfigWExecution;
     static Case parentCase;
     static List<Listener__c> testListeners;
     static List<Account> testAccounts;
@@ -57,7 +56,6 @@ public class ListenerFlowControllerTest {
     static Opportunity historyRecord;
     static List<Opportunity> historyRecords = new List<Opportunity>();
     static Opportunity result;
-    static Opportunity opportunity;
 
     @TestSetup 
     static void setupTestData() {
@@ -87,9 +85,7 @@ public class ListenerFlowControllerTest {
         for(Opportunity opp : oppHistoryRecords) {
             oppHistoryRecordsSObject.add((SObject)opp);
         }
-        System.debug('Before putting in map: historyRecordsMap = ' + historyRecordsMap);
         historyRecordsMap.put(opportunity.Id, oppHistoryRecordsSObject);
-        System.debug('After putting in map: historyRecordsMap = ' + historyRecordsMap);
 
         // -------------- Case Setup --------------
         // Standard Case
@@ -102,17 +98,14 @@ public class ListenerFlowControllerTest {
         // -------------- Flowdometer Listener Setup --------------
         // Standard Listener Config with a Last_Execution_On__c of ten minutes ago
         DateTime tenMinutesAgo = DateTime.now().addMinutes(-10); // Setting the time 10 minutes ago
-        listenerConfigWExecution = TestDataFactory.createlistenerConfig(
+        listenerConfig = TestDataFactory.createlistenerConfig(
             'Opportunity', 'stageName', 'Closed Won', tenMinutesAgo, true
         );
-        System.debug('listenerConfigWExecution: ' + listenerConfigWExecution);
 
         // Standard First Run Listener Config
         listenerConfig = TestDataFactory.createlistenerConfig(
           'Opportunity', 'stageName', 'Closed Won', null, true
         );
-        System.debug('listenerConfig: ' + listenerConfig);
-
         
         // Listener for preparingResponse tests (Scenario 1)
         Listener__c listenerForScenario1 = TestDataFactory.createlistenerConfig(
@@ -384,37 +377,68 @@ public class ListenerFlowControllerTest {
         System.assertEquals(expectedQuery, actualQuery, 'Query does not match expected value for Scenario 4');
     }
 
+    // // Test the logic for fetching the latest history values
+    // @isTest
+    // static void testGetLatestHistoryValues() {
+    //     // Create test data
+    //     Listener__c listenerConfig = testListeners[1];
+    //     listenerConfig.Last_Execution_On__c = DateTime.now().addMinutes(-10);
+    //     update listenerConfig;
+        
+    //     // Get the queryModifiers
+    //     Map<String, Object> queryModifiers = ListenerFlowController.getQueryModifiers(listenerConfig);
+
+    //     // Create additionalParams map
+    //     Map<String, Object> additionalParams = new Map<String, Object>{
+    //         'queryModifiers' => queryModifiers
+    //         // Add other optional parameters as needed
+    //     };
+
+    //     // Call runTest
+    //     static List<ListenerFlowController.ListenerFlowLatestResponse> runTest(
+    //         Listener__c listenerConfig,
+    //         Map<Id, List<SObject>> historyRecordsMap,
+    //         ListenerFlowController.ListenerFlowLatestResponse response,
+    //         Map<String, Object> additionalParams,
+    //         Map<Id, SObject> sObjectMap,
+    //         Map<Id, List<Datetime>> sortingDateTimeMap,
+    //         Map<String, Object> queryModifiers
+    //     )
+
+    //     // Assert: Check if all history records are returned
+    //     for (List<SObject> historyList : historyRecordsMap.values()) {
+    //         for (SObject record : historyList) {
+    //             Datetime createdDate = (Datetime)record.get('CreatedDate');
+    //             System.assert(createdDate >= listenerConfig.Last_Execution_On__c, 'Record date is older than Last Execution On date');
+    //         }
+    //     }
+    // }
     @isTest
     static void testGetLatestHistoryValues() {
         // Get test data
         Listener__c queriedListenerConfig = [SELECT Id, Last_Execution_On__c, Object_Name__c, Field_To_Track__c, TerminalStage__c FROM Listener__c LIMIT 1];
-        queriedListenerConfig.Last_Execution_On__c = null;
+        queriedListenerConfig.Last_Execution_On__c = DateTime.now().addMinutes(-10);  // 10 minutes before now
         
         // Define other missing parameters
         ListenerFlowController controllerInstance = new ListenerFlowController();
         String objName = queriedListenerConfig.Object_Name__c;
         DateTime lastExecutionOn = queriedListenerConfig.Last_Execution_On__c;
-        String objHistoryName = ListenerFlowController.getHistoryObjectName(queriedListenerConfig.Object_Name__c);
+        String objHistoryName = ListenerFlowController.getHistoryObjectName(listenerConfig.Object_Name__c);
         String parentIdField = ListenerFlowController.isCustomObject(objName) ? 'ParentId' : (objName + 'Id');
 
         // Get the queryModifiers
         Map<String, Object> queryModifiers = ListenerFlowController.getQueryModifiers(true, lastExecutionOn);
 
-        // Call getLatestHistoryValues and store the result in a variable of type HistoryValuesResult
-        ListenerFlowController.HistoryValuesResult historyValuesResult = ListenerFlowController.getLatestHistoryValues(
-          new List<Id>{queriedListenerConfig.Id}, 
-          queriedListenerConfig, 
+        // Call getLatestHistoryValues
+        HistoryValuesResult historyRecordsMap = ListenerFlowController.getLatestHistoryValues(
+          new List<Id>{listenerConfig.Id}, 
+          listenerConfig, 
           lastExecutionOn,
           controllerInstance,
           objHistoryName,
           parentIdField
         );
-        System.assertNotEquals(null, historyValuesResult, 'HistoryValuesResult should not be null');
-
-        // Access the historyRecordsMap field from the HistoryValuesResult instance
-        Map<Id, List<SObject>> historyRecordsMap = historyValuesResult.historyRecordsMap;
-        System.assertNotEquals(null, historyRecordsMap, 'historyRecordsMap should not be null');
-
+        
         // Assert: Check if all history records are returned
         for (List<SObject> historyList : historyRecordsMap.values()) {
             for (SObject record : historyList) {
@@ -423,6 +447,19 @@ public class ListenerFlowControllerTest {
             }
         }
     }
+
+    // // Test the that our query will max out at 10k records
+    // @isTest
+    // static void testQueryResponseLimit() {
+    //     // Create test data
+    //     Listener__c listenerConfig = testListeners[0];
+
+    //     // Run the test
+    //     List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, new Map<String, Object>(), new Map<Id, SObject>(), new Map<Id, List<Datetime>>());
+    
+    //     // Assert: Check if only 10,000 records are returned
+    //     assertHistoryRecords(responseList, 10000, null);
+    // }
 
     // @isTest
     // static void testQueryResponseSortedByCreatedDateAndMillis() {
@@ -442,6 +479,76 @@ public class ListenerFlowControllerTest {
     //         System.assert(currMillis >= prevMillis, 'Records are not sorted correctly');
     //     }
     // }    
+
+    // // Test the logic for collecting history records since the last query
+    // @isTest
+    // static void testCollectHistoryRecordsSinceLastQuery() {
+    //     // Create test data
+
+    //     // Run the test
+    //     List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, new Map<String, Object>(), new Map<Id, SObject>(), new Map<Id, List<Datetime>>());
+
+    //     // Assertions
+    //     for (List<SObject> historyList : historyRecordsMap.values()) {
+    //         for (SObject record : historyList) {
+    //             Datetime createdDate = (Datetime)record.get('CreatedDate');
+    //             System.assert(createdDate >= listenerConfig.Last_Execution_On__c, 'Record date is older than Last Execution On date');
+    //         }
+    //     }
+    // }
+
+    // // Test the logic for collecting all history records on the first run
+    // @isTest
+    // static void testCollectAllHistoryRecordsOnFirstRun() {
+    //     // Create test data
+    //     Listener__c listenerConfig = testListeners[0];
+
+    //     // Run the test
+    //     List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, new Map<String, Object>(), new Map<Id, SObject>(), new Map<Id, List<Datetime>>());
+
+    //     // Assert: Check if all history records are returned
+    //     assertHistoryRecords(responseList, 1, 'Qualification');
+    //     Datetime threeYearsAgo = DateTime.now().addYears(-3);
+    //     for (List<SObject> historyList : historyRecordsMap.values()) {
+    //         for (SObject record : historyList) {
+    //             Datetime createdDate = (Datetime)record.get('CreatedDate');
+    //             System.assert(createdDate >= threeYearsAgo, 'Record date is older than 3 years');
+    //         }
+    //     }
+    // }
+
+    // Test the logic for collecting all history records on the first run
+//     @isTest
+//     static void testBulkOperations() {
+//         Listener__c listenerConfig = new Listener__c();
+//         List<SObject> tempResponseList = runTest(listenerConfig, null, null, new Map<String, Object>(), new Map<Id, SObject>(), new Map<Id, List<Datetime>>());
+//         List<ListenerFlowController.ListenerFlowLatestResponse> responseList = 
+//             new List<ListenerFlowController.ListenerFlowLatestResponse>();
+//         for (SObject sobj : tempResponseList) {
+//             responseList.add((ListenerFlowController.ListenerFlowLatestResponse)sobj);
+//         }
+
+//         // Assert that the response list is not null and has 200 elements
+//         System.assertNotEquals(null, responseList, 'Response List should not be null');
+//         System.assertEquals(200, responseList.size(), 'Response List size should be 200');
+//     }
+
+//     // Test the logic for collecting all history records on the first run
+//     @isTest
+//     static void testNoHistoryRecords() {
+//         Listener__c listenerConfig = new Listener__c();
+//         List<SObject> tempResponseList = runTest(listenerConfig, null, null, new Map<String, Object>(), new Map<Id, SObject>(), new Map<Id, List<Datetime>>());
+//         List<ListenerFlowController.ListenerFlowLatestResponse> responseList = 
+//             new List<ListenerFlowController.ListenerFlowLatestResponse>();
+//         for (SObject sobj : tempResponseList) {
+//             responseList.add((ListenerFlowController.ListenerFlowLatestResponse)sobj);
+// }
+
+//         // Assert
+//         System.assertNotEquals(null, responseList, 'The responses should not be null.');
+//         System.assertEquals(1, responseList.size(), 'The size of the responses should be 1.');
+//         System.assertEquals(false, responseList[0].hasRecords, 'The hasRecords should be false.');
+//     }
 
     // Test the utility method for getting a non-null string
     // @isTest
@@ -541,55 +648,6 @@ public class ListenerFlowControllerTest {
     //     // Assertions
 
     // }
-    @isTest
-    static void testPreparingResponse_Scenario1() {
-        // Fetch historyRecordsMap and listenerConfigWExecution from @TestSetup
-        Map<Id, List<SObject>> historyRecordsMap = ListenerFlowControllerTest.historyRecordsMap;
-        Listener__c listenerConfigWExecution = ListenerFlowControllerTest.listenerConfigWExecution;        
-        System.debug('listenerConfigWExecution: ' + listenerConfigWExecution);
-        System.debug('historyRecordsMap: ' + historyRecordsMap);
-        DateTime lastExecutionOn = listenerConfigWExecution.Last_Execution_On__c;
-
-        // Get the queryModifiers
-        Map<String, Object> queryModifiers = ListenerFlowController.getQueryModifiers(true, lastExecutionOn);
-        // Listener__c listenerConfig = [SELECT Id, Last_Execution_On__c, Object_Name__c, Field_To_Track__c, TerminalStage__c FROM Listener__c LIMIT 1];
-        // Test.setCreatedDate(listenerConfig.id, oneHourBefore);
-
-
-        Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
-        // Populate sortingDateTimeMap for this specific test
-        sortingDateTimeMap.put(opportunity.Id, new List<Datetime>{DateTime.now()});
-
-        // Initialize sObjectMap for this test
-        Map<String, SObject> sObjectMap = new Map<String, SObject>{
-            opportunity.Id => opportunity
-        };
-
-        // Create a ListenerFlowLatestResponse object for the test
-        ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
-
-        // Initialize additionalParams for the test
-        Map<String, Object> additionalParams = new Map<String, Object>{
-            'queryModifiers' => queryModifiers
-            // Add other optional parameters as needed
-        };
-
-        // Call runTest specifically to test preparingResponse
-        runTest(
-            listenerConfigWExecution, 
-            historyRecordsMap, 
-            response, 
-            additionalParams, 
-            sObjectMap, 
-            sortingDateTimeMap
-        );
-
-        // Assertions
-        // Validate that response is populated as expected
-        System.assert(response.lstListenerFlow != null, 'lstListenerFlow should not be null');
-        System.assert(response.lstListenerFlow.size() > 0, 'lstListenerFlow should have elements');
-        System.assert(response.hasRecords, 'hasRecords should be true');
-    }
 
     // @IsTest
     // static void testPreparingResponse_Scenario2() {

@@ -57,7 +57,6 @@ public class ListenerFlowControllerTest {
     static Opportunity historyRecord;
     static List<Opportunity> historyRecords = new List<Opportunity>();
     static Opportunity result;
-    static Opportunity opportunity;
 
     @TestSetup 
     static void setupTestData() {
@@ -87,9 +86,7 @@ public class ListenerFlowControllerTest {
         for(Opportunity opp : oppHistoryRecords) {
             oppHistoryRecordsSObject.add((SObject)opp);
         }
-        System.debug('Before putting in map: historyRecordsMap = ' + historyRecordsMap);
         historyRecordsMap.put(opportunity.Id, oppHistoryRecordsSObject);
-        System.debug('After putting in map: historyRecordsMap = ' + historyRecordsMap);
 
         // -------------- Case Setup --------------
         // Standard Case
@@ -105,14 +102,11 @@ public class ListenerFlowControllerTest {
         listenerConfigWExecution = TestDataFactory.createlistenerConfig(
             'Opportunity', 'stageName', 'Closed Won', tenMinutesAgo, true
         );
-        System.debug('listenerConfigWExecution: ' + listenerConfigWExecution);
 
         // Standard First Run Listener Config
         listenerConfig = TestDataFactory.createlistenerConfig(
           'Opportunity', 'stageName', 'Closed Won', null, true
         );
-        System.debug('listenerConfig: ' + listenerConfig);
-
         
         // Listener for preparingResponse tests (Scenario 1)
         Listener__c listenerForScenario1 = TestDataFactory.createlistenerConfig(
@@ -545,9 +539,8 @@ public class ListenerFlowControllerTest {
     static void testPreparingResponse_Scenario1() {
         // Fetch historyRecordsMap and listenerConfigWExecution from @TestSetup
         Map<Id, List<SObject>> historyRecordsMap = ListenerFlowControllerTest.historyRecordsMap;
-        Listener__c listenerConfigWExecution = ListenerFlowControllerTest.listenerConfigWExecution;        
-        System.debug('listenerConfigWExecution: ' + listenerConfigWExecution);
-        System.debug('historyRecordsMap: ' + historyRecordsMap);
+        Listener__c listenerConfigWExecution = ListenerFlowControllerTest.listenerConfigWExecution;
+        Opportunity opportunity = TestDataFactory.createOpportunity('Test Opportunity', 'Prospecting', Date.today().addDays(10));
         DateTime lastExecutionOn = listenerConfigWExecution.Last_Execution_On__c;
 
         // Get the queryModifiers

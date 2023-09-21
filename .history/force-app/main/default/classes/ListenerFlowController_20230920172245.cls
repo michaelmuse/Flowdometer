@@ -136,7 +136,6 @@ global with sharing class ListenerFlowController {
     public Datetime CreatedDate { get; set; }
   }
   // Wrapper class to hold the result of getLatestHistoryValues
-  @TestVisible
   public class HistoryValuesResult {
     public Map<Id, List<SObject>> historyRecordsMap;
     public Map<Id, List<Datetime>> sortingDateTimeMap;

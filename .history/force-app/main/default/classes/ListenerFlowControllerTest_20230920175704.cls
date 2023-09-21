@@ -44,7 +44,6 @@ public class ListenerFlowControllerTest {
     static Map<Id, List<SObject>> historyRecordsMap;
     static Map<Id, List<Datetime>> sortingDateTimeMap;
     static Listener__c listenerConfig;
-    static Listener__c listenerConfigWExecution;
     static Case parentCase;
     static List<Listener__c> testListeners;
     static List<Account> testAccounts;
@@ -57,7 +56,6 @@ public class ListenerFlowControllerTest {
     static Opportunity historyRecord;
     static List<Opportunity> historyRecords = new List<Opportunity>();
     static Opportunity result;
-    static Opportunity opportunity;
 
     @TestSetup 
     static void setupTestData() {
@@ -87,9 +85,7 @@ public class ListenerFlowControllerTest {
         for(Opportunity opp : oppHistoryRecords) {
             oppHistoryRecordsSObject.add((SObject)opp);
         }
-        System.debug('Before putting in map: historyRecordsMap = ' + historyRecordsMap);
         historyRecordsMap.put(opportunity.Id, oppHistoryRecordsSObject);
-        System.debug('After putting in map: historyRecordsMap = ' + historyRecordsMap);
 
         // -------------- Case Setup --------------
         // Standard Case
@@ -102,17 +98,14 @@ public class ListenerFlowControllerTest {
         // -------------- Flowdometer Listener Setup --------------
         // Standard Listener Config with a Last_Execution_On__c of ten minutes ago
         DateTime tenMinutesAgo = DateTime.now().addMinutes(-10); // Setting the time 10 minutes ago
-        listenerConfigWExecution = TestDataFactory.createlistenerConfig(
+        listenerConfig = TestDataFactory.createlistenerConfig(
             'Opportunity', 'stageName', 'Closed Won', tenMinutesAgo, true
         );
-        System.debug('listenerConfigWExecution: ' + listenerConfigWExecution);
 
         // Standard First Run Listener Config
         listenerConfig = TestDataFactory.createlistenerConfig(
           'Opportunity', 'stageName', 'Closed Won', null, true
         );
-        System.debug('listenerConfig: ' + listenerConfig);
-
         
         // Listener for preparingResponse tests (Scenario 1)
         Listener__c listenerForScenario1 = TestDataFactory.createlistenerConfig(
@@ -543,22 +536,10 @@ public class ListenerFlowControllerTest {
     // }
     @isTest
     static void testPreparingResponse_Scenario1() {
-        // Fetch historyRecordsMap and listenerConfigWExecution from @TestSetup
-        Map<Id, List<SObject>> historyRecordsMap = ListenerFlowControllerTest.historyRecordsMap;
-        Listener__c listenerConfigWExecution = ListenerFlowControllerTest.listenerConfigWExecution;        
-        System.debug('listenerConfigWExecution: ' + listenerConfigWExecution);
-        System.debug('historyRecordsMap: ' + historyRecordsMap);
-        DateTime lastExecutionOn = listenerConfigWExecution.Last_Execution_On__c;
-
-        // Get the queryModifiers
-        Map<String, Object> queryModifiers = ListenerFlowController.getQueryModifiers(true, lastExecutionOn);
-        // Listener__c listenerConfig = [SELECT Id, Last_Execution_On__c, Object_Name__c, Field_To_Track__c, TerminalStage__c FROM Listener__c LIMIT 1];
-        // Test.setCreatedDate(listenerConfig.id, oneHourBefore);
-
-
-        Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
-        // Populate sortingDateTimeMap for this specific test
-        sortingDateTimeMap.put(opportunity.Id, new List<Datetime>{DateTime.now()});
+        // ... (your existing setup code remains the same)
+        
+        // Initialize a ListenerFlowController instance
+        ListenerFlowController controllerInstance = new ListenerFlowController();
 
         // Initialize sObjectMap for this test
         Map<String, SObject> sObjectMap = new Map<String, SObject>{
@@ -576,7 +557,7 @@ public class ListenerFlowControllerTest {
 
         // Call runTest specifically to test preparingResponse
         runTest(
-            listenerConfigWExecution, 
+            listenerConfig, 
             historyRecordsMap, 
             response, 
             additionalParams, 
@@ -591,102 +572,102 @@ public class ListenerFlowControllerTest {
         System.assert(response.hasRecords, 'hasRecords should be true');
     }
 
-    // @IsTest
-    // static void testPreparingResponse_Scenario2() {
-    //     // Create test data
-    //     ListenerFlowLatestResponse result = new ListenerFlowController.ListenerFlowLatestResponse();
+    @IsTest
+    static void testPreparingResponse_Scenario2() {
+        // Create test data
+        ListenerFlowLatestResponse result = new ListenerFlowController.ListenerFlowLatestResponse();
         
-    //     Listener__c listenerConfig = new Listener__c();
-    //     // Initialize opportunity for this test
-    //     Opportunity opportunity = new Opportunity(
-    //         Name = 'Test Opportunity',
-    //         StageName = 'Prospecting',
-    //         CloseDate = Date.today().addDays(10)
-    //     );
-    //     insert opportunity;
-    //     listenerConfig.Object_Name__c = 'Case';
-    //     listenerConfig.Field_To_Track__c = 'Status';
-    //     listenerConfig.TerminalStage__c = 'isClosed';
-    //     insert listenerConfig;
-    //     Map<Id, Map<String, Id>> goalStepRecsMap = new Map<Id, Map<String, Id>>();
-    //     Map<Id, SObject> sObjectMap = new Map<Id, SObject>();
-    //     Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
-    //     sortingDateTimeMap.put(opportunity.Id, new List<Datetime>{DateTime.now()});
+        Listener__c listenerConfig = new Listener__c();
+        // Initialize opportunity for this test
+        Opportunity opportunity = new Opportunity(
+            Name = 'Test Opportunity',
+            StageName = 'Prospecting',
+            CloseDate = Date.today().addDays(10)
+        );
+        insert opportunity;
+        listenerConfig.Object_Name__c = 'Case';
+        listenerConfig.Field_To_Track__c = 'Status';
+        listenerConfig.TerminalStage__c = 'isClosed';
+        insert listenerConfig;
+        Map<Id, Map<String, Id>> goalStepRecsMap = new Map<Id, Map<String, Id>>();
+        Map<Id, SObject> sObjectMap = new Map<Id, SObject>();
+        Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
+        sortingDateTimeMap.put(opportunity.Id, new List<Datetime>{DateTime.now()});
 
-    //     // Create a case record and related history records
-    //     Case parentCase = new Case(
-    //         Subject = 'Test Case',
-    //         Status = 'New'
-    //     );
-    //     insert parentCase;
+        // Create a case record and related history records
+        Case parentCase = new Case(
+            Subject = 'Test Case',
+            Status = 'New'
+        );
+        insert parentCase;
 
-    //     // Create a ListenerFlowLatestResponse object for the test
-    //     ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
+        // Create a ListenerFlowLatestResponse object for the test
+        ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
 
-    //     // Get the queryModifiers
-    //     Map<String, Object> queryModifiers = ListenerFlowController.getQueryModifiers(listenerConfig);
+        // Get the queryModifiers
+        Map<String, Object> queryModifiers = ListenerFlowController.getQueryModifiers(listenerConfig);
 
-    //     // Call runTest
-    //     List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(
-    //         listenerConfig, 
-    //         historyRecordsMap, 
-    //         null,  // No response object for this test
-    //         additionalParams,
-    //         new Map<Id, SObject>(),
-    //         new Map<Id, List<Datetime>>(),
-    //         queryModifiers
-    //     );
+        // Call runTest
+        List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(
+            listenerConfig, 
+            historyRecordsMap, 
+            null,  // No response object for this test
+            additionalParams,
+            new Map<Id, SObject>(),
+            new Map<Id, List<Datetime>>(),
+            queryModifiers
+        );
 
-    //     // Assertions
-    //     Integer expectedSize = 10;
-    //     System.assertEquals(true, response.hasRecords, 'Should have records.');
-    // }
+        // Assertions
+        Integer expectedSize = 10;
+        System.assertEquals(true, response.hasRecords, 'Should have records.');
+    }
 
-    // @isTest
-    // static void testPreparingResponse() {
-    //     // Create test data
-    //     Map<Id, Map<String, Id>> goalStepRecsMap = new Map<Id, Map<String, Id>>();
-    //     Map<Id, SObject> sObjectMap = new Map<Id, SObject>();
+    @isTest
+    static void testPreparingResponse() {
+        // Create test data
+        Map<Id, Map<String, Id>> goalStepRecsMap = new Map<Id, Map<String, Id>>();
+        Map<Id, SObject> sObjectMap = new Map<Id, SObject>();
 
-    //     // Create a ListenerFlowLatestResponse object for testing
-    //     ListenerFlowLatestResponse result = new ListenerFlowController.ListenerFlowLatestResponse();
+        // Create a ListenerFlowLatestResponse object for testing
+        ListenerFlowLatestResponse result = new ListenerFlowController.ListenerFlowLatestResponse();
 
-    //     // Create a Listener__c object for listenerConfig
-    //     Listener__c listenerConfig = new Listener__c(
-    //         Object_Name__c = 'Opportunity',
-    //         Field_To_Track__c = 'stageName',
-    //         TerminalStage__c = 'IsWon'
-    //     );
-    //     insert listenerConfig;
+        // Create a Listener__c object for listenerConfig
+        Listener__c listenerConfig = new Listener__c(
+            Object_Name__c = 'Opportunity',
+            Field_To_Track__c = 'stageName',
+            TerminalStage__c = 'IsWon'
+        );
+        insert listenerConfig;
 
-    //     Opportunity opportunity = new Opportunity(
-    //         Name = 'Test Opportunity',
-    //         stageName = 'Prospecting',
-    //         CloseDate = Date.today().addDays(10)
-    //     );
-    //     insert opportunity;
+        Opportunity opportunity = new Opportunity(
+            Name = 'Test Opportunity',
+            stageName = 'Prospecting',
+            CloseDate = Date.today().addDays(10)
+        );
+        insert opportunity;
 
-    //     opportunity.stageName = 'Qualification';
-    //     update opportunity;
+        opportunity.stageName = 'Qualification';
+        update opportunity;
 
-    //     // Create a Map<Id, List<sObject>> for historyRecordsMap
+        // Create a Map<Id, List<sObject>> for historyRecordsMap
         
 
-    //     // Create a sortingDateTimeMap for the test
-    //     Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
-    //     sortingDateTimeMap.put(opportunity.Id, new List<Datetime>{DateTime.now()});
+        // Create a sortingDateTimeMap for the test
+        Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
+        sortingDateTimeMap.put(opportunity.Id, new List<Datetime>{DateTime.now()});
 
-    //     // Create a ListenerFlowLatestResponse object for the test
-    //     ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
+        // Create a ListenerFlowLatestResponse object for the test
+        ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
 
-    //     // Call runTest() specifically for preparingResponse
-    //     runTest(listenerConfig, historyRecordsMap, response, additionalParams, sObjectMap, sortingDateTimeMap, queryModifiers);
+        // Call runTest() specifically for preparingResponse
+        runTest(listenerConfig, historyRecordsMap, response, additionalParams, sObjectMap, sortingDateTimeMap, queryModifiers);
 
-    //     // Update hasRecords based on the state of historyRecordsMap
-    //     response.hasRecords = !historyRecordsMap.isEmpty();
+        // Update hasRecords based on the state of historyRecordsMap
+        response.hasRecords = !historyRecordsMap.isEmpty();
 
-    //     // Assertions
-    //     System.assertEquals(true, response.hasRecords, 'hasRecords should be true if historyRecordsMap is not empty.');
+        // Assertions
+        System.assertEquals(true, response.hasRecords, 'hasRecords should be true if historyRecordsMap is not empty.');
 
-    // }
+    }
 }
