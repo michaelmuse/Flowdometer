@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RecordType xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Goal</fullName>
+    <active>true</active>
+    <compactLayoutAssignment>Step_Goal_Compact_Layout</compactLayoutAssignment>
+    <label>Goal</label>
+    <picklistValues>
+        <picklist>Goal_Measured_In_units__c</picklist>
+        <values>
+            <fullName>Days</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Hours</fullName>
+            <default>true</default>
+        </values>
+        <values>
+            <fullName>Weekdays</fullName>
+            <default>false</default>
+        </values>
+    </picklistValues>
+</RecordType>

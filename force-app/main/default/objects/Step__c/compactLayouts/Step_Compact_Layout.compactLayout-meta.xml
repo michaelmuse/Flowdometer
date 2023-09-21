@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CompactLayout xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Step_Compact_Layout</fullName>
+    <fields>Field_Value_Initial__c</fields>
+    <fields>Step_Handle_Time__c</fields>
+    <fields>ProgressBarVsGoal__c</fields>
+    <fields>Field_Value_Ending__c</fields>
+    <fields>TrackedObjectLink__c</fields>
+    <fields>Flow__c</fields>
+    <label>Tracker Step Compact Layout</label>
+</CompactLayout>

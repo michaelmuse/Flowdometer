@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Handle_Time_vs_Goal__c</fullName>
+    <deprecated>false</deprecated>
+    <externalId>false</externalId>
+    <formula>IF(
+  AND(
+    NOT(ISBLANK(Total_Handle_Time__c)),
+    (Goal__r.Goal_Total_Handle_Time__c &gt; 0),
+    NOT(ISBLANK(TEXT(Most_Recent_Step__r.Goal_Measured_In_units__c)))
+  ),   
+  CASE(TEXT(Most_Recent_Step__r.Goal_Measured_In_units__c),
+    &quot;Hours&quot;, (Total_Handle_Time__c * 24),
+    &quot;Days&quot;, Total_Handle_Time__c,
+    &quot;Weekdays&quot;,  Cycle_Time_Weekdays__c   ,
+    null
+    )/ Goal__r.Goal_Total_Handle_Time__c 
+  ,null
+)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <inlineHelpText>Total time spent in this process as compared with the goal for cycle time</inlineHelpText>
+    <label>Cycle Time vs Goal</label>
+    <precision>18</precision>
+    <required>false</required>
+    <scale>1</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

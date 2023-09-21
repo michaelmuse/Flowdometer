@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Goal__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <deprecated>false</deprecated>
+    <externalId>false</externalId>
+    <label>Goal Flow</label>
+    <lookupFilter>
+        <active>true</active>
+        <errorMessage>Value must be of &quot;Goal&quot; Record Type</errorMessage>
+        <filterItems>
+            <field>Flow__c.RecordTypeId</field>
+            <operation>equals</operation>
+            <value>Goal</value>
+        </filterItems>
+        <isOptional>false</isOptional>
+    </lookupFilter>
+    <referenceTo>Flow__c</referenceTo>
+    <relationshipLabel>Tracker Flows with this Goal Flow</relationshipLabel>
+    <relationshipName>Trackers</relationshipName>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

@@ -3,44 +3,44 @@
 
 /* Adjust the modal size */
 .c-modal {
-  max-width: 90%; /* or any specific size */
-  max-height: 90%; /* or any specific size */
+    max-width: 90%; /* or any specific size */
+    max-height: 90%; /* or any specific size */
 }
 
 .vertical-line {
-  width: 1px;
-  background-color: #ccc;
-  height: 100%;
-  position: absolute;
-  right: 0;
+    width: 1px;
+    background-color: #ccc;
+    height: 100%;
+    position: absolute;
+    right: 0;
 }
 
 /* Existing .responsive-iframe class */
 .responsive-iframe {
-  border: none; /* Remove border */
-  width: 100%;
-  height: 100%;
+    border: none; /* Remove border */
+    width: 100%;
+    height: 100%;
 }
 
 .responsive-iframe iframe {
-  width: 100%;
-  height: 100%;
-  border: none; /* remove dark border */
+    width: 100%;
+    height: 100%;
+    border: none; /* remove dark border */
 }
 
 /* Style for the modal iframe */
 iframe {
-  border: none;
+    border: none;
 }
 
 .icon-wrapper {
-  display: flex;
-  align-items: center;
+    display: flex;
+    align-items: center;
 }
 
 .vertical-line {
-  width: 1px;
-  background-color: #ccc;
-  height: 24px; /* Adjust the height as needed */
-  margin-left: 8px;
+    width: 1px;
+    background-color: #ccc;
+    height: 24px;  /* Adjust the height as needed */
+    margin-left: 8px;
 }

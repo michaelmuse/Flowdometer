@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CompactLayout xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Step_Goal_Compact_Layout</fullName>
+    <fields>Field_Value_Initial__c</fields>
+    <fields>Goal_Field_Change_Handle_Time_Hrs__c</fields>
+    <fields>Goal_Measured_In_units__c</fields>
+    <label>Goal Step Compact Layout</label>
+</CompactLayout>

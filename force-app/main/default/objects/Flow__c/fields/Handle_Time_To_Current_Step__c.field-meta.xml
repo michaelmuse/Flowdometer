@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Handle_Time_To_Current_Step__c</fullName>
+    <deprecated>false</deprecated>
+    <externalId>false</externalId>
+    <label>Handle Time To Current Step</label>
+    <summarizedField>Step__c.Final_Handle_Time__c</summarizedField>
+    <summaryForeignKey>Step__c.Flow__c</summaryForeignKey>
+    <summaryOperation>sum</summaryOperation>
+    <trackTrending>false</trackTrending>
+    <type>Summary</type>
+</CustomField>

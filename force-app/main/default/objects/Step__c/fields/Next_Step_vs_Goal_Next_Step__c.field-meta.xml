@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Next_Step_vs_Goal_Next_Step__c</fullName>
+    <deprecated>false</deprecated>
+    <externalId>false</externalId>
+    <formula>IF(
+  NOT(ISBLANK(Step_Goal__r.Field_Value_Ending__c)),
+  IF(Step_Goal__r.Field_Value_Ending__c = Field_Value_Ending__c,
+    &quot;Matched goal&quot;,
+    &quot;Deviated from goal&quot;
+  ),
+  &quot;Unknown&quot;
+)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <inlineHelpText>Describes whether stages were followed in the order prescribed by the Goal</inlineHelpText>
+    <label>(Deprecated) Next Step vs Goal Next Step</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

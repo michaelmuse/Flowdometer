@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>HandleTimeVsGoal__c</fullName>
+    <externalId>false</externalId>
+    <formula>IF(
+  AND(
+    NOT(ISBLANK(Step_Goal__r.Goal_Field_Change_Handle_Time_Hrs__c)),
+    NOT(ISBLANK(Step_Handle_Time__c)),
+    NOT(Step_Goal__r.Goal_Field_Change_Handle_Time_Hrs__c = 0),
+    NOT(ISBLANK(TEXT(Step_Goal__r.Goal_Measured_In_units__c)))
+  ),   
+  CASE(TEXT(Step_Goal__r.Goal_Measured_In_units__c),
+    &quot;Hours&quot;, (Step_Handle_Time__c * 24),
+    &quot;Days&quot;, Step_Handle_Time__c,
+    &quot;Weekdays&quot;, HandleTimeWeekdays__c,
+    null
+    )/Step_Goal__r.Goal_Field_Change_Handle_Time_Hrs__c
+  ,null
+)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <label>Handle Time vs Goal</label>
+    <precision>18</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Percent</type>
+</CustomField>

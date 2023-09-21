@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Next_Check__c</fullName>
+    <externalId>false</externalId>
+    <formula>IF(
+OR(ISBLANK(Frequency__c), Frequency__c = 0), Last_Check__c,
+Last_Check__c + ( Frequency__c / 60 )
+)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <label>Next Check</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>DateTime</type>
+</CustomField>

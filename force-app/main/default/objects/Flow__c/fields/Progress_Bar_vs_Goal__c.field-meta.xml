@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Progress_Bar_vs_Goal__c</fullName>
+    <externalId>false</externalId>
+    <formula>IF(
+  Handle_Time_vs_Goal__c&lt;1,
+  IMAGE(&quot;/resource/Flowdometer__PrimaryBlue&quot; ,&quot;&quot;,10,100*Handle_Time_vs_Goal__c)+IMAGE( &quot;/resource/Flowdometer__UnusedGray&quot; ,&quot;&quot;,10,100*(1-Handle_Time_vs_Goal__c)),
+&quot;Breached&quot;
+)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <label>Progress Bar vs Goal</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

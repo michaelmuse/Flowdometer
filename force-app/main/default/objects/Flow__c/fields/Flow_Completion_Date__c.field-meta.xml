@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Flow_Completion_Date__c</fullName>
+    <deprecated>false</deprecated>
+    <externalId>false</externalId>
+    <inlineHelpText>Latest date a terminal Step was reached</inlineHelpText>
+    <label>Flow Completion Date</label>
+    <summarizedField>Step__c.Field_Value_Initial_Timestamp__c</summarizedField>
+    <summaryFilterItems>
+        <field>Step__c.Terminal_Stage__c</field>
+        <operation>equals</operation>
+        <value>True</value>
+    </summaryFilterItems>
+    <summaryForeignKey>Step__c.Flow__c</summaryForeignKey>
+    <summaryOperation>max</summaryOperation>
+    <trackTrending>false</trackTrending>
+    <type>Summary</type>
+</CustomField>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>TimeUntilBreach__c</fullName>
+    <externalId>false</externalId>
+    <formula>IF(AND(NOT(Terminal_Stage__c),NOT(isGoal__c)),MAX(IF(AND(NOT(ISBLANK(BreachTime__c)), StepActive__c ), BreachTime__c-NOW(),null),0),null)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <inlineHelpText>Time remaining until the goal for completing this Step is surpassed</inlineHelpText>
+    <label>Time Until Breach (in days)</label>
+    <precision>18</precision>
+    <required>false</required>
+    <scale>1</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

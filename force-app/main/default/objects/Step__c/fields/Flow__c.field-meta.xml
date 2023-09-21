@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Flow__c</fullName>
+    <deprecated>false</deprecated>
+    <externalId>false</externalId>
+    <label>Flow</label>
+    <referenceTo>Flow__c</referenceTo>
+    <relationshipLabel>Steps in this Flow</relationshipLabel>
+    <relationshipName>Steps2</relationshipName>
+    <relationshipOrder>0</relationshipOrder>
+    <reparentableMasterDetail>false</reparentableMasterDetail>
+    <trackTrending>false</trackTrending>
+    <type>MasterDetail</type>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+</CustomField>

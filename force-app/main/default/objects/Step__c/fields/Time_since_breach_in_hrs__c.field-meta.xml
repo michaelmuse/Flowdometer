@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Time_since_breach_in_hrs__c</fullName>
+    <deprecated>false</deprecated>
+    <externalId>false</externalId>
+    <formula>IF(
+	AND(
+		NOT(Terminal_Stage__c),
+		NOT(isGoal__c)
+	),
+	MAX(
+		IF(
+			NOT(ISBLANK(BreachTime__c)),
+			IF(
+				NOT(ISBLANK(Field_Value_Ending_Timestamp__c)),
+				Field_Value_Ending_Timestamp__c - BreachTime__c,
+				NOW()-BreachTime__c
+			),
+			null
+		),
+		0
+	),
+	null
+)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <inlineHelpText>Time since breach in days. Stops when the next Step is reached</inlineHelpText>
+    <label>(Deprecated) Time Since Breach (in days)</label>
+    <precision>18</precision>
+    <required>false</required>
+    <scale>2</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

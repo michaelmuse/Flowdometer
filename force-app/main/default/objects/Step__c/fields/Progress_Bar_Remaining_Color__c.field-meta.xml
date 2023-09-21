@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Progress_Bar_Remaining_Color__c</fullName>
+    <externalId>false</externalId>
+    <formula>IF( OR(Terminal_Stage__c, isGoal__c ),
+  &quot;/resource/Blank&quot;,
+  IF( ISBLANK(Next_Step__c ),
+    &quot;/resource/LightBlue&quot;,
+    &quot;/resource/UnusedGray&quot;
+  )
+)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <label>(Deprecated) ProgressBar Remaining Color</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

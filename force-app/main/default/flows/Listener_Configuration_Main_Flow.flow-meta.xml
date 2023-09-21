@@ -4,11 +4,11 @@
         <name>Query_and_Parse_History_Records_Latest</name>
         <label>Query and Parse History Records</label>
         <locationX>314</locationX>
-        <locationY>350</locationY>
+        <locationY>458</locationY>
         <actionName>ListenerFlowController</actionName>
         <actionType>apex</actionType>
         <connector>
-            <targetReference>Limit_Collection</targetReference>
+            <targetReference>Check_Records</targetReference>
         </connector>
         <flowTransactionModel>CurrentTransaction</flowTransactionModel>
         <inputParameters>
@@ -36,7 +36,7 @@
     <assignments>
         <name>Set_Error_Message_Get_All_Record_Types</name>
         <label>Set Error Message (Get All Record Types)</label>
-        <locationX>842</locationX>
+        <locationX>1106</locationX>
         <locationY>350</locationY>
         <assignmentItems>
             <assignToReference>varFlowDoConfig.Latest_Flow_Error_Message__c</assignToReference>
@@ -47,6 +47,22 @@
         </assignmentItems>
         <connector>
             <isGoTo>true</isGoTo>
+            <targetReference>Update_FlowdoConfig_0</targetReference>
+        </connector>
+    </assignments>
+    <assignments>
+        <name>Set_Error_Message_No_Record_Types_Found</name>
+        <label>Set Error Message (No Record Types Found)</label>
+        <locationX>842</locationX>
+        <locationY>458</locationY>
+        <assignmentItems>
+            <assignToReference>varFlowDoConfig.Latest_Flow_Error_Message__c</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <stringValue>No Record Types Found in &quot;Flowdometer - (2) Listener Finds Changed Records&quot;</stringValue>
+            </value>
+        </assignmentItems>
+        <connector>
             <targetReference>Update_FlowdoConfig_0</targetReference>
         </connector>
     </assignments>
@@ -122,28 +138,10 @@
             <targetReference>Update_FlowdoConfig_0</targetReference>
         </connector>
     </assignments>
-    <collectionProcessors>
-        <name>Limit_Collection</name>
-        <elementSubtype>SortCollectionProcessor</elementSubtype>
-        <label>Limit Collection</label>
-        <locationX>314</locationX>
-        <locationY>458</locationY>
-        <collectionProcessorType>SortCollectionProcessor</collectionProcessorType>
-        <collectionReference>lstListenerFlow</collectionReference>
-        <connector>
-            <targetReference>Check_Records</targetReference>
-        </connector>
-        <limit>30</limit>
-        <sortOptions>
-            <doesPutEmptyStringAndNullFirst>false</doesPutEmptyStringAndNullFirst>
-            <sortField>varEditStartTime</sortField>
-            <sortOrder>Asc</sortOrder>
-        </sortOptions>
-    </collectionProcessors>
     <decisions>
         <name>Check_FlowdoConfig</name>
         <label>Check FlowdoConfig</label>
-        <locationX>710</locationX>
+        <locationX>974</locationX>
         <locationY>134</locationY>
         <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
         <rules>
@@ -194,10 +192,35 @@
             <label>Has Records</label>
         </rules>
     </decisions>
+    <decisions>
+        <name>Found_Record_Types</name>
+        <label>Found Record Types?</label>
+        <locationX>578</locationX>
+        <locationY>350</locationY>
+        <defaultConnector>
+            <targetReference>Set_Error_Message_No_Record_Types_Found</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>No RTs Found</defaultConnectorLabel>
+        <rules>
+            <name>RTs_Found</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Get_ALL_Record_Types</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Query_and_Parse_History_Records_Latest</targetReference>
+            </connector>
+            <label>RTs Found</label>
+        </rules>
+    </decisions>
     <description>Triggered by: Flowdometer - Listener Tracking Trigger. Flowdometer handler to query for untracked changes</description>
     <environments>Default</environments>
     <interviewLabel>Listener Configuration Main Flow {!$Flow.CurrentDateTime}</interviewLabel>
-    <label>Flowdometer - Listener Finds Changed Records</label>
+    <label>Flowdometer - (2) Listener Finds Changed Records</label>
     <loops>
         <name>Loop_Through_Parsed_Records</name>
         <label>Loop Through Parsed Records</label>
@@ -234,11 +257,11 @@
     <recordLookups>
         <name>Get_ALL_Record_Types</name>
         <label>Get ALL Record Types</label>
-        <locationX>314</locationX>
+        <locationX>578</locationX>
         <locationY>242</locationY>
         <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
         <connector>
-            <targetReference>Query_and_Parse_History_Records_Latest</targetReference>
+            <targetReference>Found_Record_Types</targetReference>
         </connector>
         <faultConnector>
             <targetReference>Set_Error_Message_Get_All_Record_Types</targetReference>
@@ -295,11 +318,11 @@
         <name>Update_FlowdoConfig_0</name>
         <label>Update FlowdoConfig</label>
         <locationX>578</locationX>
-        <locationY>782</locationY>
+        <locationY>1556</locationY>
         <inputReference>updateFlowdoConfig</inputReference>
     </recordUpdates>
     <start>
-        <locationX>584</locationX>
+        <locationX>848</locationX>
         <locationY>0</locationY>
         <connector>
             <targetReference>Check_FlowdoConfig</targetReference>
@@ -442,12 +465,5 @@
         <isInput>true</isInput>
         <isOutput>false</isOutput>
         <objectType>Listener__c</objectType>
-    </variables>
-    <variables>
-        <name>varFlowErrorMessage</name>
-        <dataType>String</dataType>
-        <isCollection>false</isCollection>
-        <isInput>false</isInput>
-        <isOutput>true</isOutput>
     </variables>
 </Flow>

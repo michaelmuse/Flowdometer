@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Success__c</fullName>
+    <defaultValue>false</defaultValue>
+    <deprecated>false</deprecated>
+    <description>Check this if this final step means you&apos;ve accomplished the intended outcome of your process. For Example: Closed Won, Closed, Converted, Completed, Finished, Approved etc.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Check this if this final step means you&apos;ve accomplished the intended outcome of your process. For Example: Closed Won, Closed, Converted, Completed, Finished, Approved etc.</inlineHelpText>
+    <label>Process Succeeded?</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

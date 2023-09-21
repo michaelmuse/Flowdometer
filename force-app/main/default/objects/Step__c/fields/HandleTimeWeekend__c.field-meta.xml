@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>HandleTimeWeekend__c</fullName>
+    <description>Note that this field is imprecise - it is just the total time (a number of days with decimal points) minus the weekdays, which are rounded up to the whole day. It is useful for adjusting time calculations to weekdays.</description>
+    <externalId>false</externalId>
+    <formula>MIN(0,(Step_Handle_Time__c -  HandleTimeWeekdays__c))</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <inlineHelpText>Note that this field is imprecise - it is just the total time (a number of days with decimal points) minus the weekdays, which are rounded up to the whole day. It is useful for adjusting time calculations to weekdays.</inlineHelpText>
+    <label>Handle Time (over Weekend Days)</label>
+    <precision>18</precision>
+    <required>false</required>
+    <scale>1</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

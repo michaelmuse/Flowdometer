@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CompactLayout xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Flow_Compact_Layout</fullName>
+    <fields>Tracked_Object_Link__c</fields>
+    <fields>Tracked_Field_Name__c</fields>
+    <fields>Type__c</fields>
+    <fields>Name_of_Tracked_Record__c</fields>
+    <fields>Total_Handle_Time__c</fields>
+    <fields>Progress_Bar_vs_Goal__c</fields>
+    <fields>Next_Breach_At__c</fields>
+    <label>Tracker Flow Compact Layout</label>
+</CompactLayout>

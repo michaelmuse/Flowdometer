@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Goal_Total_Handle_Time__c</fullName>
+    <deprecated>false</deprecated>
+    <externalId>false</externalId>
+    <inlineHelpText>Total time your process should take. This field is expressed in the Units used on the Goal object</inlineHelpText>
+    <label>Goal Cycle Time</label>
+    <summarizedField>Step__c.Goal_Field_Change_Handle_Time_Hrs__c</summarizedField>
+    <summaryForeignKey>Step__c.Flow__c</summaryForeignKey>
+    <summaryOperation>sum</summaryOperation>
+    <trackTrending>false</trackTrending>
+    <type>Summary</type>
+</CustomField>

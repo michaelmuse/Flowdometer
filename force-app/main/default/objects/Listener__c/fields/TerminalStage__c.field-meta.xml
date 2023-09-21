@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>TerminalStage__c</fullName>
+    <externalId>false</externalId>
+    <inlineHelpText>OPTIONAL: (do this more easily by setting a goal)
+Hides final stages from overwheliming your reports (since they stay there indefinitely).
+
+Create (or find) a formula field on the tracked object that returns true if your tracked field is in last step of your process. For example, for Leads there is a Standard Field called IsConverted, for Opportunities and Cases, IsClosed. Add all final stage options, such as Cancelled, Lost, etc. 
+
+Specify this field with the API Name, here in Terminal Stage.</inlineHelpText>
+    <label>Terminal Stage</label>
+    <length>40</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

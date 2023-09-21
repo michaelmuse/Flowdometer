@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>First_Step_Taken_at_or_NOW__c</fullName>
+    <deprecated>false</deprecated>
+    <description>Used in other formulas for error handling</description>
+    <externalId>false</externalId>
+    <formula>IF(ISBLANK( First_Step_Taken_at__c ), NOW(), First_Step_Taken_at__c)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <label>First Step Taken At or NOW</label>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>DateTime</type>
+</CustomField>

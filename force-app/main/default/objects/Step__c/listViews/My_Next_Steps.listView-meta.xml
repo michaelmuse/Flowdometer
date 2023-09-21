@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListView xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>My_Next_Steps</fullName>
+    <columns>NAME</columns>
+    <columns>TrackedObjectLink__c</columns>
+    <columns>Field_Value_Initial__c</columns>
+    <columns>TimeUntilBreach__c</columns>
+    <columns>ProgressBarVsGoal__c</columns>
+    <columns>Plan_Next_Steps__c</columns>
+    <filterScope>Mine</filterScope>
+    <filters>
+        <field>StepActive__c</field>
+        <operation>equals</operation>
+        <value>1</value>
+    </filters>
+    <label>My Next Steps</label>
+</ListView>
