@@ -143,22 +143,8 @@ public class ListenerFlowControllerTest {
     
         // Store the listener records for use in test methods
         testListeners = [SELECT Id, Object_Name__c FROM Listener__c];
-        }
-        public static void initializeHistoryRecordsMap() {
-            // Fetch the Opportunity record and Opportunity history records
-            Opportunity opp = [SELECT Id, Name, StageName, CloseDate FROM Opportunity WHERE Id = :opportunity.Id];
-            List<OpportunityHistory> oppHistories = [SELECT Id, StageName, OldValue, NewValue FROM OpportunityHistory WHERE Id IN :oppHistoryRecordIds];
-        
-            // Cast list of OpportunityHistory to list of SObject
-            List<SObject> oppHistoriesAsSObjects = new List<SObject>();
-            for(OpportunityHistory oppHistory : oppHistories) {
-                oppHistoriesAsSObjects.add((SObject)oppHistory);
-            }
-        
-            // Now, populate the historyRecordsMap
-            historyRecordsMap = new Map<Id, List<SObject>>();
-            historyRecordsMap.put(opp.Id, oppHistoriesAsSObjects);
-        }
+    }
+
     // Executes the main test logic and returns the response list
     // Optional parameters are Map<String, Object> additionalParams
     /*
