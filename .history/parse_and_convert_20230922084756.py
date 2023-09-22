@@ -33,5 +33,5 @@ if __name__ == "__main__":
                     json_output[parent_dir_name][field_name] = parse_xml_to_json(filepath)
 
 
-    with open("FlowdometerObjectSchema.json", "w") as f:
+    with open("gist_content.json", "w") as f:
         json.dump(json_output, f, indent=4)

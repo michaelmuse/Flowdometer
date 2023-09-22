@@ -4,6 +4,7 @@ import json
 import os
 
 def parse_xml_to_json(xml_file):
+    print(f"Debug: Parsing {xml_file}")  # Debug line
 
     tree = ET.parse(xml_file)
     root = tree.getroot()
@@ -15,6 +16,7 @@ def parse_xml_to_json(xml_file):
         if tag not in ['redundantTag1', 'redundantTag2']:
             field_data[tag] = value
 
+    print(f"Debug: Field Data for {xml_file}: {field_data}")  # Debug line
     return field_data
 
 if __name__ == "__main__":
@@ -28,10 +30,12 @@ if __name__ == "__main__":
             for filename in filenames:
                 if filename.endswith('.field-meta.xml'):
                     filepath = os.path.join(dirpath, filename)
+                    print(f"Debug: Processing {filepath}")  # Debug line
 
                     field_name = os.path.splitext(filename)[0]
                     json_output[parent_dir_name][field_name] = parse_xml_to_json(filepath)
 
+    print(f"Final JSON: {json_output}")  # Debug line
 
-    with open("FlowdometerObjectSchema.json", "w") as f:
+    with open("gist_content.json", "w") as f:
         json.dump(json_output, f, indent=4)

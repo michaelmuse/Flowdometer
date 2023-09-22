@@ -34,7 +34,7 @@ jobs:
         run: python parse_and_convert.py 
 
       - name: Update Gists with JSON
-        run: gh gist edit 80cc64f9d4bf1d8f67ff4aacc149e582 --add FlowdometerObjectSchema.json
+        run: gh gist edit 80cc64f9d4bf1d8f67ff4aacc149e582 --add gist_content.json
 
       - name: Update Other Gists
         run: |
