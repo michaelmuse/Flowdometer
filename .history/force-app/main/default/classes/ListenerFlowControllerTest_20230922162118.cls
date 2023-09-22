@@ -183,7 +183,7 @@ public class ListenerFlowControllerTest {
         Map<String, SObject> sObjectMap,
         Map<Id, List<Datetime>> sortingDateTimeMap
     ) {
-        // Create an instance of ListenerFlowController to invoke the methods
+        // Create an instance of ListenerFlowController
         ListenerFlowController controllerInstance = new ListenerFlowController();
         System.debug('controllerInstance: ' + controllerInstance);
          

@@ -79,7 +79,7 @@ public class ListenerFlowControllerTest {
         opportunityForUpdate.stageName = 'Qualification';
         update opportunityForUpdate;
     
-        // Opportunity History Records
+        // Opportunity History Records for preparingResponse tests
         List<Opportunity> oppHistoryRecords = TestDataFactory.createOpportunityHistoryRecords(2, 'stageName');
 
         // Opportunity History Records for preparingResponse tests
@@ -91,7 +91,7 @@ public class ListenerFlowControllerTest {
         System.debug('After putting in map: historyRecordsMap = ' + historyRecordsMap);
 
         // -------------- Case Setup --------------
-        // Standard Case Record
+        // Standard Case
         parentCase = TestDataFactory.createCase('Test Case', 'New');
     
         // Case History Records
@@ -183,7 +183,7 @@ public class ListenerFlowControllerTest {
         Map<String, SObject> sObjectMap,
         Map<Id, List<Datetime>> sortingDateTimeMap
     ) {
-        // Create an instance of ListenerFlowController to invoke the methods
+        // Create an instance of ListenerFlowController
         ListenerFlowController controllerInstance = new ListenerFlowController();
         System.debug('controllerInstance: ' + controllerInstance);
          
