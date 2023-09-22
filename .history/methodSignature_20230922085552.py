@@ -51,7 +51,7 @@ def extract_method_signatures(code, methods_to_search):
     return extracted_methods
 
 # List of methods to search for within each method body
-methods_to_search = ['preparingResponse', 'parseRecordsToFlow', 'getQueryModifiers', 'getLatestHistoryValues', 'runTest', 'buildQuery', 'getQueryModifiers']
+methods_to_search = ['preparingResponse', 'parseRecordsToFlow', 'getQueryModifiers', 'getLatestHistoryValues', 'getStringNotNull', 'isCustomObject']
 
 # List of Apex test class paths
 apex_test_class_paths = [
