@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>Field_Value_Ending_Timestamp__c</fullName>
+    <fullName>Sequence__c</fullName>
     <deprecated>false</deprecated>
-    <description>Captures the timestamp for the conclusion of the tracked Step in the process flow.</description>
     <externalId>false</externalId>
-    <label>Step Ended At</label>
+    <label>Order</label>
+    <precision>18</precision>
     <required>false</required>
+    <scale>0</scale>
     <trackTrending>false</trackTrending>
-    <type>DateTime</type>
+    <type>Number</type>
+    <unique>false</unique>
 </CustomField>

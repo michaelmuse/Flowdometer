@@ -3,7 +3,6 @@
     <fullName>Tracked_Field_Name__c</fullName>
     <deprecated>false</deprecated>
     <externalId>false</externalId>
-    <description>Specifies the field within the tracked object that the Flow is monitoring.</description>
     <inlineHelpText>API Name of the field where changes are tracked</inlineHelpText>
     <label>Tracked Field Name</label>
     <length>255</length>

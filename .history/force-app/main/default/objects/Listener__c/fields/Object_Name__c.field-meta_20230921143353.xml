@@ -2,7 +2,6 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Object_Name__c</fullName>
     <externalId>false</externalId>
-    <description>The Salesforce object that is monitored by the Flowdometer listener.</description>
     <inlineHelpText>Choose Object that has the field you&apos;d like Tracked</inlineHelpText>
     <label>Object To Track</label>
     <length>40</length>
