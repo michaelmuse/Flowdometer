@@ -4,9 +4,6 @@ import json
 def read_apex_class_file(file_path):
     with open(file_path, 'r') as file:
         return file.read()
-
-def remove_block_comments(code):
-    return re.sub(r'\/\*[\s\S]*?\*\/', '', code)
     
 def extract_method_signatures(code, methods_to_search):
     # method_matches = re.finditer(r"(?P<signature>((@isTest\s+)?(public|private|protected|global)\s+(static)?\s*(?P<return_type>[\w.<>]+)\s+(?P<return_var>[a-zA-Z_]\w+)\s*\(\s*(?P<parameters>[^)]*?)\s*\)\s*{))", code, re.DOTALL)
@@ -91,16 +88,9 @@ apex_test_class_paths = [
 final_output = {}
 
 # Loop over each file path
-# Loop over each file path
 for path in apex_test_class_paths:
     apex_test_class_code = read_apex_class_file(path)
-    
-    # Remove block comments
-    cleaned_code = remove_block_comments(apex_test_class_code)
-    
-    # Extract method signatures from the cleaned code
-    extracted_methods_info = extract_method_signatures(cleaned_code, methods_to_search)
-    
+    extracted_methods_info = extract_method_signatures(apex_test_class_code, methods_to_search)
     final_output[path] = extracted_methods_info
 
 # Save to JSON file

@@ -1,8 +1,10 @@
+# parse_and_convert.py
 import xml.etree.ElementTree as ET
 import json
 import os
 
 def parse_xml_to_json(xml_file):
+
     tree = ET.parse(xml_file)
     root = tree.getroot()
 
@@ -29,6 +31,7 @@ if __name__ == "__main__":
 
                     field_name = os.path.splitext(filename)[0].replace(".field-meta", "")
                     json_output[parent_dir_name][field_name] = parse_xml_to_json(filepath)
+
 
     with open("FlowdometerObjectSchema.json", "w") as f:
         json.dump(json_output, f, indent=4)

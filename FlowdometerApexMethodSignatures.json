@@ -1,0 +1,320 @@
+{
+  "F:\\Muse Operations Drive\\Projects\\Flowdometer\\force-app\\main\\default\\classes\\ListenerFlowController.cls": [
+    {
+      "signature": "public static Boolean isCustomObject(String objectname) {",
+      "lines": "77-80",
+      "variables_in_scope": [
+        "objToken"
+      ],
+      "called_methods": {},
+      "return_type": "Boolean",
+      "return_var": "isCustomObject",
+      "return": "Boolean isCustomObject",
+      "parameters": "String objectname"
+    },
+    {
+      "signature": "private static String getStringNotNull(Object valueObj) {",
+      "lines": "84-88",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "String",
+      "return_var": "getStringNotNull",
+      "return": "String getStringNotNull",
+      "parameters": "Object valueObj"
+    },
+    {
+      "signature": "private static String getHistoryObjectName(String objectName) {",
+      "lines": "92-112",
+      "variables_in_scope": [
+        "standardObjectToHistoryMap"
+      ],
+      "called_methods": {},
+      "return_type": "String",
+      "return_var": "getHistoryObjectName",
+      "return": "String getHistoryObjectName",
+      "parameters": "String objectName"
+    },
+    {
+      "signature": "private static String getParentName(String objectName) {",
+      "lines": "113-126",
+      "variables_in_scope": [
+        "objectToNameFieldMap"
+      ],
+      "called_methods": {},
+      "return_type": "String",
+      "return_var": "getParentName",
+      "return": "String getParentName",
+      "parameters": "String objectName"
+    },
+    {
+      "signature": "public Integer compareTo(Object compareTo) {",
+      "lines": "137-163",
+      "variables_in_scope": [
+        "compareToRecord",
+        "thisDate",
+        "otherDate",
+        "thisMillis",
+        "otherMillis",
+        "thisID",
+        "otherID"
+      ],
+      "called_methods": {},
+      "return_type": "Integer",
+      "return_var": "compareTo",
+      "return": "Integer compareTo",
+      "parameters": "Object compareTo"
+    },
+    {
+      "signature": "private static String buildQuery( String tableName, String parentIdField, List<Id> targetRecordIds, Listener__c listenerConfig, Boolean isHistoryQuery, DateTime lastExecutionOn ) {",
+      "lines": "183-235",
+      "variables_in_scope": [
+        "selectFields",
+        "whereConditions",
+        "Field",
+        "queryModifiers",
+        "queryStr"
+      ],
+      "called_methods": {
+        "buildQuery": [
+          183
+        ],
+        "getQueryModifiers": [
+          215,
+          215
+        ]
+      },
+      "return_type": "String",
+      "return_var": "buildQuery",
+      "return": "String buildQuery",
+      "parameters": "String tableName, String parentIdField, List<Id> targetRecordIds, Listener__c listenerConfig, Boolean isHistoryQuery, DateTime lastExecutionOn"
+    },
+    {
+      "signature": "public void sortHistoryList(List<SObject> historyList) {",
+      "lines": "255-278",
+      "variables_in_scope": [
+        "toSort",
+        "previousDateTime",
+        "count",
+        "record",
+        "recordDatetime"
+      ],
+      "called_methods": {},
+      "return_type": "void",
+      "return_var": "sortHistoryList",
+      "return": "void sortHistoryList",
+      "parameters": "List<SObject> historyList"
+    },
+    {
+      "signature": "private static HistoryValuesResult getLatestHistoryValues( List<Id> targetRecordIds, Listener__c listenerConfig, DateTime lastExecutionOn, ListenerFlowController controllerInstance, String objHistoryName, String parentIdField ) {",
+      "lines": "282-372",
+      "variables_in_scope": [
+        "fieldValue",
+        "fieldName",
+        "objectSuffix",
+        "isHistoryQuery",
+        "queryStr",
+        "historyRecordsMap",
+        "parentId",
+        "createdDate",
+        "specificHistoryList",
+        "oneHistoryParentIds",
+        "createdHistoryMap",
+        "tempHistoryLst",
+        "historyList",
+        "createdHistoryRecord",
+        "parentRecord",
+        "currentFieldValue",
+        "editableRecord",
+        "tempList"
+      ],
+      "called_methods": {
+        "getLatestHistoryValues": [
+          282
+        ],
+        "buildQuery": [
+          295
+        ]
+      },
+      "return_type": "HistoryValuesResult",
+      "return_var": "getLatestHistoryValues",
+      "return": "HistoryValuesResult getLatestHistoryValues",
+      "parameters": "List<Id> targetRecordIds, Listener__c listenerConfig, DateTime lastExecutionOn, ListenerFlowController controllerInstance, String objHistoryName, String parentIdField"
+    },
+    {
+      "signature": "public void preparingResponse( ListenerFlowLatestResponse response, Listener__c listenerConfig, Map<String, SObject> sObjectMap, ListenerFlowController controllerInstance ) {",
+      "lines": "379-427",
+      "variables_in_scope": [
+        "count",
+        "trackFlowObj",
+        "listSObj",
+        "SObj",
+        "fieldValue",
+        "parentName"
+      ],
+      "called_methods": {
+        "preparingResponse": [
+          379
+        ]
+      },
+      "return_type": "void",
+      "return_var": "preparingResponse",
+      "return": "void preparingResponse",
+      "parameters": "ListenerFlowLatestResponse response, Listener__c listenerConfig, Map<String, SObject> sObjectMap, ListenerFlowController controllerInstance"
+    },
+    {
+      "signature": "public static List<ListenerFlowLatestResponse> parseRecordsToFlow( List<ListenerFlowLatestRequest> listenerConfigList) {",
+      "lines": "435-514",
+      "variables_in_scope": [
+        "controllerInstance",
+        "listenerConfig",
+        "objName",
+        "objHistoryName",
+        "parentName",
+        "parentIdField",
+        "fieldValue",
+        "fieldName",
+        "lastExecutionOn",
+        "responseList",
+        "response",
+        "sObjectMapForParse",
+        "targetRecords",
+        "targetRecordIds",
+        "sObjectMap",
+        "isHistoryQuery",
+        "terminalStageField",
+        "queryStr",
+        "record",
+        "historyResult",
+        "historyRecordsMap",
+        "sortingDateTimeMap",
+        "oneHistoryParentIds",
+        "tempHistoryLst"
+      ],
+      "called_methods": {
+        "parseRecordsToFlow": [
+          435
+        ],
+        "buildQuery": [
+          468
+        ],
+        "getLatestHistoryValues": [
+          484
+        ],
+        "preparingResponse": [
+          503
+        ]
+      },
+      "return_type": "List<ListenerFlowLatestResponse>",
+      "return_var": "parseRecordsToFlow",
+      "return": "List<ListenerFlowLatestResponse> parseRecordsToFlow",
+      "parameters": "List<ListenerFlowLatestRequest> listenerConfigList"
+    }
+  ],
+  "F:\\Muse Operations Drive\\Projects\\Flowdometer\\force-app\\main\\default\\classes\\ListenerFlowControllerTest.cls": [
+    {
+      "signature": "public static void initializeHistoryRecordsMap() {",
+      "lines": "108-126",
+      "variables_in_scope": [
+        "opp",
+        "Id",
+        "oppHistories",
+        "oppHistoriesAsSObjects",
+        "historyRecordsMap"
+      ],
+      "called_methods": {},
+      "return_type": "void",
+      "return_var": "initializeHistoryRecordsMap",
+      "return": "void initializeHistoryRecordsMap",
+      "parameters": ""
+    }
+  ],
+  "F:\\Muse Operations Drive\\Projects\\Flowdometer\\force-app\\main\\default\\classes\\TestDataFactory.cls": [
+    {
+      "signature": "public static List<Opportunity> createAndUpdateOpportunities( Id parentId, String field, Integer numRecords ) {",
+      "lines": "7-32",
+      "variables_in_scope": [
+        "opps",
+        "i",
+        "opp"
+      ],
+      "called_methods": {},
+      "return_type": "List<Opportunity>",
+      "return_var": "createAndUpdateOpportunities",
+      "return": "List<Opportunity> createAndUpdateOpportunities",
+      "parameters": "Id parentId, String field, Integer numRecords"
+    },
+    {
+      "signature": "public static Case createCase(String subject, String status) {",
+      "lines": "34-41",
+      "variables_in_scope": [
+        "newCase"
+      ],
+      "called_methods": {},
+      "return_type": "Case",
+      "return_var": "createCase",
+      "return": "Case createCase",
+      "parameters": "String subject, String status"
+    },
+    {
+      "signature": "public static List<CaseHistory> createCaseHistoryRecords( Id parentId, String field, Integer numRecords ) {",
+      "lines": "43-51",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "List<CaseHistory>",
+      "return_var": "createCaseHistoryRecords",
+      "return": "List<CaseHistory> createCaseHistoryRecords",
+      "parameters": "Id parentId, String field, Integer numRecords"
+    },
+    {
+      "signature": "public static Listener__c createlistenerConfig( String objectName, String fieldToTrack, String terminalStage, DateTime lastExecutionOn, Boolean insertRecord ) {",
+      "lines": "53-72",
+      "variables_in_scope": [
+        "listenerConfig"
+      ],
+      "called_methods": {},
+      "return_type": "Listener__c",
+      "return_var": "createlistenerConfig",
+      "return": "Listener__c createlistenerConfig",
+      "parameters": "String objectName, String fieldToTrack, String terminalStage, DateTime lastExecutionOn, Boolean insertRecord"
+    },
+    {
+      "signature": "public static Opportunity createOpportunity(String name, String stageName, Date closeDate) {",
+      "lines": "74-82",
+      "variables_in_scope": [
+        "opp"
+      ],
+      "called_methods": {},
+      "return_type": "Opportunity",
+      "return_var": "createOpportunity",
+      "return": "Opportunity createOpportunity",
+      "parameters": "String name, String stageName, Date closeDate"
+    },
+    {
+      "signature": "public static List<Opportunity> createOpportunityHistoryRecords(Integer numRecords, String stageName) {",
+      "lines": "84-97",
+      "variables_in_scope": [
+        "historyRecords",
+        "i",
+        "CloseDate"
+      ],
+      "called_methods": {},
+      "return_type": "List<Opportunity>",
+      "return_var": "createOpportunityHistoryRecords",
+      "return": "List<Opportunity> createOpportunityHistoryRecords",
+      "parameters": "Integer numRecords, String stageName"
+    },
+    {
+      "signature": "public static List<Flow__c> createCustomObjects(Integer numRecords) {",
+      "lines": "99-106",
+      "variables_in_scope": [
+        "customObjects",
+        "i"
+      ],
+      "called_methods": {},
+      "return_type": "List<Flow__c>",
+      "return_var": "createCustomObjects",
+      "return": "List<Flow__c> createCustomObjects",
+      "parameters": "Integer numRecords"
+    }
+  ]
+}

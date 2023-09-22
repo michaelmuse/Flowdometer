@@ -91,16 +91,9 @@ apex_test_class_paths = [
 final_output = {}
 
 # Loop over each file path
-# Loop over each file path
 for path in apex_test_class_paths:
     apex_test_class_code = read_apex_class_file(path)
-    
-    # Remove block comments
-    cleaned_code = remove_block_comments(apex_test_class_code)
-    
-    # Extract method signatures from the cleaned code
-    extracted_methods_info = extract_method_signatures(cleaned_code, methods_to_search)
-    
+    extracted_methods_info = extract_method_signatures(apex_test_class_code, methods_to_search)
     final_output[path] = extracted_methods_info
 
 # Save to JSON file

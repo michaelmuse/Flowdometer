@@ -35,7 +35,7 @@ jobs:
 
       - name: Update Gists with JSON
         run: gh gist edit 80cc64f9d4bf1d8f67ff4aacc149e582 --add FlowdometerObjectSchema.json
-        run: gh gist edit c29b1571124939fa60fc0b26df14bba2 --add FlowdometerApexMethodSignatures.json
+        run: gh gist edit 80cc64f9d4bf1d8f67ff4aacc149e582 --add FlowdometerObjectSchema.json
 
       - name: Update Other Gists
         run: |
