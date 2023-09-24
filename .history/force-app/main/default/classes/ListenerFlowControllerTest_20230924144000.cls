@@ -146,14 +146,16 @@ public class ListenerFlowControllerTest {
         public static void initializeHistoryRecordsMap() {
             // Fetch the Opportunity record and Opportunity history records
             Opportunity opp = [SELECT Id, Name, StageName, CloseDate FROM Opportunity WHERE Id = :opportunity.Id];
+            List<OpportunityHistory> oppHistories = [SELECT Id, StageName FROM OpportunityHistory WHERE Id IN :oppHistoryRecordIds];
+            System.debug('opp' + opp);
+            System.debug('oppHistories' + oppHistories);
+
             // Use the Opportunity Id from historyRecordsMap to query OpportunityHistory
             List<Id> oppHistoryRecordIds = new List<Id>(historyRecordsMap.keySet());
 
             List<OpportunityHistory> oppHistories = [SELECT Id, StageName 
                                                     FROM OpportunityHistory 
                                                     WHERE OpportunityId IN :oppHistoryRecordIds];
-            System.debug('opp' + opp);
-            System.debug('oppHistories' + oppHistories);
         
             // Cast list of OpportunityHistory to list of SObject
             List<SObject> oppHistoriesAsSObjects = new List<SObject>();
