@@ -607,7 +607,6 @@ public class ListenerFlowControllerTest {
 
         // Assertions
         // Validate that response is populated as expected
-        System.assertNotEquals(null, response, 'Response should not be null');
         System.assert(response.lstListenerFlow != null, 'lstListenerFlow should not be null');
         System.assert(response.lstListenerFlow.size() > 0, 'lstListenerFlow should have elements');
         System.assert(response.hasRecords, 'hasRecords should be true');
