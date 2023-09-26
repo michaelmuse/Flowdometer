@@ -103,22 +103,23 @@ global with sharing class ListenerFlowController {
       this.sortingDateTimeMap = sortingDateTimeMap;
     }
   }
-  // This method sorts the history records in ascending order of CreatedDate and ID, and updates the historyList parameter.
-  public void sortHistoryList(List<SObject> historyList) {
-    List<CustomDatetimeSort> toSort = new List<CustomDatetimeSort>();
-    System.debug('Inside sortHistoryList - Before sorting: ' + historyList);
+    // This method sorts the history records in ascending order of CreatedDate and ID, and updates the historyList parameter.
+    public void sortHistoryList(List<SObject> historyList) {
+      List<CustomDatetimeSort> toSort = new List<CustomDatetimeSort>();
+      System.debug('Inside sortHistoryList - Before sorting: ' + historyList);
 
-    for(SObject record : historyList) {
-      toSort.add(new CustomDatetimeSort(record));
-    } 
+      for(SObject record : historyList) {
+        toSort.add(new CustomDatetimeSort(record));
+      } 
 
-    toSort.sort();
-    
+      toSort.sort();
+      
     // Replace elements in the original list with the sorted elements
     for (Integer i = 0; i < historyList.size(); i++) {
       historyList[i] = toSort[i].record;
     }
-    System.debug('Inside sortHistoryList - After sorting: ' + historyList);
+      System.debug('Inside sortHistoryList - After sorting: ' + historyList);
+
   }
   // This method allows us to call sortHistoryList from a test class
   public void sortHistoryList_Test(List<MockHistoryObject> mockHistoryList) {
@@ -126,7 +127,7 @@ global with sharing class ListenerFlowController {
     List<SObject> historyList = new List<SObject>();
     for (MockHistoryObject mockRecord : mockHistoryList) {
         SObject record = new Opportunity();  // Replace with the appropriate SObject type
-        record.put('CloseDate', mockRecord.CreatedDate.date());
+        record.put('CreatedDate', mockRecord.CreatedDate);
         record.put('Id', mockRecord.Id);
         historyList.add(record);
     }
@@ -138,7 +139,7 @@ global with sharing class ListenerFlowController {
     mockHistoryList.clear();
     for (SObject record : historyList) {
         MockHistoryObject mockRecord = new MockHistoryObject(
-            (DateTime) record.get('CloseDate'), // Note the change here
+            (DateTime) record.get('CreatedDate'),
             (Id) record.get('Id')
         );
         mockHistoryList.add(mockRecord);

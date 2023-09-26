@@ -258,37 +258,36 @@ public class ListenerFlowControllerTest {
     // ------------------------------
     // Test Methods
     // ------------------------------ 
-    
     @isTest
     static void testSortHistoryList() {
-        // Create a list of MockHistoryObject
-        List<ListenerFlowController.MockHistoryObject> mockHistoryList = new List<ListenerFlowController.MockHistoryObject>();
-        for (Integer i = 0; i < 5; i++) {
-            ListenerFlowController.MockHistoryObject mockRecord = new ListenerFlowController.MockHistoryObject(
-                DateTime.now().addMinutes(i), // Simulating CreatedDate
-                Id.valueOf('006000000' + String.valueOf(i).leftPad(6, '0')) // Dummy Id
-            );
+        // Create a list of mock SObjects
+        List<SObject> mockHistoryList = new List<SObject>();
 
+        // Create mock records with created date and id
+        for (Integer i = 0; i < 5; i++) {
+            SObject mockRecord = new SObject();
+            mockRecord.put('CreatedDate', System.now().addSeconds(i));  // Varying created dates
+            mockRecord.put('Id', 'a0' + i);  // Mock Ids
             mockHistoryList.add(mockRecord);
         }
-        
-        // Shuffle the list manually
-        ListenerFlowController.MockHistoryObject temp = mockHistoryList[0];
-        mockHistoryList[0] = mockHistoryList[4];
-        mockHistoryList[4] = temp;
-        
-        // Create an instance of your controller
+
+        // Shuffle the list to ensure it's not sorted
+        mockHistoryList.sort();  // Sort it once
+        mockHistoryList.reverse();  // Then reverse it to ensure it's not in the original order
+
+        // Create an instance of your controller and call the sortHistoryList method
         ListenerFlowController controllerInstance = new ListenerFlowController();
-        controllerInstance.sortHistoryList_Test(mockHistoryList);
-        
+        controllerInstance.sortHistoryList(mockHistoryList);
+
         // Validate that the list is sorted correctly
         for (Integer i = 1; i < mockHistoryList.size(); i++) {
-            DateTime prevDate = mockHistoryList[i-1].CreatedDate;
-            DateTime currDate = mockHistoryList[i].CreatedDate;
+            Datetime prevDate = (Datetime) mockHistoryList[i-1].get('CreatedDate');
+            Datetime currDate = (Datetime) mockHistoryList[i].get('CreatedDate');
+            
             System.assert(prevDate <= currDate, 'The list is not sorted correctly');
         }
-    }    
-
+    }
+    
     @isTest
     static void testIsCustomObject() {
         // Test with standard object

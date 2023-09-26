@@ -266,14 +266,14 @@ public class ListenerFlowControllerTest {
         for (Integer i = 0; i < 5; i++) {
             ListenerFlowController.MockHistoryObject mockRecord = new ListenerFlowController.MockHistoryObject(
                 DateTime.now().addMinutes(i), // Simulating CreatedDate
-                Id.valueOf('006000000' + String.valueOf(i).leftPad(6, '0')) // Dummy Id
+                Id.valueOf('006000000' + i) // Dummy Id
             );
 
             mockHistoryList.add(mockRecord);
         }
         
         // Shuffle the list manually
-        ListenerFlowController.MockHistoryObject temp = mockHistoryList[0];
+        MockHistoryObject temp = mockHistoryList[0];
         mockHistoryList[0] = mockHistoryList[4];
         mockHistoryList[4] = temp;
         

@@ -126,7 +126,7 @@ global with sharing class ListenerFlowController {
     List<SObject> historyList = new List<SObject>();
     for (MockHistoryObject mockRecord : mockHistoryList) {
         SObject record = new Opportunity();  // Replace with the appropriate SObject type
-        record.put('CloseDate', mockRecord.CreatedDate.date());
+        record.put('CloseDate', mockRecord.CreatedDate);
         record.put('Id', mockRecord.Id);
         historyList.add(record);
     }

@@ -261,30 +261,35 @@ public class ListenerFlowControllerTest {
     
     @isTest
     static void testSortHistoryList() {
-        // Create a list of MockHistoryObject
-        List<ListenerFlowController.MockHistoryObject> mockHistoryList = new List<ListenerFlowController.MockHistoryObject>();
-        for (Integer i = 0; i < 5; i++) {
-            ListenerFlowController.MockHistoryObject mockRecord = new ListenerFlowController.MockHistoryObject(
-                DateTime.now().addMinutes(i), // Simulating CreatedDate
-                Id.valueOf('006000000' + String.valueOf(i).leftPad(6, '0')) // Dummy Id
-            );
+        // Create a list of Opportunities as mock SObjects
+        List<Opportunity> mockHistoryList = new List<Opportunity>();
+        System.debug('Before sorting: ' + mockHistoryList);
 
+        // Create mock records with close dates
+        for (Integer i = 0; i < 5; i++) {
+            Opportunity mockRecord = new Opportunity(
+                Name = 'Test Opportunity ' + i,
+                StageName = 'Prospecting',
+                CloseDate = Date.today().addDays(i)  // Varying close dates
+            );
             mockHistoryList.add(mockRecord);
         }
-        
-        // Shuffle the list manually
-        ListenerFlowController.MockHistoryObject temp = mockHistoryList[0];
+        System.debug('After sorting: ' + mockHistoryList);
+    
+        // Shuffle the list manually to ensure it's not sorted
+        Opportunity temp = mockHistoryList[0];
         mockHistoryList[0] = mockHistoryList[4];
         mockHistoryList[4] = temp;
-        
-        // Create an instance of your controller
+    
+        // Create an instance of your controller and call the sortHistoryList method
         ListenerFlowController controllerInstance = new ListenerFlowController();
-        controllerInstance.sortHistoryList_Test(mockHistoryList);
-        
+        controllerInstance.sortHistoryList(mockHistoryList);
+    
         // Validate that the list is sorted correctly
         for (Integer i = 1; i < mockHistoryList.size(); i++) {
-            DateTime prevDate = mockHistoryList[i-1].CreatedDate;
-            DateTime currDate = mockHistoryList[i].CreatedDate;
+            Date prevDate = mockHistoryList[i-1].CloseDate;
+            Date currDate = mockHistoryList[i].CloseDate;
+    
             System.assert(prevDate <= currDate, 'The list is not sorted correctly');
         }
     }    

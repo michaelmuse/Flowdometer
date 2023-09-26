@@ -94,7 +94,11 @@ public class ListenerFlowControllerTest {
         // Standard Case Record
         parentCase = TestDataFactory.createCase('Test Case', 'New');
     
-     // -------------- Flowdometer Listener Setup --------------
+        // Case History Records
+        List<CaseHistory> caseHistoryRecords = TestDataFactory.createCaseHistoryRecords(parentCase.Id, 'Status', 2);
+        insert caseHistoryRecords;
+
+        // -------------- Flowdometer Listener Setup --------------
         // Standard Listener Config with a Last_Execution_On__c of ten minutes ago
         DateTime tenMinutesAgo = DateTime.now().addMinutes(-10); // Setting the time 10 minutes ago
         listenerConfigWExecution = TestDataFactory.createlistenerConfig(
@@ -258,37 +262,6 @@ public class ListenerFlowControllerTest {
     // ------------------------------
     // Test Methods
     // ------------------------------ 
-    
-    @isTest
-    static void testSortHistoryList() {
-        // Create a list of MockHistoryObject
-        List<ListenerFlowController.MockHistoryObject> mockHistoryList = new List<ListenerFlowController.MockHistoryObject>();
-        for (Integer i = 0; i < 5; i++) {
-            ListenerFlowController.MockHistoryObject mockRecord = new ListenerFlowController.MockHistoryObject(
-                DateTime.now().addMinutes(i), // Simulating CreatedDate
-                Id.valueOf('006000000' + String.valueOf(i).leftPad(6, '0')) // Dummy Id
-            );
-
-            mockHistoryList.add(mockRecord);
-        }
-        
-        // Shuffle the list manually
-        ListenerFlowController.MockHistoryObject temp = mockHistoryList[0];
-        mockHistoryList[0] = mockHistoryList[4];
-        mockHistoryList[4] = temp;
-        
-        // Create an instance of your controller
-        ListenerFlowController controllerInstance = new ListenerFlowController();
-        controllerInstance.sortHistoryList_Test(mockHistoryList);
-        
-        // Validate that the list is sorted correctly
-        for (Integer i = 1; i < mockHistoryList.size(); i++) {
-            DateTime prevDate = mockHistoryList[i-1].CreatedDate;
-            DateTime currDate = mockHistoryList[i].CreatedDate;
-            System.assert(prevDate <= currDate, 'The list is not sorted correctly');
-        }
-    }    
-
     @isTest
     static void testIsCustomObject() {
         // Test with standard object
@@ -297,7 +270,7 @@ public class ListenerFlowControllerTest {
         System.assertEquals(false, isCustom, 'Expected false for standard object');
 
         // Test with custom object
-        String customObjectName = 'Flowdometer__Listener__c'; // Replace with your custom object name if different
+        String customObjectName = 'Listener__c'; // Replace with your custom object name if different
         isCustom = ListenerFlowController.isCustomObject(customObjectName);
         System.assertEquals(true, isCustom, 'Expected true for custom object');
 
@@ -306,45 +279,7 @@ public class ListenerFlowControllerTest {
         isCustom = ListenerFlowController.isCustomObject(nonExistentObjectName);
         System.assertEquals(false, isCustom, 'Expected false for non-existent object');
     }
-
-    @isTest static void testGetHistoryObjectName() {
-      // Test for special case: Opportunity
-      System.assertEquals('OpportunityFieldHistory', ListenerFlowController.getHistoryObjectName('Opportunity'), 'Should return OpportunityFieldHistory for Opportunity');
-  
-      // Test for standard objects
-      System.assertEquals('AccountHistory', ListenerFlowController.getHistoryObjectName('Account'), 'Should return AccountHistory for Account');
-      System.assertEquals('ContactHistory', ListenerFlowController.getHistoryObjectName('Contact'), 'Should return ContactHistory for Contact');
-      // Add more standard objects if you have them
-  
-      // Test for custom objects
-      System.assertEquals('Flowdometer__Listener__History', ListenerFlowController.getHistoryObjectName('Flowdometer__Listener__c'), 'Should return Flowdometer__Listener__History for Flowdometer__Listener__c');
-  
-    }
-
-    @isTest static void testGetParentName() {
-    // Test known object types
-    System.assertEquals('CaseNumber', ListenerFlowController.getParentName('Case'), 'Should return CaseNumber for Case');
-    System.assertEquals('SolutionNumber', ListenerFlowController.getParentName('Solution'), 'Should return SolutionNumber for Solution');
-    System.assertEquals('ContractNumber', ListenerFlowController.getParentName('Contract'), 'Should return ContractNumber for Contract');
     
-    // Test an unknown standard object
-    System.assertEquals('Name', ListenerFlowController.getParentName('Account'), 'Should return Name for unknown standard objects');
-    
-    // Test a custom object
-    System.assertEquals('Name', ListenerFlowController.getParentName('CustomObject__c'), 'Should return Name for custom objects');
-    }
-    
-    @isTest static void testGetStringNotNull() {
-      // Test for null input
-      System.assertEquals('', ListenerFlowController.getStringNotNull(null), 'Should return empty string for null input');
-      
-      // Test for non-null inputs
-      System.assertEquals('42', ListenerFlowController.getStringNotNull(42), 'Should return string "42" for integer 42');
-      System.assertEquals('true', ListenerFlowController.getStringNotNull(true), 'Should return string "true" for boolean true');
-      System.assertEquals('some text', ListenerFlowController.getStringNotNull('some text'), 'Should return string "some text" for string input');
-      // Add more data types as needed
-    }
-
     @isTest
     static void testParseRecordsToFlow() {
         // Initialize other required parameters
@@ -527,4 +462,276 @@ public class ListenerFlowControllerTest {
             }
         }
     }
+
+    // @isTest
+    // static void testQueryResponseSortedByCreatedDateAndMillis() {
+
+    //     // Test Execution
+    //     List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(listenerConfig, historyRecordsMap, null, new Map<String, Object>(), new Map<Id, SObject>(), new Map<Id, List<Datetime>>());
+    
+    //     // Assertion
+    //     List<SObject> sortedHistoryRecords = responseList[0].historyRecords;
+    //     for(Integer i = 1; i < sortedHistoryRecords.size(); i++) {
+    //         Datetime prevDate = (Datetime)sortedHistoryRecords[i-1].get('CreatedDate');
+    //         Datetime currDate = (Datetime)sortedHistoryRecords[i].get('CreatedDate');
+    
+    //         Long prevMillis = prevDate.getTime();
+    //         Long currMillis = currDate.getTime();
+    
+    //         System.assert(currMillis >= prevMillis, 'Records are not sorted correctly');
+    //     }
+    // }    
+
+    // Test the utility method for getting a non-null string
+    // @isTest
+    // static void testGetStringNotNull() {
+    //     String value = ListenerFlowController.getStringNotNull('Hello');
+    //     System.assertEquals('Hello', value);
+    //     ListenerFlowControllerTest.responseList = new List<ListenerFlowController.ListenerFlowLatestResponse>();
+    //     ListenerFlowControllerTest.responseList.add(new ListenerFlowController.ListenerFlowLatestResponse());
+    //     ListenerFlowControllerTest.hasRecords = true;
+    //     value = ListenerFlowController.getStringNotNull(null);
+    //     System.assertEquals('', value);
+    //     System.assertEquals(false, ListenerFlowControllerTest.hasRecords, 'hasRecords should be false');
+    // }
+
+    // @isTest
+    // static void testIsCustomObject() {
+    //     // Test with a standard object (Account)
+    //     Boolean isAccountCustom = ListenerFlowController.isCustomObject('Account');
+    //     System.assertEquals(false, isAccountCustom, 'Account should be a standard object');
+
+    //     // Test with your custom object (Flow__c)
+    //     Boolean isFlowCustom = ListenerFlowController.isCustomObject('Flow__c');
+    //     System.assertEquals(true, isFlowCustom, 'Flow__c should be a custom object');
+
+    //     // Test with a non-existent object (ThisObjectDoesNotExist__c)
+    //     Boolean isNonExistentCustom = ListenerFlowController.isCustomObject('ThisObjectDoesNotExist__c');
+    //     System.assertEquals(false, isNonExistentCustom, 'Non-existent object should not be a custom object');
+    // }
+
+
+    // ------------------------------
+    // Test Methods for preparingResponse
+    // ------------------------------
+
+    // @isTest
+    // static void testPreparingResponse_Scenario1() {
+    //     // Create listener record with setting created date and last execution date with one hour before from now.
+    //     Datetime currentTime = DateTime.now();
+    //     Datetime oneHourBefore = Datetime.newInstanceGmt(
+    //         currentTime.year(),
+    //         currentTime.month(),
+    //         currentTime.day(),
+    //         currentTime.hour() - 1,
+    //         currentTime.minute(),
+    //         currentTime.second()
+    //     );
+    //     Map<String, Object> queryModifiers = new Map<String, Object>();
+    //     Listener__c listenerConfig = testListeners[2];
+    //     insert listenerConfig;
+    //     Test.setCreatedDate(listenerConfig.id, oneHourBefore);
+
+    //     // Populate sortingDateTimeMap for this specific test
+    //     sortingDateTimeMap.put(parentCase.Id, new List<Datetime>{DateTime.now()});
+
+    //     Opportunity opportunity = new Opportunity(
+    //         Name = 'Test Opportunity',
+    //         stageName = 'Prospecting',
+    //         CloseDate = Date.today().addDays(10)
+    //     );
+    //     insert opportunity;
+
+    //     opportunity.stageName = 'Qualification';
+    //     update opportunity;
+
+    //     Map<String, SObject> sObjectMap = new Map<String, SObject>{
+    //         opportunity.Id => opportunity
+    //     };
+
+    //     Set<Id> targetRecords = new Set<Id>{opportunity.Id};
+
+    //     Map<Id, List<SObject>> historyRecordsMap = ListenerFlowController.getLatestHistoryValues(
+    //         new List<Id>{opportunity.Id}, 
+    //         listenerConfig,
+    //         queryModifiers
+    //     );
+
+    //     // Create a ListenerFlowLatestResponse object for the test
+    //     ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
+
+
+    //     // Create additionalParams map
+    //     Map<String, Object> additionalParams = new Map<String, Object>{
+    //         'queryModifiers' => queryModifiers
+    //         // Add other optional parameters as needed
+    //     };
+
+    //     // Call runTest
+    //     static List<ListenerFlowController.ListenerFlowLatestResponse> runTest(
+    //         Listener__c listenerConfig,
+    //         Map<Id, List<SObject>> historyRecordsMap,
+    //         ListenerFlowController.ListenerFlowLatestResponse response,
+    //         Map<String, Object> additionalParams,
+    //         Map<String, SObject> sObjectMap,
+    //         Map<Id, List<Datetime>> sortingDateTimeMap
+    //     )
+
+    //     // Assertions
+
+    // }
+    @isTest
+    static void testPreparingResponse_Scenario1() {
+        // Fetch historyRecordsMap and listenerConfigWExecution from @TestSetup
+        Map<Id, List<SObject>> historyRecordsMap = ListenerFlowControllerTest.historyRecordsMap;
+        Listener__c listenerConfigWExecution = [SELECT Id, Last_Execution_On__c, Object_Name__c, Field_To_Track__c, TerminalStage__c FROM Listener__c WHERE Last_Execution_On__c != null LIMIT 1];
+        System.debug('listenerConfigWExecution: ' + listenerConfigWExecution);
+        System.debug('historyRecordsMap: ' + historyRecordsMap);
+        DateTime lastExecutionOn = listenerConfigWExecution.Last_Execution_On__c;
+
+        // Query for an Opportunity record
+        Opportunity opportunity = [SELECT Id, Name, StageName, CloseDate FROM Opportunity LIMIT 1];
+        System.debug('Queried opportunity: ' + opportunity);
+
+        // Get the queryModifiers
+        Map<String, Object> queryModifiers = ListenerFlowController.getQueryModifiers(true, lastExecutionOn);
+        // Listener__c listenerConfig = [SELECT Id, Last_Execution_On__c, Object_Name__c, Field_To_Track__c, TerminalStage__c FROM Listener__c LIMIT 1];
+        // Test.setCreatedDate(listenerConfig.id, oneHourBefore);
+
+
+        Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
+        // Populate sortingDateTimeMap for this specific test
+        sortingDateTimeMap.put(opportunity.Id, new List<Datetime>{DateTime.now()});
+
+        // Initialize sObjectMap for this test
+        Map<String, SObject> sObjectMap = new Map<String, SObject>{
+            opportunity.Id => opportunity
+        };
+
+        // Create a ListenerFlowLatestResponse object for the test
+        ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
+
+        // Initialize additionalParams for the test
+        Map<String, Object> additionalParams = new Map<String, Object>{
+            'queryModifiers' => queryModifiers
+            // Add other optional parameters as needed
+        };
+
+        // Call runTest specifically to test preparingResponse
+        runTest(
+            listenerConfigWExecution, 
+            historyRecordsMap, 
+            response, 
+            additionalParams, 
+            sObjectMap, 
+            sortingDateTimeMap
+        );
+        System.debug('State of response after runTest: ' + response);
+
+        // Assertions
+        // Validate that response is populated as expected
+        System.assertNotEquals(null, response, 'Response should not be null');
+        System.assert(response.lstListenerFlow != null, 'lstListenerFlow should not be null');
+        System.assert(response.lstListenerFlow.size() > 0, 'lstListenerFlow should have elements');
+        System.assert(response.hasRecords, 'hasRecords should be true');
+    }
+
+    // @IsTest
+    // static void testPreparingResponse_Scenario2() {
+    //     // Create test data
+    //     ListenerFlowLatestResponse result = new ListenerFlowController.ListenerFlowLatestResponse();
+        
+    //     Listener__c listenerConfig = new Listener__c();
+    //     // Initialize opportunity for this test
+    //     Opportunity opportunity = new Opportunity(
+    //         Name = 'Test Opportunity',
+    //         StageName = 'Prospecting',
+    //         CloseDate = Date.today().addDays(10)
+    //     );
+    //     insert opportunity;
+    //     listenerConfig.Object_Name__c = 'Case';
+    //     listenerConfig.Field_To_Track__c = 'Status';
+    //     listenerConfig.TerminalStage__c = 'isClosed';
+    //     insert listenerConfig;
+    //     Map<Id, Map<String, Id>> goalStepRecsMap = new Map<Id, Map<String, Id>>();
+    //     Map<Id, SObject> sObjectMap = new Map<Id, SObject>();
+    //     Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
+    //     sortingDateTimeMap.put(opportunity.Id, new List<Datetime>{DateTime.now()});
+
+    //     // Create a case record and related history records
+    //     Case parentCase = new Case(
+    //         Subject = 'Test Case',
+    //         Status = 'New'
+    //     );
+    //     insert parentCase;
+
+    //     // Create a ListenerFlowLatestResponse object for the test
+    //     ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
+
+    //     // Get the queryModifiers
+    //     Map<String, Object> queryModifiers = ListenerFlowController.getQueryModifiers(listenerConfig);
+
+    //     // Call runTest
+    //     List<ListenerFlowController.ListenerFlowLatestResponse> responseList = runTest(
+    //         listenerConfig, 
+    //         historyRecordsMap, 
+    //         null,  // No response object for this test
+    //         additionalParams,
+    //         new Map<Id, SObject>(),
+    //         new Map<Id, List<Datetime>>(),
+    //         queryModifiers
+    //     );
+
+    //     // Assertions
+    //     Integer expectedSize = 10;
+    //     System.assertEquals(true, response.hasRecords, 'Should have records.');
+    // }
+
+    // @isTest
+    // static void testPreparingResponse() {
+    //     // Create test data
+    //     Map<Id, Map<String, Id>> goalStepRecsMap = new Map<Id, Map<String, Id>>();
+    //     Map<Id, SObject> sObjectMap = new Map<Id, SObject>();
+
+    //     // Create a ListenerFlowLatestResponse object for testing
+    //     ListenerFlowLatestResponse result = new ListenerFlowController.ListenerFlowLatestResponse();
+
+    //     // Create a Listener__c object for listenerConfig
+    //     Listener__c listenerConfig = new Listener__c(
+    //         Object_Name__c = 'Opportunity',
+    //         Field_To_Track__c = 'stageName',
+    //         TerminalStage__c = 'IsWon'
+    //     );
+    //     insert listenerConfig;
+
+    //     Opportunity opportunity = new Opportunity(
+    //         Name = 'Test Opportunity',
+    //         stageName = 'Prospecting',
+    //         CloseDate = Date.today().addDays(10)
+    //     );
+    //     insert opportunity;
+
+    //     opportunity.stageName = 'Qualification';
+    //     update opportunity;
+
+    //     // Create a Map<Id, List<sObject>> for historyRecordsMap
+        
+
+    //     // Create a sortingDateTimeMap for the test
+    //     Map<Id, List<Datetime>> sortingDateTimeMap = new Map<Id, List<Datetime>>();
+    //     sortingDateTimeMap.put(opportunity.Id, new List<Datetime>{DateTime.now()});
+
+    //     // Create a ListenerFlowLatestResponse object for the test
+    //     ListenerFlowController.ListenerFlowLatestResponse response = new ListenerFlowController.ListenerFlowLatestResponse();
+
+    //     // Call runTest() specifically for preparingResponse
+    //     runTest(listenerConfig, historyRecordsMap, response, additionalParams, sObjectMap, sortingDateTimeMap, queryModifiers);
+
+    //     // Update hasRecords based on the state of historyRecordsMap
+    //     response.hasRecords = !historyRecordsMap.isEmpty();
+
+    //     // Assertions
+    //     System.assertEquals(true, response.hasRecords, 'hasRecords should be true if historyRecordsMap is not empty.');
+
+    // }
 }

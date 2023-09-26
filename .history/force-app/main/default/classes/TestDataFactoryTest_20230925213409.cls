@@ -14,6 +14,24 @@ public class TestDataFactoryTest {
   }
 
   @isTest
+  static void testCreateCaseHistoryRecords() {
+    // Create a test Case record
+    Case testCase = new Case(Subject = 'Test Case', Status = 'Open');
+    insert testCase;
+  
+    // Call the createCaseHistoryRecords method
+    List<CaseHistory> historyRecords = TestDataFactory.createCaseHistoryRecords(
+      testCase.Id,  // Parent Case Id
+      'Status',     // Field to track
+      3             // Number of history records to create
+    );
+  
+    // Assert that the history records were created
+    System.assertEquals(3, historyRecords.size(), 'Should have created 3 CaseHistory records');
+  }
+  
+
+  @isTest
   static void testCreateCase() {
       // Arrange
       String expectedSubject = 'Test Subject';

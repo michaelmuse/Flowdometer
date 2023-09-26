@@ -258,37 +258,6 @@ public class ListenerFlowControllerTest {
     // ------------------------------
     // Test Methods
     // ------------------------------ 
-    
-    @isTest
-    static void testSortHistoryList() {
-        // Create a list of MockHistoryObject
-        List<ListenerFlowController.MockHistoryObject> mockHistoryList = new List<ListenerFlowController.MockHistoryObject>();
-        for (Integer i = 0; i < 5; i++) {
-            ListenerFlowController.MockHistoryObject mockRecord = new ListenerFlowController.MockHistoryObject(
-                DateTime.now().addMinutes(i), // Simulating CreatedDate
-                Id.valueOf('006000000' + String.valueOf(i).leftPad(6, '0')) // Dummy Id
-            );
-
-            mockHistoryList.add(mockRecord);
-        }
-        
-        // Shuffle the list manually
-        ListenerFlowController.MockHistoryObject temp = mockHistoryList[0];
-        mockHistoryList[0] = mockHistoryList[4];
-        mockHistoryList[4] = temp;
-        
-        // Create an instance of your controller
-        ListenerFlowController controllerInstance = new ListenerFlowController();
-        controllerInstance.sortHistoryList_Test(mockHistoryList);
-        
-        // Validate that the list is sorted correctly
-        for (Integer i = 1; i < mockHistoryList.size(); i++) {
-            DateTime prevDate = mockHistoryList[i-1].CreatedDate;
-            DateTime currDate = mockHistoryList[i].CreatedDate;
-            System.assert(prevDate <= currDate, 'The list is not sorted correctly');
-        }
-    }    
-
     @isTest
     static void testIsCustomObject() {
         // Test with standard object

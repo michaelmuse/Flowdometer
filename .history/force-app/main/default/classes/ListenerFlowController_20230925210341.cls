@@ -80,15 +80,6 @@ global with sharing class ListenerFlowController {
     public String NewValue { get; set; }
     public Datetime CreatedDate { get; set; }
   }
-  public class MockHistoryObject {
-    public DateTime CreatedDate { get; set; }
-    public Id Id { get; set; }
-
-    public MockHistoryObject(DateTime CreatedDate, Id Id) {
-        this.CreatedDate = CreatedDate;
-        this.Id = Id;
-    }
-  }
   // Wrapper class to hold the result of getLatestHistoryValues
   @TestVisible
   public class HistoryValuesResult {
@@ -101,47 +92,6 @@ global with sharing class ListenerFlowController {
     ) {
       this.historyRecordsMap = historyRecordsMap;
       this.sortingDateTimeMap = sortingDateTimeMap;
-    }
-  }
-  // This method sorts the history records in ascending order of CreatedDate and ID, and updates the historyList parameter.
-  public void sortHistoryList(List<SObject> historyList) {
-    List<CustomDatetimeSort> toSort = new List<CustomDatetimeSort>();
-    System.debug('Inside sortHistoryList - Before sorting: ' + historyList);
-
-    for(SObject record : historyList) {
-      toSort.add(new CustomDatetimeSort(record));
-    } 
-
-    toSort.sort();
-    
-    // Replace elements in the original list with the sorted elements
-    for (Integer i = 0; i < historyList.size(); i++) {
-      historyList[i] = toSort[i].record;
-    }
-    System.debug('Inside sortHistoryList - After sorting: ' + historyList);
-  }
-  // This method allows us to call sortHistoryList from a test class
-  public void sortHistoryList_Test(List<MockHistoryObject> mockHistoryList) {
-    // Convert List<MockHistoryObject> to List<SObject> before sorting
-    List<SObject> historyList = new List<SObject>();
-    for (MockHistoryObject mockRecord : mockHistoryList) {
-        SObject record = new Opportunity();  // Replace with the appropriate SObject type
-        record.put('CloseDate', mockRecord.CreatedDate.date());
-        record.put('Id', mockRecord.Id);
-        historyList.add(record);
-    }
-
-    // Call the existing sortHistoryList method
-    sortHistoryList(historyList);
-
-    // Convert sorted List<SObject> back to List<MockHistoryObject>
-    mockHistoryList.clear();
-    for (SObject record : historyList) {
-        MockHistoryObject mockRecord = new MockHistoryObject(
-            (DateTime) record.get('CloseDate'), // Note the change here
-            (Id) record.get('Id')
-        );
-        mockHistoryList.add(mockRecord);
     }
   }
 
@@ -182,21 +132,43 @@ global with sharing class ListenerFlowController {
     }
   }
 
-  @TestVisible
-  private static String getParentName(String objectName) {
-    Map<String, String> objectToNameFieldMap = new Map<String, String> {
-        'Case' => 'CaseNumber',
-        'Solution' => 'SolutionNumber',
-        'Contract' => 'ContractNumber'
-    };
 
-    if (objectToNameFieldMap.containsKey(objectName)) {
-        return objectToNameFieldMap.get(objectName);
+    // @TestVisible
+    // private static String getHistoryObjectName(String objectName) {
+    //   // Approach 1: Standard Objects
+    //   Map<String, String> standardObjectToHistoryMap = new Map<String, String>{
+    //     'Case' => 'CaseHistory',
+    //     'Account' => 'AccountHistory',
+    //     'Contact' => 'ContactHistory',
+    //     'Lead' => 'LeadHistory',
+    //     'Opportunity' => 'OpportunityFieldHistory'
+    //   };
+    //   if (standardObjectToHistoryMap.containsKey(objectName)) {
+    //     return standardObjectToHistoryMap.get(objectName);
+    //   }
+  
+    //   // Approach 2: Custom Objects (only if not a standard object)
+    //   if (isCustomObject(objectName)) {
+    //     return objectName + '__History';
+    //   }
+  
+    //   // If no matching history object is found, return null or throw an exception.
+    //   return null;
+    // }
+    private static String getParentName(String objectName) {
+      Map<String, String> objectToNameFieldMap = new Map<String, String> {
+          'Case' => 'CaseNumber',
+          'Solution' => 'SolutionNumber',
+          'Contract' => 'ContractNumber'
+      };
+  
+      if (objectToNameFieldMap.containsKey(objectName)) {
+          return objectToNameFieldMap.get(objectName);
+      }
+  
+      // Return 'Name' by default, because it's used by majority of standard objects and all custom objects
+      return 'Name';
     }
-
-    // Return 'Name' by default, because it's used by majority of standard objects and all custom objects
-    return 'Name';
-  }
 
   // Called by: getLatestHistoryValues
   // Comparator Class for SObject sorting, primarily by CreatedDate and secondarily by ID
@@ -212,8 +184,6 @@ global with sharing class ListenerFlowController {
   
       Datetime thisDate = (Datetime) this.record.get('CreatedDate');
       Datetime otherDate = (Datetime) compareToRecord.record.get('CreatedDate');
-      if (thisDate == null) return 1;
-      if (otherDate == null) return -1;
   
       Long thisMillis = thisDate.getTime();
       Long otherMillis = otherDate.getTime();
@@ -327,7 +297,30 @@ global with sharing class ListenerFlowController {
         return queryModifiers;
     }
 
-
+    public void sortHistoryList(List<SObject> historyList) {
+      // Prepare a list of CustomDatetimeSort
+      List<CustomDatetimeSort> toSort = new List<CustomDatetimeSort>();
+      for(SObject record : historyList) {
+        toSort.add(new CustomDatetimeSort(record));
+      } 
+  
+      // Sort the list with custom sorting
+      toSort.sort();
+  
+      // Additional sorting logic based on order of creation
+      Datetime previousDateTime = null;
+      Integer count = 1;
+      for (CustomDatetimeSort sortedRecord : toSort) {
+          SObject record = sortedRecord.record;
+          Datetime recordDatetime = (Datetime) record.get('CreatedDate');
+          if (previousDateTime != null && recordDatetime == previousDateTime) {
+              count++;
+          } else {
+              count = 1;
+          }
+          previousDateTime = recordDatetime;
+      }
+    }
 
   // /**
   //  * Fetches the latest history records for given parent records based on listener configuration and query modifiers.

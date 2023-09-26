@@ -83,6 +83,24 @@ public class TestDataFactory {
     insert newCase;
     return newCase;
   }
+  
+  public static List<CaseHistory> createCaseHistoryRecords(
+    Id parentId,
+    String field,
+    Integer numRecords
+  ) {
+    List<CaseHistory> histories = new List<CaseHistory>();
+    for (Integer i = 0; i < numRecords; i++) {
+      CaseHistory ch = new CaseHistory(
+        CaseId = parentId,
+        // Add additional fields here based on your specific needs
+        // For example: Field = field, NewValue = 'New Value ' + i
+      );
+      histories.add(ch);
+    }
+    insert histories;
+    return histories;
+  }
 
   public static Listener__c createlistenerConfig(
     String objectName,

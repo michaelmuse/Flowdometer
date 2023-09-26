@@ -262,18 +262,17 @@ public class ListenerFlowControllerTest {
     @isTest
     static void testSortHistoryList() {
         // Create a list of MockHistoryObject
-        List<ListenerFlowController.MockHistoryObject> mockHistoryList = new List<ListenerFlowController.MockHistoryObject>();
+        List<MockHistoryObject> mockHistoryList = new List<MockHistoryObject>();
         for (Integer i = 0; i < 5; i++) {
-            ListenerFlowController.MockHistoryObject mockRecord = new ListenerFlowController.MockHistoryObject(
+            MockHistoryObject mockRecord = new MockHistoryObject(
                 DateTime.now().addMinutes(i), // Simulating CreatedDate
-                Id.valueOf('006000000' + String.valueOf(i).leftPad(6, '0')) // Dummy Id
+                Id.valueOf('006000000' + i) // Dummy Id
             );
-
             mockHistoryList.add(mockRecord);
         }
         
         // Shuffle the list manually
-        ListenerFlowController.MockHistoryObject temp = mockHistoryList[0];
+        MockHistoryObject temp = mockHistoryList[0];
         mockHistoryList[0] = mockHistoryList[4];
         mockHistoryList[4] = temp;
         
