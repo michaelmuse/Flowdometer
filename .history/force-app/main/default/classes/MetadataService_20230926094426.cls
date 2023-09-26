@@ -37,23 +37,7 @@ public class MetadataService {
 
         return vfContent.substring(startIndex, endIndex);
     }
-    // Creating lookup field - MJM
-    public static void createLookupField(string fldName, string objName, string relatedTo, string relationshipLabel){
-        MetadataService.MetadataPort service = createService();
-        MetadataService.CustomField customField = new MetadataService.CustomField();
-        String apiName = fldName.replaceAll('[^a-zA-Z0-9]', '_');
-        customField.fullName = objName + '.' + apiName + '__c';
-        customField.label = fldName;
-        customField.type_x = 'Lookup';
-        customField.relationshipLabel = relationshipLabel;
-        customField.relationshipName = apiName;
-        customField.referenceTo = relatedTo;
-        List<MetadataService.SaveResult> results =
-            service.createMetadata(
-                new MetadataService.Metadata[] { customField });
-        handleSaveResults(results[0]);
-    }
-
+    //moved to Utility
 	public class ReportTypeColumnTranslation {
         public String label;
         public String name;

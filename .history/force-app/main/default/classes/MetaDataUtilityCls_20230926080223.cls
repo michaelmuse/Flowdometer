@@ -135,8 +135,8 @@ public with sharing class MetaDataUtilityCls {
         } else {
             historyEnabledForObject = true;
         }
-        
-        if(sObjectName != 'Task') {
+        if(!isRelationshipAvailable){
+            if(sObjectName != 'Task') {
                 String fieldLabel = sObjectName.contains('__c') ? sObjectName.replace('__c','') : sObjectName;
                 
                 // Handle managed package namespace
@@ -161,32 +161,26 @@ public with sharing class MetaDataUtilityCls {
                 System.debug('fieldLabelForLookup: ' + fieldLabelForLookup);
                 System.debug('sanitizedFieldLabelForLookup: ' + sanitizedFieldLabelForLookup);
 
-                // Check if lookup to the sObject on Flowdometer__Flow__c already exists
-                Boolean isLookupToSObjectAvailable = doesFieldExist('Flowdometer__Flow__c', sObjectLabel);
-
-                // Check if lookup to Flowdometer__Flow__c on the sObject already exists
-                Boolean isLookupToFlowAvailable = doesFieldExist(sObjectName, sanitizedFieldLabelForLookup);
-
-                // Create lookup on Flowdometer__Flow__c if it doesn't exist
-                if (!isLookupToSObjectAvailable) {
+                // Check if field already exists before creating lookup to the sObject on Flowdometer__Flow__c
+                if (!doesFieldExist('Flowdometer__Flow__c', sObjectLabel)) {  // Using sObjectLabel directly here
                     if(!Test.isRunningTest()){
-                        MetadataService.createLookupField(sObjectLabel, 'Flowdometer__Flow__c', sObjectName, 'Flow');
+                        System.debug('Creating lookup field: ' + sObjectLabel + ' on Flowdometer__Flow__c for ' + sObjectName);
+                        MetadataService.createLookupField(sObjectLabel, 'Flowdometer__Flow__c', sObjectName);  // Using sObjectLabel directly here
                         grantFieldEditAccess('Flowdometer_User','Flowdometer__Flow__c', sObjectName);
                     }
                 }
 
-
-                // Create lookup on sObject if it doesn't exist
-                if (!isLookupToFlowAvailable) {
+                // Check if field already exists before creating lookup to Flowdometer__Flow__c on the sObject
+                if (!doesFieldExist(sObjectName, sanitizedFieldLabelForLookup)) {
                     if(!Test.isRunningTest()){
-                        MetadataService.createLookupField(fieldLabelForLookup, sObjectName, 'Flowdometer__Flow__c', sObjectLabel);
-                        grantFieldEditAccess('Flowdometer_User', sObjectName, fieldLabelForLookup);
+                        System.debug('Creating lookup field: ' + sanitizedFieldLabelForLookup + ' on ' + sObjectName + ' for Flowdometer__Flow__c');
+                        MetadataService.createLookupField(sanitizedFieldLabelForLookup, sObjectName, 'Flowdometer__Flow__c');
+                        grantFieldEditAccess('Flowdometer_User', sObjectName, sanitizedFieldLabelForLookup);
                     }
                 }
-
-
-                // Update the isRelationshipAvailable based on both checks
-                isRelationshipAvailable = isLookupToSObjectAvailable && isLookupToFlowAvailable;
+                
+                isRelationshipAvailable = TRUE;
+            }
         }
         
         // if(!isRelationshipAvailable){

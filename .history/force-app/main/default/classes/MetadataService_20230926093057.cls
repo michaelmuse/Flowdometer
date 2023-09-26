@@ -41,8 +41,10 @@ public class MetadataService {
     public static void createLookupField(string fldName, string objName, string relatedTo, string relationshipLabel){
         MetadataService.MetadataPort service = createService();
         MetadataService.CustomField customField = new MetadataService.CustomField();
+
         String apiName = fldName.replaceAll('[^a-zA-Z0-9]', '_');
         customField.fullName = objName + '.' + apiName + '__c';
+
         customField.label = fldName;
         customField.type_x = 'Lookup';
         customField.relationshipLabel = relationshipLabel;
@@ -52,6 +54,53 @@ public class MetadataService {
             service.createMetadata(
                 new MetadataService.Metadata[] { customField });
         handleSaveResults(results[0]);
+    }
+
+    //Method For creating External field
+    public static void createExternalField(string ExfldName, string objName, string relatedTo){
+        MetadataService.MetadataPort service = createService();
+        MetadataService.CustomField customField = new MetadataService.CustomField();
+        customField.fullName = objName+'.'+ExfldName+'__c';
+        customField.label = ExfldName;
+        customField.type_x = 'Text';
+        customField.length = 42;
+        customField.externalId = true;
+        List<MetadataService.SaveResult> results =
+            service.createMetadata(
+                new MetadataService.Metadata[] { customField });
+        handleSaveResults(results[0]);
+    }
+    // Method for creating a custom field
+    public static void enableFieldHistoryTracking(String sObjectAPIName,String fieldAPIName){
+        String[] objList =new String[] {sObjectAPIName};
+        List<MetadataService.Metadata> deployList = new List<MetadataService.Metadata>();
+        MetadataService.MetadataPort service = createService();
+        MetadataService.CustomObject cusObj = (MetadataService.CustomObject) service.readMetadata('CustomObject', objList).getRecords()[0];  
+        cusObj.enableHistory = (cusObj.enableHistory == NULL || cusObj.enableHistory == TRUE) ? TRUE : FALSE;
+        if(!cusObj.enableHistory){
+            cusObj.enableHistory = true;
+        }
+        for(MetadataService.CustomField cf :cusObj.fields){
+            if(cf.fullName == fieldAPIName){
+                cf.trackHistory = true ;
+            }
+        }
+        deployList.add(cusObj);
+        List<MetadataService.SaveResult> results = service.updateMetadata(new List<MetadataService.CustomObject>{cusObj});
+    }
+
+    // Method for checking if field history tracking is enabled
+    public static Boolean validateHistoryEnabled(String sObjectAPIName){
+        String[] objList =new String[] {sObjectAPIName};
+        List<MetadataService.Metadata> deployList = new List<MetadataService.Metadata>();
+        MetadataService.MetadataPort service = createService();
+        MetadataService.CustomObject cusObj = (MetadataService.CustomObject) service.readMetadata('CustomObject', objList).getRecords()[0]; 
+        if(cusObj.enableHistory == NULL || cusObj.enableHistory == FALSE){
+            cusObj.enableHistory = false;
+        } else {
+            cusObj.enableHistory = true;
+        }
+        return cusObj.enableHistory;
     }
 
 	public class ReportTypeColumnTranslation {
@@ -178,6 +227,7 @@ public class MetadataService {
     {
         if(saveResult==null || saveResult.success)
             return;
+        // Construct error message and throw an exception
         if(saveResult.errors!=null)
         {
             List<String> messages = new List<String>();
