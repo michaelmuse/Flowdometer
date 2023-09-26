@@ -145,31 +145,33 @@ public with sharing class MetaDataUtilityCls {
                     fieldLabel = fieldLabel.replace(namespacePrefix, '');
                 }
                 
+                // Sanitize field names
+                String sanitizedFieldLabel = sanitizeFieldName(fieldLabel + ' Flow');
                 // Fetching sObject label dynamically
                 DescribeSObjectResult sObjectDescribe = Schema.getGlobalDescribe().get(sObjectName).getDescribe();
-                String sObjectLabel = sObjectDescribe.getLabel();  // Label for the sObject should be human-readable
+                String sObjectLabel = sObjectDescribe.getLabel();
 
                 // Fetching field label dynamically
                 DescribeFieldResult fieldDescribe = Schema.getGlobalDescribe().get(sObjectName).getDescribe().fields.getMap().get(fieldName).getDescribe();
-                String fieldLabelForLookup = fieldDescribe.getLabel() + ' Flow';  // Label for the field specified in fieldName
+                String fieldLabel = fieldDescribe.getLabel();
 
-                // Sanitizing ONLY the label for the second lookup
-                String sanitizedFieldLabelForLookup = sanitizeFieldName(fieldLabelForLookup);
-
+                // Sanitizing the labels
+                String sanitizedSObjectLabel = sanitizeFieldName(sObjectLabel);
+                String sanitizedFieldLabel = sanitizeFieldName(fieldLabel + ' Flow');
 
                 // Check if field already exists before creating lookup to the sObject on Flowdometer__Flow__c
-                if (!doesFieldExist('Flowdometer__Flow__c', sObjectLabel)) {  // Using sObjectLabel directly here
+                if (!doesFieldExist('Flowdometer__Flow__c', sanitizedSObjectLabel)) {
                     if(!Test.isRunningTest()){
-                        MetadataService.createLookupField(sObjectLabel, 'Flowdometer__Flow__c', sObjectName);  // Using sObjectLabel directly here
+                        MetadataService.createLookupField(sanitizedSObjectLabel, 'Flowdometer__Flow__c', sObjectName);
                         grantFieldEditAccess('Flowdometer_User','Flowdometer__Flow__c', sObjectName);
                     }
                 }
 
                 // Check if field already exists before creating lookup to Flowdometer__Flow__c on the sObject
-                if (!doesFieldExist(sObjectName, sanitizedFieldLabelForLookup)) {
+                if (!doesFieldExist(sObjectName, sanitizedFieldLabel)) {
                     if(!Test.isRunningTest()){
-                        MetadataService.createLookupField(sanitizedFieldLabelForLookup, sObjectName, 'Flowdometer__Flow__c');
-                        grantFieldEditAccess('Flowdometer_User', sObjectName, sanitizedFieldLabelForLookup);
+                        MetadataService.createLookupField(sanitizedFieldLabel, sObjectName, 'Flowdometer__Flow__c');
+                        grantFieldEditAccess('Flowdometer_User', sObjectName, sanitizedFieldLabel);
                     }
                 }
                 

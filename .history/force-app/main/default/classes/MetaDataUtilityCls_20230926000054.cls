@@ -100,23 +100,7 @@ public with sharing class MetaDataUtilityCls {
             System.debug('An error occurred: ' + e.getMessage());
         }
     }
-    // Check before creating a new Lookup field
-    public static Boolean doesFieldExist(String objName, String fieldName) {
-        SObjectType sobjType = Schema.getGlobalDescribe().get(objName);
-        if (sobjType == null) {
-            return false; // Object doesn't exist
-        }
-        
-        Map<String, Schema.SObjectField> fieldsMap = sobjType.getDescribe().fields.getMap();
-        return fieldsMap.containsKey(fieldName + '__c');
-    }
-    
-    // Sanitize the field name to adhere to Salesforce's naming conventions
-    public static String sanitizeFieldName(String originalName) {
-        String sanitized = originalName.replaceAll('[^a-zA-Z0-9]', '_'); // Replace non-alphanumeric characters with underscores
-        sanitized = sanitized.replaceAll('__+', '_'); // Replace multiple consecutive underscores with a single one
-        return sanitized;
-    }
+
 
     //This method checks if the selected field has history tracking enabled. If field history isn't enabled, then it shows the user a message to 'Enable the History tracking'.
     @AuraEnabled(Cacheable=true)  
@@ -136,47 +120,35 @@ public with sharing class MetaDataUtilityCls {
             historyEnabledForObject = true;
         }
         if(!isRelationshipAvailable){
+            // Skip lookup creation for certain standard objects like Task
             if(sObjectName != 'Task') {
                 String fieldLabel = sObjectName.contains('__c') ? sObjectName.replace('__c','') : sObjectName;
                 
                 // Handle managed package namespace
-                String namespacePrefix = 'YourNamespace__';
+                String namespacePrefix = 'YourNamespace__'; // Replace with actual namespace
                 if(sObjectName.startsWith(namespacePrefix)) {
                     fieldLabel = fieldLabel.replace(namespacePrefix, '');
                 }
                 
-                // Fetching sObject label dynamically
-                DescribeSObjectResult sObjectDescribe = Schema.getGlobalDescribe().get(sObjectName).getDescribe();
-                String sObjectLabel = sObjectDescribe.getLabel();  // Label for the sObject should be human-readable
-
-                // Fetching field label dynamically
-                DescribeFieldResult fieldDescribe = Schema.getGlobalDescribe().get(sObjectName).getDescribe().fields.getMap().get(fieldName).getDescribe();
-                String fieldLabelForLookup = fieldDescribe.getLabel() + ' Flow';  // Label for the field specified in fieldName
-
-                // Sanitizing ONLY the label for the second lookup
-                String sanitizedFieldLabelForLookup = sanitizeFieldName(fieldLabelForLookup);
-
-
-                // Check if field already exists before creating lookup to the sObject on Flowdometer__Flow__c
-                if (!doesFieldExist('Flowdometer__Flow__c', sObjectLabel)) {  // Using sObjectLabel directly here
-                    if(!Test.isRunningTest()){
-                        MetadataService.createLookupField(sObjectLabel, 'Flowdometer__Flow__c', sObjectName);  // Using sObjectLabel directly here
-                        grantFieldEditAccess('Flowdometer_User','Flowdometer__Flow__c', sObjectName);
+                // Create lookup on sObjectName pointing to Flowdometer__Flow__c
+                if(!Test.isRunningTest()){
+                    MetadataService.createLookupField(fieldLabel + ' Flow', 'Flowdometer__Flow__c', sObjectName);
+                    String fieldAPIName = sObjectName.contains('__c') ? sObjectName.replace(' ', '_') : sObjectName.replace(' ', '_') + '__c';
+                    if(sObjectName.startsWith(namespacePrefix)) {
+                        fieldAPIName = namespacePrefix + fieldAPIName;
                     }
+                    grantFieldEditAccess('Flowdometer_User','Flowdometer__Flow__c',fieldAPIName);
                 }
-
-                // Check if field already exists before creating lookup to Flowdometer__Flow__c on the sObject
-                if (!doesFieldExist(sObjectName, sanitizedFieldLabelForLookup)) {
-                    if(!Test.isRunningTest()){
-                        MetadataService.createLookupField(sanitizedFieldLabelForLookup, sObjectName, 'Flowdometer__Flow__c');
-                        grantFieldEditAccess('Flowdometer_User', sObjectName, sanitizedFieldLabelForLookup);
-                    }
+                
+                // Create lookup on Flowdometer__Flow__c pointing to sObjectName
+                if(!Test.isRunningTest()){
+                    MetadataService.createLookupField(fieldLabel, sObjectName, 'Flowdometer__Flow__c');
+                    grantFieldEditAccess('Flowdometer_User', sObjectName, fieldLabel);
                 }
                 
                 isRelationshipAvailable = TRUE;
             }
         }
-        
         // if(!isRelationshipAvailable){
         //     String fieldLabel = sObjectName.contains('__c') ? sObjectName.replace('__c','') : sObjectName;
         //     if(!Test.isRunningTest()){

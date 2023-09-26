@@ -100,24 +100,13 @@ public with sharing class MetaDataUtilityCls {
             System.debug('An error occurred: ' + e.getMessage());
         }
     }
-    // Check before creating a new Lookup field
-    public static Boolean doesFieldExist(String objName, String fieldName) {
-        SObjectType sobjType = Schema.getGlobalDescribe().get(objName);
-        if (sobjType == null) {
-            return false; // Object doesn't exist
-        }
-        
-        Map<String, Schema.SObjectField> fieldsMap = sobjType.getDescribe().fields.getMap();
-        return fieldsMap.containsKey(fieldName + '__c');
-    }
-    
+
     // Sanitize the field name to adhere to Salesforce's naming conventions
     public static String sanitizeFieldName(String originalName) {
         String sanitized = originalName.replaceAll('[^a-zA-Z0-9]', '_'); // Replace non-alphanumeric characters with underscores
         sanitized = sanitized.replaceAll('__+', '_'); // Replace multiple consecutive underscores with a single one
         return sanitized;
     }
-
     //This method checks if the selected field has history tracking enabled. If field history isn't enabled, then it shows the user a message to 'Enable the History tracking'.
     @AuraEnabled(Cacheable=true)  
     public static String checkFieldHistoryStatus(string sObjectName, string fieldName){
@@ -145,38 +134,23 @@ public with sharing class MetaDataUtilityCls {
                     fieldLabel = fieldLabel.replace(namespacePrefix, '');
                 }
                 
-                // Fetching sObject label dynamically
-                DescribeSObjectResult sObjectDescribe = Schema.getGlobalDescribe().get(sObjectName).getDescribe();
-                String sObjectLabel = sObjectDescribe.getLabel();  // Label for the sObject should be human-readable
-
-                // Fetching field label dynamically
-                DescribeFieldResult fieldDescribe = Schema.getGlobalDescribe().get(sObjectName).getDescribe().fields.getMap().get(fieldName).getDescribe();
-                String fieldLabelForLookup = fieldDescribe.getLabel() + ' Flow';  // Label for the field specified in fieldName
-
-                // Sanitizing ONLY the label for the second lookup
-                String sanitizedFieldLabelForLookup = sanitizeFieldName(fieldLabelForLookup);
-
-
-                // Check if field already exists before creating lookup to the sObject on Flowdometer__Flow__c
-                if (!doesFieldExist('Flowdometer__Flow__c', sObjectLabel)) {  // Using sObjectLabel directly here
-                    if(!Test.isRunningTest()){
-                        MetadataService.createLookupField(sObjectLabel, 'Flowdometer__Flow__c', sObjectName);  // Using sObjectLabel directly here
-                        grantFieldEditAccess('Flowdometer_User','Flowdometer__Flow__c', sObjectName);
-                    }
+                // Sanitize field names
+                String sanitizedFieldLabel = sanitizeFieldName(fieldLabel + ' Flow');
+                String sanitizedObjectName = sanitizeFieldName(sObjectName);
+                
+                if(!Test.isRunningTest()){
+                    MetadataService.createLookupField(sanitizedFieldLabel, 'Flowdometer__Flow__c', sanitizedObjectName);
+                    grantFieldEditAccess('Flowdometer_User','Flowdometer__Flow__c',sanitizedObjectName);
                 }
-
-                // Check if field already exists before creating lookup to Flowdometer__Flow__c on the sObject
-                if (!doesFieldExist(sObjectName, sanitizedFieldLabelForLookup)) {
-                    if(!Test.isRunningTest()){
-                        MetadataService.createLookupField(sanitizedFieldLabelForLookup, sObjectName, 'Flowdometer__Flow__c');
-                        grantFieldEditAccess('Flowdometer_User', sObjectName, sanitizedFieldLabelForLookup);
-                    }
+                
+                if(!Test.isRunningTest()){
+                    MetadataService.createLookupField(fieldLabel, sanitizedObjectName, 'Flowdometer__Flow__c');
+                    grantFieldEditAccess('Flowdometer_User', sanitizedObjectName, fieldLabel);
                 }
                 
                 isRelationshipAvailable = TRUE;
             }
         }
-        
         // if(!isRelationshipAvailable){
         //     String fieldLabel = sObjectName.contains('__c') ? sObjectName.replace('__c','') : sObjectName;
         //     if(!Test.isRunningTest()){
