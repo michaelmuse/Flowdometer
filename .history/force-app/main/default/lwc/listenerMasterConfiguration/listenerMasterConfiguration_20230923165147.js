@@ -124,7 +124,7 @@ export default class ListenerMasterConfiguration extends NavigationMixin(Lightni
 
     handleSubmitValidation(){
         this.isLoaded = true;
-        checkFieldHistoryStatus({ sObjectAPIName: this.selectedSObject, fieldName: this.selectedField })
+        checkFieldHistoryStatus({ sObjectName: this.selectedSObject, fieldName: this.selectedField })
             .then((result) => {
                 this.fieldHistoryStatus = result;
                 this.error = undefined;

@@ -221,44 +221,43 @@ public with sharing class MetaDataUtilityCls {
                     if(!Test.isRunningTest()){
                             MetadataService.createLookupField(fieldLabelForLookupToFlow, sObjectAPIName, FlowObjectAPIName, sObjectLabel); //FieldLabelForLookupField, objectAPINameToPutLookupOn, relatedObjectPointedTo, relationshipLabelNameChildren
                             grantFieldEditAccess(permissionSetName, sObjectAPIName, apiConvertedLabelForLookupToFlow); //permission set, objectAPINameWLookup, LookupFieldAPIName
-                    }
             }
 
-            // Update the isRelationshipAvailable based on the sObject to ensure history tracking is enabled
-            isRelationshipAvailable = isLookupToFlowAvailable;
+            // Update the isRelationshipAvailable based on both checks
+            isRelationshipAvailable = isLookupToSObjectAvailable && isLookupToFlowAvailable;
         }
+        if(isRelationshipAvailable){
+            String fieldAPIName = fieldAPINameForLookupToFlow;
+            List<FieldDefinition> FieldDefinitionList = [SELECT QualifiedApiName,IsFieldHistoryTracked 
+                                        FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = :sObjectAPIName 
+                                        AND IsFieldHistoryTracked = true];
 
-        // Set up history tracking for the field referenced
-        String fieldAPIName = fieldName;
-        List<FieldDefinition> FieldDefinitionList = [SELECT QualifiedApiName,IsFieldHistoryTracked 
-                                    FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = :sObjectAPIName 
-                                    AND IsFieldHistoryTracked = true];
-        // Get all the fields that have history tracking enabled
-        for(FieldDefinition fd : FieldDefinitionList){
-            historyEnabledFields.add(fd.QualifiedApiName);
-        }
-        // Check if we are out of available field history tracking 
-        if(historyEnabledFields.size() == 20 && !historyEnabledFields.contains(fieldAPIName) && historyEnabledForObject){
-            fieldHistoryStatus = HISTORY_ENABLED_HAS_NO_LIMITS; // Out of available field history tracking
-        //Check if the field history is already enabled for this field
-        } else if(!historyEnabledFields.isEmpty() && historyEnabledFields.contains(fieldAPIName) && historyEnabledForObject){
-            fieldHistoryStatus = HISTORY_ENABLED_ALREADY; // Field history is already enabled for this field
-        // Check if the field history is not enabled for this field and we are not out of available field history tracking
-        } else if(historyEnabledForObject && !historyEnabledFields.contains(fieldAPIName) && historyEnabledFields.size() < 20){
-            if(!Test.isRunningTest()){
-                MetadataService.enableFieldHistoryTracking(sObjectAPIName, fieldAPIName);
+            for(FieldDefinition fd : FieldDefinitionList){
+                historyEnabledFields.add(fd.QualifiedApiName);
             }
-            fieldHistoryStatus = HISTORY_ENABLED_HAS_LIMITS; // Field history is not enabled for this field but we are not out of available field history tracking
-        // Check if the field history is not enabled for this field and we are out of available field history tracking
-        } else if(!historyEnabledForObject){
-            if(!Test.isRunningTest()){
-                MetadataService.enableFieldHistoryTracking(sObjectAPIName, fieldAPIName);
+            // Check if we are out of available field history tracking 
+            if(historyEnabledFields.size() == 20 && !historyEnabledFields.contains(fieldAPIName) && historyEnabledForObject){
+                fieldHistoryStatus = HISTORY_ENABLED_HAS_NO_LIMITS; // Out of available field history tracking
+            //Check if the field history is already enabled for this field
+            } else if(!historyEnabledFields.isEmpty() && historyEnabledFields.contains(fieldAPIName) && historyEnabledForObject){
+                fieldHistoryStatus = HISTORY_ENABLED_ALREADY; // Field history is already enabled for this field
+            // Check if the field history is not enabled for this field and we are not out of available field history tracking
+            } else if(historyEnabledForObject && !historyEnabledFields.contains(fieldAPIName) && historyEnabledFields.size() < 20){
+                if(!Test.isRunningTest()){
+                    MetadataService.enableFieldHistoryTracking(sObjectAPIName, fieldAPIName);
+                }
+                fieldHistoryStatus = HISTORY_ENABLED_HAS_LIMITS; // Field history is not enabled for this field but we are not out of available field history tracking
+            // Check if the field history is not enabled for this field and we are out of available field history tracking
+            } else if(!historyEnabledForObject){
+                if(!Test.isRunningTest()){
+                    MetadataService.enableFieldHistoryTracking(sObjectAPIName, fieldAPIName);
+                }
+                fieldHistoryStatus = HISTORY_NOT_ENABLED_EARLIER_BUT_ENABLED_NOW;
+            } else {
+                fieldHistoryStatus = '';
             }
-            fieldHistoryStatus = HISTORY_NOT_ENABLED_EARLIER_BUT_ENABLED_NOW;
-        } else {
-            fieldHistoryStatus = '';
         }
-        System.debug('fieldHistoryStatus: ' + fieldHistoryStatus);
+        System.debug(fieldHistoryStatus);
         return fieldHistoryStatus;
     }
 

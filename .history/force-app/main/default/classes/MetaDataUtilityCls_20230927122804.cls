@@ -213,6 +213,7 @@ public with sharing class MetaDataUtilityCls {
                     if(!Test.isRunningTest()){
                             MetadataService.createLookupField(fieldLabelForLookupTosObject, FlowObjectAPIName, sObjectAPIName, flowLabel); //FieldLabelForLookupField, objectAPINameToPutLookupOn, relatedObjectPointedTo, relationshipLabelNameChildren
                             grantFieldEditAccess(permissionSetName, FlowObjectAPIName, apiConvertedLabelForLookupTosObject); //permission set, objectAPINameWLookup, LookupFieldAPIName
+                            isLookupToFlowAvailable = true;
                     }
             }
 

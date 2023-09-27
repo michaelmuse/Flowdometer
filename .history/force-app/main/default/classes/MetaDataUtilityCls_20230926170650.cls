@@ -86,30 +86,23 @@ public with sharing class MetaDataUtilityCls {
     //This method is used to grant field edit access via our permission set    
     public static void grantFieldEditAccess(String permissionSetName, String objectApiName, String fieldApiName) { //permission set, objectAPINameWLookup, LookupFieldAPIName
         try {
-            System.debug('permissionSetName: ' + permissionSetName);
-            System.debug('objectApiName: ' + objectApiName);
-            System.debug('fieldApiName: ' + fieldApiName);
             MetadataService.MetadataPort service = MetadataService.createService();
-            System.debug('service: ' + service);
             MetadataService.PermissionSet permissionSet = (MetadataService.PermissionSet) service.readMetadata(
                 'PermissionSet', new String[] { permissionSetName }).getRecords()[0];
-            System.debug('permissionSet: ' + permissionSet);
             MetadataService.PermissionSetFieldPermissions fieldPermission = new MetadataService.PermissionSetFieldPermissions();
-            System.debug('fieldPermission: ' + fieldPermission);
             fieldPermission.field = objectApiName+'.'+fieldApiName;
             fieldPermission.editable = true;
             fieldPermission.readable = true;
             permissionSet.fieldPermissions.add(fieldPermission);
-            System.debug('permissionSet.fieldPermissions: ' + permissionSet.fieldPermissions);
             List<MetadataService.SaveResult> results = service.updateMetadata(new MetadataService.Metadata[] { permissionSet });
-            if (results != null && !results.isEmpty()) {
-                MetadataService.handleSaveResults(results[0]);
-            } else {
-                    System.debug('No results returned from metadata API.');
-            }
+						if (results != null && !results.isEmpty()) {
+							MetadataService.handleSaveResults(results[0]);
+						} else {
+								System.debug('No results returned from metadata API.');
+						}
         } catch (Exception e) {
             System.debug('An error occurred: ' + e.getMessage());
-			System.debug(e.getStackTraceString());
+						System.debug(e.getStackTraceString());
         }
     }
     // Check before creating a new Lookup field
@@ -130,135 +123,134 @@ public with sharing class MetaDataUtilityCls {
 	}
     
     // Sanitize the field name to adhere to Salesforce's naming conventions
-    public static String convertLabeltoAPIName(String originalName) {
+    public static String sanitizeFieldName(String originalName) {
         String sanitized = originalName.replaceAll('[^a-zA-Z0-9]', '_'); // Replace non-alphanumeric characters with underscores
-        sanitized = 'Flowdometer__' + sanitized + '__c';
+        sanitized = sanitized.replaceAll('__+', '_'); // Replace multiple consecutive underscores with a single one
         return sanitized;
     }
 
     //This method checks if the selected field has history tracking enabled. If field history isn't enabled, then it shows the user a message to 'Enable the History tracking'.
     @AuraEnabled(Cacheable=true)  
     public static String checkFieldHistoryStatus(string sObjectAPIName, string fieldName){
-        // General Setup
         Set<String> historyEnabledFields = new Set<String>();
         String fieldHistoryStatus = '';
         Set<String> stdObjects = new Set<String>{'Account', 'Contact', 'Lead','Opportunity','Case'};
         Boolean historyEnabledForObject = false;
-        String fieldAPINameForLookupToFlow = '';
-        String fieldAPINameForLookupToObject = '';
-
-        // Check if the relationship between the sObject and Flowdometer__Flow__c exists
+        
 		String FlowObjectAPIName = 'Flowdometer__Flow__c';
         getLookupField('Flowdometer__Flow__c');
         isRelationshipAvailable = relatedlookupMap.containsKey(sObjectAPIName) ? TRUE : FALSE;
 				System.debug('isRelationshipAvailable: ' + isRelationshipAvailable);
 				System.debug('relatedlookupMap: ' + relatedlookupMap);
 				System.debug('sObjectAPIName: ' + sObjectAPIName);
-        if(stdObjects.contains(sObjectAPIName) || sObjectAPIName.contains('__c')){ //IS THIS RIGHT?
+        if(stdObjects.contains(sObjectAPIName) || sObjectAPIName.contains('__c')){
             if(!Test.isRunningTest()){
                 historyEnabledForObject = MetadataService.validateHistoryEnabled(sObjectAPIName);
             }
         } else {
             historyEnabledForObject = true;
         }
-        // Skip for Task object because it cant accept lookups
+        
         if(sObjectAPIName != 'Task') {
-            // Not sure what this does, seems to remove the '__c' from the end of the sObjectAPIName and set it to fieldLabel which isnt right
             String fieldLabel = sObjectAPIName.contains('__c') ? sObjectAPIName.replace('__c','') : sObjectAPIName;
             
-            // Remove managed package namespace from fieldLabel
-            String namespacePrefix = 'Flowdometer__';
+            // Handle managed package namespace
+            String namespacePrefix = 'YourNamespace__';
             if(sObjectAPIName.startsWith(namespacePrefix)) {
                 fieldLabel = fieldLabel.replace(namespacePrefix, '');
             }
             
-            // Setting Object Labels
+            // Fetching sObjectlabel
             DescribeSObjectResult sObjectDescribe = Schema.getGlobalDescribe().get(sObjectAPIName).getDescribe();
             String sObjectLabel = sObjectDescribe.getLabel();  // Label for the sObject should be human-readable
-            String flowLabel = 'Flow';
-            System.debug('sObjectLabel: ' + sObjectLabel);
-            System.debug('flowLabel: ' + flowLabel);
 
-            // Setting field labels
+            // Fetching field labels
             DescribeFieldResult fieldDescribe = Schema.getGlobalDescribe().get(sObjectAPIName).getDescribe().fields.getMap().get(fieldName).getDescribe();
             String fieldLabelForLookupToFlow = fieldDescribe.getLabel() + ' Flow';
             String fieldLabelForLookupTosObject = sObjectLabel;
-            System.debug('fieldLabelForLookupToFlow: ' + fieldLabelForLookupToFlow);
-            System.debug('fieldLabelForLookupTosObject: ' + fieldLabelForLookupTosObject);
-
-            // Setting fieldAPINames
-            fieldAPINameForLookupToFlow = fieldName.replace('__c', '') + '_Flow__c';
-            fieldAPINameForLookupToObject = sObjectAPIName;//.replace('__c', '');
-            System.debug('fieldAPINameForLookupToFlow: ' + fieldAPINameForLookupToObject);
-            System.debug('fieldAPINameForLookupToObject: ' + fieldAPINameForLookupToFlow);
+            // Building fieldAPINames
+            String fieldAPINameForLookupToFlow = fieldName.replace('__c', '') + '_Flow';
+            String fieldAPINameForLookupToObject = sObjectAPIName.replace('__c', '');
+            System.debug('Lookup to SObject fieldAPIname: ' + fieldAPINameForLookupToObject);
+            System.debug('Lookup to Flow fieldAPIname: ' + fieldAPINameForLookupToFlow);
 
             // Sanitizing the Labels
-            String apiConvertedLabelForLookupToFlow = convertLabeltoAPIName(fieldLabelForLookupToFlow);
-            String apiConvertedLabelForLookupTosObject = convertLabeltoAPIName(fieldLabelForLookupTosObject);
-            System.debug('apiConvertedLabelForLookupToFlow: ' + apiConvertedLabelForLookupToFlow);
-            System.debug('apiConvertedLabelForLookupTosObject: ' + apiConvertedLabelForLookupTosObject);
+            String sanitizedFieldLabelForLookupToFlow = sanitizeFieldName(fieldLabelForLookupToFlow);
+            String sanitizedFieldLabelForLookupTosObject = sanitizeFieldName(fieldLabelForLookupTosObject);
+
+            System.debug('sObjectLabel: ' + sObjectLabel);
+
+            System.debug('sObjectAPIName: ' + sObjectAPIName);
+            System.debug('fieldLabelForLookupToFlow: ' + fieldLabelForLookupToFlow);
+                            System.debug('fieldLabelForLookupTosObject: ' + fieldLabelForLookupTosObject);
+            System.debug('sanitizedFieldLabelForLookupToFlow: ' + sanitizedFieldLabelForLookupToFlow);
+                            System.debug('sanitizedFieldLabelForLookupTosObject: ' + sanitizedFieldLabelForLookupTosObject);
 
             // Check if lookup to the sObject on Flowdometer__Flow__c already exists
-            Boolean isLookupToSObjectAvailable = doesFieldExist(FlowObjectAPIName, apiConvertedLabelForLookupTosObject);  //object to check, fieldLookingUpToOtherObject to check for
+            Boolean isLookupToSObjectAvailable = doesFieldExist(FlowObjectAPIName, fieldAPINameForLookupToObject);  //object to check, field to check
             System.debug('isLookupToSObjectAvailable: ' + isLookupToSObjectAvailable);
 
             // Check if lookup to Flowdometer__Flow__c on the sObject already exists
-            Boolean isLookupToFlowAvailable = doesFieldExist(sObjectAPIName, apiConvertedLabelForLookupToFlow);  //object to check, fieldLookingUpToOtherObject to check for
+            Boolean isLookupToFlowAvailable = doesFieldExist(sObjectAPIName, fieldAPINameForLookupToFlow);  //object to check, field to check
             System.debug('isLookupToFlowAvailable: ' + isLookupToFlowAvailable);
 
-
-            String permissionSetName = 'Flowdometer__Flowdometer_User';
             // Create lookup on Flowdometer__Flow__c if it doesn't exist
             if (!isLookupToSObjectAvailable) {
                     if(!Test.isRunningTest()){
-                            MetadataService.createLookupField(fieldLabelForLookupTosObject, FlowObjectAPIName, sObjectAPIName, flowLabel); //FieldLabelForLookupField, objectAPINameToPutLookupOn, relatedObjectPointedTo, relationshipLabelNameChildren
-                            grantFieldEditAccess(permissionSetName, FlowObjectAPIName, apiConvertedLabelForLookupTosObject); //permission set, objectAPINameWLookup, LookupFieldAPIName
+                            MetadataService.createLookupField(sObjectLabel, fieldLabelForLookupTosObject, fieldAPINameForLookupToFlow, 'Flow'); //FieldLabelForLookupField, objectAPINameToPutLookupOn, relatedObjectPointedTo, relationshipLabelNameChildren
+                            grantFieldEditAccess('Flowdometer_User', sanitizedFieldLabelForLookupTosObject, sObjectAPIName); //permission set, objectAPINameWLookup, LookupFieldAPIName
                     }
             }
 
             // Create lookup on sObject if it doesn't exist
             if (!isLookupToFlowAvailable) {
                     if(!Test.isRunningTest()){
-                            MetadataService.createLookupField(fieldLabelForLookupToFlow, sObjectAPIName, FlowObjectAPIName, sObjectLabel); //FieldLabelForLookupField, objectAPINameToPutLookupOn, relatedObjectPointedTo, relationshipLabelNameChildren
-                            grantFieldEditAccess(permissionSetName, sObjectAPIName, apiConvertedLabelForLookupToFlow); //permission set, objectAPINameWLookup, LookupFieldAPIName
+                            MetadataService.createLookupField(fieldLabelForLookupToFlow, sObjectAPIName, fieldLabelForLookupTosObject, sObjectLabel); //FieldLabelForLookupField, objectAPINameToPutLookupOn, relatedObjectPointedTo, relationshipLabelNameChildren
+                            grantFieldEditAccess('Flowdometer_User', sObjectAPIName, sanitizedFieldLabelForLookupToFlow); //permission set, objectAPINameWLookup, LookupFieldAPIName
                     }
             }
 
-            // Update the isRelationshipAvailable based on the sObject to ensure history tracking is enabled
-            isRelationshipAvailable = isLookupToFlowAvailable;
+            // Update the isRelationshipAvailable based on both checks
+            isRelationshipAvailable = isLookupToSObjectAvailable && isLookupToFlowAvailable;
         }
+        
+        // if(!isRelationshipAvailable){
+        //     String fieldLabel = sObjectName.contains('__c') ? sObjectName.replace('__c','') : sObjectName;
+        //     if(!Test.isRunningTest()){
+        //         MetadataService.createLookupField(fieldLabel, 'Flowdometer__Flow__c', sObjectName);
+        //         String fieldAPIName = sObjectName.contains('__c') ? sObjectName.replace(' ', '_') : sObjectName.replace(' ', '_') + '__c';
+        //         grantFieldEditAccess('Flowdometer_User','Flowdometer__Flow__c',fieldAPIName);
+        //     }
+        //     isRelationshipAvailable = TRUE;
+        // }
+        if(isRelationshipAvailable){
+            String fieldAPIName = fieldName;
+            List<FieldDefinition> FieldDefinitionList = [SELECT QualifiedApiName,IsFieldHistoryTracked 
+                                        FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = :sObjectAPIName 
+                                        AND IsFieldHistoryTracked = true];
 
-        // Set up history tracking for the field referenced
-        String fieldAPIName = fieldName;
-        List<FieldDefinition> FieldDefinitionList = [SELECT QualifiedApiName,IsFieldHistoryTracked 
-                                    FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = :sObjectAPIName 
-                                    AND IsFieldHistoryTracked = true];
-        // Get all the fields that have history tracking enabled
-        for(FieldDefinition fd : FieldDefinitionList){
-            historyEnabledFields.add(fd.QualifiedApiName);
-        }
-        // Check if we are out of available field history tracking 
-        if(historyEnabledFields.size() == 20 && !historyEnabledFields.contains(fieldAPIName) && historyEnabledForObject){
-            fieldHistoryStatus = HISTORY_ENABLED_HAS_NO_LIMITS; // Out of available field history tracking
-        //Check if the field history is already enabled for this field
-        } else if(!historyEnabledFields.isEmpty() && historyEnabledFields.contains(fieldAPIName) && historyEnabledForObject){
-            fieldHistoryStatus = HISTORY_ENABLED_ALREADY; // Field history is already enabled for this field
-        // Check if the field history is not enabled for this field and we are not out of available field history tracking
-        } else if(historyEnabledForObject && !historyEnabledFields.contains(fieldAPIName) && historyEnabledFields.size() < 20){
-            if(!Test.isRunningTest()){
-                MetadataService.enableFieldHistoryTracking(sObjectAPIName, fieldAPIName);
+            for(FieldDefinition fd : FieldDefinitionList){
+                historyEnabledFields.add(fd.QualifiedApiName);
             }
-            fieldHistoryStatus = HISTORY_ENABLED_HAS_LIMITS; // Field history is not enabled for this field but we are not out of available field history tracking
-        // Check if the field history is not enabled for this field and we are out of available field history tracking
-        } else if(!historyEnabledForObject){
-            if(!Test.isRunningTest()){
-                MetadataService.enableFieldHistoryTracking(sObjectAPIName, fieldAPIName);
+            if(historyEnabledFields.size() == 20 && !historyEnabledFields.contains(fieldAPIName) && historyEnabledForObject){
+                fieldHistoryStatus = HISTORY_ENABLED_HAS_NO_LIMITS;
+            } else if(!historyEnabledFields.isEmpty() && historyEnabledFields.contains(fieldAPIName) && historyEnabledForObject){
+                fieldHistoryStatus = HISTORY_ENABLED_ALREADY;
+            } else if(historyEnabledForObject && !historyEnabledFields.contains(fieldAPIName) && historyEnabledFields.size() < 20){
+                if(!Test.isRunningTest()){
+                    MetadataService.enableFieldHistoryTracking(sObjectAPIName, fieldName);
+                }
+                fieldHistoryStatus = HISTORY_ENABLED_HAS_LIMITS;
+            } else if(!historyEnabledForObject){
+                if(!Test.isRunningTest()){
+                    MetadataService.enableFieldHistoryTracking(sObjectAPIName, fieldName);
+                }
+                fieldHistoryStatus = HISTORY_NOT_ENABLED_EARLIER_BUT_ENABLED_NOW;
+            } else {
+                fieldHistoryStatus = '';
             }
-            fieldHistoryStatus = HISTORY_NOT_ENABLED_EARLIER_BUT_ENABLED_NOW;
-        } else {
-            fieldHistoryStatus = '';
         }
-        System.debug('fieldHistoryStatus: ' + fieldHistoryStatus);
+        System.debug(fieldHistoryStatus);
         return fieldHistoryStatus;
     }
 

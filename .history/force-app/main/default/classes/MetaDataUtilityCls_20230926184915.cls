@@ -86,9 +86,6 @@ public with sharing class MetaDataUtilityCls {
     //This method is used to grant field edit access via our permission set    
     public static void grantFieldEditAccess(String permissionSetName, String objectApiName, String fieldApiName) { //permission set, objectAPINameWLookup, LookupFieldAPIName
         try {
-            System.debug('permissionSetName: ' + permissionSetName);
-            System.debug('objectApiName: ' + objectApiName);
-            System.debug('fieldApiName: ' + fieldApiName);
             MetadataService.MetadataPort service = MetadataService.createService();
             System.debug('service: ' + service);
             MetadataService.PermissionSet permissionSet = (MetadataService.PermissionSet) service.readMetadata(
@@ -102,14 +99,14 @@ public with sharing class MetaDataUtilityCls {
             permissionSet.fieldPermissions.add(fieldPermission);
             System.debug('permissionSet.fieldPermissions: ' + permissionSet.fieldPermissions);
             List<MetadataService.SaveResult> results = service.updateMetadata(new MetadataService.Metadata[] { permissionSet });
-            if (results != null && !results.isEmpty()) {
-                MetadataService.handleSaveResults(results[0]);
-            } else {
-                    System.debug('No results returned from metadata API.');
-            }
+						if (results != null && !results.isEmpty()) {
+							MetadataService.handleSaveResults(results[0]);
+						} else {
+								System.debug('No results returned from metadata API.');
+						}
         } catch (Exception e) {
             System.debug('An error occurred: ' + e.getMessage());
-			System.debug(e.getStackTraceString());
+						System.debug(e.getStackTraceString());
         }
     }
     // Check before creating a new Lookup field
@@ -132,7 +129,7 @@ public with sharing class MetaDataUtilityCls {
     // Sanitize the field name to adhere to Salesforce's naming conventions
     public static String convertLabeltoAPIName(String originalName) {
         String sanitized = originalName.replaceAll('[^a-zA-Z0-9]', '_'); // Replace non-alphanumeric characters with underscores
-        sanitized = 'Flowdometer__' + sanitized + '__c';
+        sanitized = 'Flowdometer__' + sanitized = '__c'
         return sanitized;
     }
 
@@ -199,20 +196,18 @@ public with sharing class MetaDataUtilityCls {
             System.debug('apiConvertedLabelForLookupTosObject: ' + apiConvertedLabelForLookupTosObject);
 
             // Check if lookup to the sObject on Flowdometer__Flow__c already exists
-            Boolean isLookupToSObjectAvailable = doesFieldExist(FlowObjectAPIName, apiConvertedLabelForLookupTosObject);  //object to check, fieldLookingUpToOtherObject to check for
+            Boolean isLookupToSObjectAvailable = doesFieldExist(FlowObjectAPIName, fieldAPINameForLookupToObject);  //object to check, fieldLookingUpToOtherObject to check for
             System.debug('isLookupToSObjectAvailable: ' + isLookupToSObjectAvailable);
 
             // Check if lookup to Flowdometer__Flow__c on the sObject already exists
-            Boolean isLookupToFlowAvailable = doesFieldExist(sObjectAPIName, apiConvertedLabelForLookupToFlow);  //object to check, fieldLookingUpToOtherObject to check for
+            Boolean isLookupToFlowAvailable = doesFieldExist(sObjectAPIName, fieldAPINameForLookupToFlow);  //object to check, fieldLookingUpToOtherObject to check for
             System.debug('isLookupToFlowAvailable: ' + isLookupToFlowAvailable);
 
-
-            String permissionSetName = 'Flowdometer__Flowdometer_User';
             // Create lookup on Flowdometer__Flow__c if it doesn't exist
             if (!isLookupToSObjectAvailable) {
                     if(!Test.isRunningTest()){
                             MetadataService.createLookupField(fieldLabelForLookupTosObject, FlowObjectAPIName, sObjectAPIName, flowLabel); //FieldLabelForLookupField, objectAPINameToPutLookupOn, relatedObjectPointedTo, relationshipLabelNameChildren
-                            grantFieldEditAccess(permissionSetName, FlowObjectAPIName, apiConvertedLabelForLookupTosObject); //permission set, objectAPINameWLookup, LookupFieldAPIName
+                            grantFieldEditAccess('Flowdometer_User', FlowObjectAPIName, fieldAPINameForLookupToObject); //permission set, objectAPINameWLookup, LookupFieldAPIName
                     }
             }
 
@@ -220,45 +215,45 @@ public with sharing class MetaDataUtilityCls {
             if (!isLookupToFlowAvailable) {
                     if(!Test.isRunningTest()){
                             MetadataService.createLookupField(fieldLabelForLookupToFlow, sObjectAPIName, FlowObjectAPIName, sObjectLabel); //FieldLabelForLookupField, objectAPINameToPutLookupOn, relatedObjectPointedTo, relationshipLabelNameChildren
-                            grantFieldEditAccess(permissionSetName, sObjectAPIName, apiConvertedLabelForLookupToFlow); //permission set, objectAPINameWLookup, LookupFieldAPIName
+                            grantFieldEditAccess('Flowdometer_User', sObjectAPIName, fieldAPINameForLookupToFlow); //permission set, objectAPINameWLookup, LookupFieldAPIName
                     }
             }
 
-            // Update the isRelationshipAvailable based on the sObject to ensure history tracking is enabled
-            isRelationshipAvailable = isLookupToFlowAvailable;
+            // Update the isRelationshipAvailable based on both checks
+            isRelationshipAvailable = isLookupToSObjectAvailable && isLookupToFlowAvailable;
         }
+        if(isRelationshipAvailable){
+            String fieldAPIName = fieldAPINameForLookupToFlow;
+            List<FieldDefinition> FieldDefinitionList = [SELECT QualifiedApiName,IsFieldHistoryTracked 
+                                        FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = :sObjectAPIName 
+                                        AND IsFieldHistoryTracked = true];
 
-        // Set up history tracking for the field referenced
-        String fieldAPIName = fieldName;
-        List<FieldDefinition> FieldDefinitionList = [SELECT QualifiedApiName,IsFieldHistoryTracked 
-                                    FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = :sObjectAPIName 
-                                    AND IsFieldHistoryTracked = true];
-        // Get all the fields that have history tracking enabled
-        for(FieldDefinition fd : FieldDefinitionList){
-            historyEnabledFields.add(fd.QualifiedApiName);
-        }
-        // Check if we are out of available field history tracking 
-        if(historyEnabledFields.size() == 20 && !historyEnabledFields.contains(fieldAPIName) && historyEnabledForObject){
-            fieldHistoryStatus = HISTORY_ENABLED_HAS_NO_LIMITS; // Out of available field history tracking
-        //Check if the field history is already enabled for this field
-        } else if(!historyEnabledFields.isEmpty() && historyEnabledFields.contains(fieldAPIName) && historyEnabledForObject){
-            fieldHistoryStatus = HISTORY_ENABLED_ALREADY; // Field history is already enabled for this field
-        // Check if the field history is not enabled for this field and we are not out of available field history tracking
-        } else if(historyEnabledForObject && !historyEnabledFields.contains(fieldAPIName) && historyEnabledFields.size() < 20){
-            if(!Test.isRunningTest()){
-                MetadataService.enableFieldHistoryTracking(sObjectAPIName, fieldAPIName);
+            for(FieldDefinition fd : FieldDefinitionList){
+                historyEnabledFields.add(fd.QualifiedApiName);
             }
-            fieldHistoryStatus = HISTORY_ENABLED_HAS_LIMITS; // Field history is not enabled for this field but we are not out of available field history tracking
-        // Check if the field history is not enabled for this field and we are out of available field history tracking
-        } else if(!historyEnabledForObject){
-            if(!Test.isRunningTest()){
-                MetadataService.enableFieldHistoryTracking(sObjectAPIName, fieldAPIName);
+            // Check if we are out of available field history tracking 
+            if(historyEnabledFields.size() == 20 && !historyEnabledFields.contains(fieldAPIName) && historyEnabledForObject){
+                fieldHistoryStatus = HISTORY_ENABLED_HAS_NO_LIMITS; // Out of available field history tracking
+            //Check if the field history is already enabled for this field
+            } else if(!historyEnabledFields.isEmpty() && historyEnabledFields.contains(fieldAPIName) && historyEnabledForObject){
+                fieldHistoryStatus = HISTORY_ENABLED_ALREADY; // Field history is already enabled for this field
+            // Check if the field history is not enabled for this field and we are not out of available field history tracking
+            } else if(historyEnabledForObject && !historyEnabledFields.contains(fieldAPIName) && historyEnabledFields.size() < 20){
+                if(!Test.isRunningTest()){
+                    MetadataService.enableFieldHistoryTracking(sObjectAPIName, fieldAPIName);
+                }
+                fieldHistoryStatus = HISTORY_ENABLED_HAS_LIMITS; // Field history is not enabled for this field but we are not out of available field history tracking
+            // Check if the field history is not enabled for this field and we are out of available field history tracking
+            } else if(!historyEnabledForObject){
+                if(!Test.isRunningTest()){
+                    MetadataService.enableFieldHistoryTracking(sObjectAPIName, fieldAPIName);
+                }
+                fieldHistoryStatus = HISTORY_NOT_ENABLED_EARLIER_BUT_ENABLED_NOW;
+            } else {
+                fieldHistoryStatus = '';
             }
-            fieldHistoryStatus = HISTORY_NOT_ENABLED_EARLIER_BUT_ENABLED_NOW;
-        } else {
-            fieldHistoryStatus = '';
         }
-        System.debug('fieldHistoryStatus: ' + fieldHistoryStatus);
+        System.debug(fieldHistoryStatus);
         return fieldHistoryStatus;
     }
 
