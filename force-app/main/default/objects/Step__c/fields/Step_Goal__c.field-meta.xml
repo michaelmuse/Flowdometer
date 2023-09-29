@@ -3,8 +3,8 @@
     <fullName>Step_Goal__c</fullName>
     <deleteConstraint>SetNull</deleteConstraint>
     <deprecated>false</deprecated>
-    <externalId>false</externalId>
     <description>References the optimal time duration for the Step, allowing Step duration to be contrasted with the intended process time.</description>
+    <externalId>false</externalId>
     <label>Goal Step</label>
     <lookupFilter>
         <active>true</active>
