@@ -1,5 +1,6 @@
 import re
 import json
+import os
 
 def read_apex_class_file(file_path):
     with open(file_path, 'r') as file:
@@ -83,15 +84,14 @@ methods_to_search = ['preparingResponse', 'parseRecordsToFlow', 'getQueryModifie
 
 # List of Apex test class paths
 apex_test_class_paths = [
-    "F:\\Muse Operations Drive\\Projects\\Flowdometer\\force-app\\main\\default\\classes\\ListenerFlowController.cls",
-    "F:\\Muse Operations Drive\\Projects\\Flowdometer\\force-app\\main\\default\\classes\\ListenerFlowControllerTest.cls",
-    "F:\\Muse Operations Drive\\Projects\\Flowdometer\\force-app\\main\\default\\classes\\TestDataFactory.cls", 
-    "F:\\Muse Operations Drive\\Projects\\Flowdometer\\force-app\\main\\default\\classes\\MetadataService.cls"
+    os.path.join("force-app", "main", "default", "classes", "ListenerFlowController.cls"),
+    os.path.join("force-app", "main", "default", "classes", "ListenerFlowControllerTest.cls"),
+    os.path.join("force-app", "main", "default", "classes", "TestDataFactory.cls"),
+    os.path.join("force-app", "main", "default", "classes", "MetadataService.cls")
 ]
 
 final_output = {}
 
-# Loop over each file path
 # Loop over each file path
 for path in apex_test_class_paths:
     apex_test_class_code = read_apex_class_file(path)
