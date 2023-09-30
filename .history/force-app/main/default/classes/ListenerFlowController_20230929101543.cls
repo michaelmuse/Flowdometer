@@ -325,14 +325,7 @@ global with sharing class ListenerFlowController {
         return queryModifiers;
     }
 
-  // Convert a list of MyClass objects to a list of Integer objects
-  public class MyClass {
-    public Integer someField;
 
-    public MyClass(Integer someField) {
-        this.someField = someField;
-    }
-  }
 
   // /**
   //  * Fetches the latest history records for given parent records based on listener configuration and query modifiers.
@@ -596,5 +589,16 @@ global with sharing class ListenerFlowController {
     System.debug('responseList: ' + responseList);
     return responseList;
 
+    // Using the class
+    List<MyClass> myClassList = new List<MyClass> {
+      responseList
+    };
+
+    // Serialize to JSON
+    String jsonString = JSON.serialize(myClassList);
+
+    // Deserialize to List<String>
+    List<String> stringList = (List<String>) JSON.deserialize(jsonString, List<String>.class);
+    System.debug('stringList: ' + stringList);
   }
 }
