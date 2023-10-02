@@ -143,7 +143,7 @@ export default class ListenerMasterConfiguration extends NavigationMixin(Lightni
 
     async handleSubmitValidation(){
         this.isLoading = true;
-        console.log('submission:' + this.selectedSObject + ' - ' + this.selectedField + ': Listener'); // format is using API names, not labels
+        console.log('submission:' this.selectedSObject + ' - ' + this.selectedField);
         try {
             // Wait for the checkFieldHistoryStatus to complete
             this.fieldHistoryStatus = await checkFieldHistoryStatus({ sObjectAPIName: this.selectedSObject, fieldName: this.selectedField });
