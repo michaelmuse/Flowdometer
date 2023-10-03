@@ -1,22 +1,28 @@
+//force-app/main/default/lwc/flowdometerInstructions/flowdometerInstructions.js
+import { LightningElement, api, track } from 'lwc';
+
 export default class FlowdometerInstructions extends LightningElement {
     // Define the array of steps for the Welcome Mat
-    steps = [
+    @track steps = [
         { 
             label: 'Tracking', 
             description: 'Next, set up listeners to track changes to fields over time here:', 
             completed: false, 
             tileClass: 'slds-welcome-mat__tile',
-            content: 'https://on.driveway.app/guides/bLekwqW/embed' 
+            content: 'https://on.driveway.app/guides/bLekwqW/embed',
+            iconName: 'standard:stethoscope'
         },
         { 
             label: 'Goals / SLAs', 
             description: 'Last, set up your goals here:', 
             completed: false, 
             tileClass: 'slds-welcome-mat__tile',
-            content: 'https://on.driveway.app/guides/0LYOe0W/embed' 
+            content: 'https://on.driveway.app/guides/0LYOe0W/embed',
+            iconName: 'standard:service_appointment'
         },
         { 
-            label: 'Extending Flowdometer', 
+            label: 'Extending Flowdometer',
+            iconName: 'standard:capslock', 
             description: 'Flowdometer is an open-source project that is designed to be built on top of. The Flow and Step objects can be added to with whatever fields are necessary for your use case.\n\n' +
                          'Flowdometer data on my tracked record\n' +
                          'For example, you might build an automation to have your tracked object point at the Flow Tracker record that is tracking it. This would allow you to then pull in the data from the Flow record, and Most Recent Step record, including goal attainment progress bars, and put them directly on the tracked object. Imagine sorting all your opportunities by Next Breach At.\n\n' +
@@ -25,43 +31,59 @@ export default class FlowdometerInstructions extends LightningElement {
         }
     ];
 
-    /**
-     * Dynamic class getter for each tile in the welcome mat.
-     * This getter maps over the `steps` array and checks the `completed` property
-     * for each step. If a step is completed, it assigns the completed
-     * Salesforce Lightning Design System (SLDS) class to it, otherwise, it assigns the default class.
-     *
-     * @returns {Array} An array of class strings corresponding to each step.
-     */
+    // Add a new property to track the state of the toggle
+    @track isStepCompleted = false;
+
+    // Add a new method to handle the toggle change
+    handleToggleChange(event) {
+        this.isStepCompleted = event.target.checked;
+        // Update the step's completed status here
+    }
+    
+    // Expose steps for testing
+    @api getSteps() {
+        return this.steps;
+    }
+
+    // Tracked property to manage the state of the modal
+    @track isModalOpen = false;
+
+    // Property to hold the current content for the modal
+    currentModalContent = '';
+ 
+    // Dynamic class getter for each tile in the welcome mat
     get tileClass() {
         return this.steps.map(step => step.completed ? 'slds-welcome-mat__tile slds-welcome-mat__tile_complete' : 'slds-welcome-mat__tile');
     }
-
-    // Handler function to mark a step as completed
-    // New property to hold the current content for the modal
-    currentModalContent = '';
-
-    // Update the property when a step is clicked
+ 
+    // Update the property when a step is clicked and open the modal
     handleStepCompleted(event) {
+        console.log('handleStepCompleted called');
         const stepIndex = event.currentTarget.dataset.index;
         const newSteps = JSON.parse(JSON.stringify(this.steps));  // Deep Clone for immutability
         newSteps[stepIndex].completed = true;
         this.steps = newSteps;
-
-        this.currentModalContent = newSteps[stepIndex].content;  // Update the content
+    
+        // Open the modal and pass the content
+        this.isModalOpen = true;
+        const modalComponent = this.template.querySelector('c-modal');
+        if (modalComponent) {
+            console.log('Modal component found');
+            modalComponent.loadContent(newSteps[stepIndex].content, !!newSteps[stepIndex].content);
+        } else {
+            console.log('Modal component not found');
+        }
     }
-    handleStepCompleted(event) {
-        const stepIndex = event.currentTarget.dataset.index;
-        const newSteps = JSON.parse(JSON.stringify(this.steps));  // Deep Clone
-        newSteps[stepIndex].completed = true;
-        this.steps = newSteps;
-        this.currentModalContent = newSteps[stepIndex].content;  // Update the content
-    }    }
+
+    // Decode URL for modal iframe
+    get decodedModalContent() {
+        console.log(this.currentModalContent);
+        return decodeURI(this.currentModalContent);
+    }
 
     // Handler function to close the modal component
-    handleClose() { // Added this method
-        // Fire the custom event 'close' from this component
-        const closeEvent = new CustomEvent('close');
-        this.dispatchEvent(closeEvent);
+    handleClose() {
+        // Close the modal
+        this.isModalOpen = false;
     }
 }

@@ -49,8 +49,6 @@ global with sharing class ListenerFlowController {
   global String varType;
   @AuraEnabled
   global Id varHistoryRecordId;
-  @AuraEnabled
-  global Id varLastHistoryRecordId;
 
   // Inner class for ListenerFlowLatestResponse parameter setting on Flow record
   @TestVisible
@@ -484,24 +482,13 @@ global with sharing class ListenerFlowController {
               System.debug('Field to Track: ' + listenerConfig.Field_To_Track__c);
               // Field was created with no other history. Fetching the current value directly from the parent object
               fieldValue = String.valueOf(sObjectMap.get(parentRecId).get(listenerConfig.Field_To_Track__c));
-              SObject parentRecord = sObjectMap.get(parentRecId);
-              if (parentRecord != null) {
-                System.debug('Parent Record: ' + parentRecord);
-                System.debug('Parent Record Field Value: ' + parentRecord.get(listenerConfig.Field_To_Track__c));
-              } else {
-                System.debug('Parent Record is null.');
-              }
           }
         } else {
           // Not 'created', get from newValue
           System.debug('Got fieldValue from SObj.NewValue');
           fieldValue = String.valueOf(SObj.get('NewValue'));
         }
-        List<Datetime> sortedDates = controllerInstance.sortingDateTimeMap.get(parentRecId);
         System.debug('fieldValue: ' + fieldValue);
-        System.debug('sortedDates: ' + sortedDates);
-        System.debug('listSOBJ: ' + listSObj);
-        System.debug('SObj: ' + SObj);
         // Populating trackFlowObj 
         trackFlowObj.varHistoryRecordId = (Id) SObj.get('Id');
         trackFlowObj.varCurrentFieldTracked = listenerConfig.Field_To_Track__c;
@@ -512,17 +499,11 @@ global with sharing class ListenerFlowController {
         trackFlowObj.varTerminalStage = false; 
         trackFlowObj.varTrackedCustomObjectName = listenerConfig.Object_Name__c; 
         trackFlowObj.varEditStartTime = dt;
-        if (count < sortedDates.size() - 1) {  // Make sure we have a next record
-          trackFlowObj.varEditEndTime = sortedDates[count + 1];
+        if (count > 0) {
+          trackFlowObj.varEditEndTime = controllerInstance.sortingDateTimeMap.get(parentRecId)[count - 1];
         } else {
-            trackFlowObj.varEditEndTime = null;  // No next record
-        }
-        if (count > 0) {  // Make sure we have a previous record
-          trackFlowObj.varLastHistoryRecordId = (Id) listSObj[count - 1].get('Id');  // ID of the previous history record
-        } else {
-            trackFlowObj.varLastHistoryRecordId = null;  // No previous record
-        }
-
+          trackFlowObj.varEditEndTime = null;  // No prior record
+        }        
         trackFlowObj.varType = listenerConfig.Type__c; 
 
         response.lstListenerFlow.add(trackFlowObj);

@@ -49,8 +49,6 @@ global with sharing class ListenerFlowController {
   global String varType;
   @AuraEnabled
   global Id varHistoryRecordId;
-  @AuraEnabled
-  global Id varLastHistoryRecordId;
 
   // Inner class for ListenerFlowLatestResponse parameter setting on Flow record
   @TestVisible
@@ -497,11 +495,7 @@ global with sharing class ListenerFlowController {
           System.debug('Got fieldValue from SObj.NewValue');
           fieldValue = String.valueOf(SObj.get('NewValue'));
         }
-        List<Datetime> sortedDates = controllerInstance.sortingDateTimeMap.get(parentRecId);
         System.debug('fieldValue: ' + fieldValue);
-        System.debug('sortedDates: ' + sortedDates);
-        System.debug('listSOBJ: ' + listSObj);
-        System.debug('SObj: ' + SObj);
         // Populating trackFlowObj 
         trackFlowObj.varHistoryRecordId = (Id) SObj.get('Id');
         trackFlowObj.varCurrentFieldTracked = listenerConfig.Field_To_Track__c;
@@ -516,13 +510,7 @@ global with sharing class ListenerFlowController {
           trackFlowObj.varEditEndTime = sortedDates[count + 1];
         } else {
             trackFlowObj.varEditEndTime = null;  // No next record
-        }
-        if (count > 0) {  // Make sure we have a previous record
-          trackFlowObj.varLastHistoryRecordId = (Id) listSObj[count - 1].get('Id');  // ID of the previous history record
-        } else {
-            trackFlowObj.varLastHistoryRecordId = null;  // No previous record
-        }
-
+        }    
         trackFlowObj.varType = listenerConfig.Type__c; 
 
         response.lstListenerFlow.add(trackFlowObj);

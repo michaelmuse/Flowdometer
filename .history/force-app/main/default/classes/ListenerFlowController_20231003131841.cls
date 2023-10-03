@@ -501,7 +501,6 @@ global with sharing class ListenerFlowController {
         System.debug('fieldValue: ' + fieldValue);
         System.debug('sortedDates: ' + sortedDates);
         System.debug('listSOBJ: ' + listSObj);
-        System.debug('SObj: ' + SObj);
         // Populating trackFlowObj 
         trackFlowObj.varHistoryRecordId = (Id) SObj.get('Id');
         trackFlowObj.varCurrentFieldTracked = listenerConfig.Field_To_Track__c;

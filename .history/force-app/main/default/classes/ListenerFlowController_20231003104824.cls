@@ -49,8 +49,6 @@ global with sharing class ListenerFlowController {
   global String varType;
   @AuraEnabled
   global Id varHistoryRecordId;
-  @AuraEnabled
-  global Id varLastHistoryRecordId;
 
   // Inner class for ListenerFlowLatestResponse parameter setting on Flow record
   @TestVisible
@@ -413,14 +411,13 @@ global with sharing class ListenerFlowController {
         
         // Fetch the current value from the parent record map
         SObject parentRecord = controllerInstance.parentRecordsMap.get(oneHistoryParentId);
-        System.debug('parentRecord: ' + parentRecord);
         Object currentFieldValue = parentRecord.get(fieldName);
         
-        // // Create a new EditableHistory instance and set its fields.
-        // EditableHistory editableRecord = new EditableHistory();
-        // editableRecord.Id = (String)createdHistoryRecord.get('Id');
-        // editableRecord.OldValue = (String)createdHistoryRecord.get('OldValue');
-        // editableRecord.NewValue = (String)currentFieldValue;
+        // Create a new EditableHistory instance and set its fields.
+        EditableHistory editableRecord = new EditableHistory();
+        editableRecord.Id = (String)createdHistoryRecord.get('Id');
+        editableRecord.OldValue = (String)createdHistoryRecord.get('OldValue');
+        editableRecord.NewValue = (String)currentFieldValue;
         
         // Optionally, update the historyRecordsMap
         historyRecordsMap.put(oneHistoryParentId, new List<SObject>{ createdHistoryRecord });
@@ -474,34 +471,15 @@ global with sharing class ListenerFlowController {
         
         if (SObj.get('Field') == 'created') {
           if (listSObj.size() > 1 && listSObj.size() > count + 1 && listSObj[count + 1].get('Field') == listenerConfig.Field_To_Track__c) {
-              // 'Field' was 'created' and more than one history record exists
-              System.debug('Got fieldValue from listSObj');
               fieldValue = String.valueOf(listSObj[count + 1].get('OldValue')); 
           } else {
-              System.debug('Got fieldValue from ParentRecId');
-              System.debug('sObjectMap: ' + sObjectMap);
-              System.debug('parentRecId: ' + parentRecId);
-              System.debug('Field to Track: ' + listenerConfig.Field_To_Track__c);
-              // Field was created with no other history. Fetching the current value directly from the parent object
+              // Fetching the current value directly from the parent object
               fieldValue = String.valueOf(sObjectMap.get(parentRecId).get(listenerConfig.Field_To_Track__c));
-              SObject parentRecord = sObjectMap.get(parentRecId);
-              if (parentRecord != null) {
-                System.debug('Parent Record: ' + parentRecord);
-                System.debug('Parent Record Field Value: ' + parentRecord.get(listenerConfig.Field_To_Track__c));
-              } else {
-                System.debug('Parent Record is null.');
-              }
           }
         } else {
-          // Not 'created', get from newValue
-          System.debug('Got fieldValue from SObj.NewValue');
           fieldValue = String.valueOf(SObj.get('NewValue'));
         }
-        List<Datetime> sortedDates = controllerInstance.sortingDateTimeMap.get(parentRecId);
-        System.debug('fieldValue: ' + fieldValue);
-        System.debug('sortedDates: ' + sortedDates);
-        System.debug('listSOBJ: ' + listSObj);
-        System.debug('SObj: ' + SObj);
+        
         // Populating trackFlowObj 
         trackFlowObj.varHistoryRecordId = (Id) SObj.get('Id');
         trackFlowObj.varCurrentFieldTracked = listenerConfig.Field_To_Track__c;
@@ -512,17 +490,7 @@ global with sharing class ListenerFlowController {
         trackFlowObj.varTerminalStage = false; 
         trackFlowObj.varTrackedCustomObjectName = listenerConfig.Object_Name__c; 
         trackFlowObj.varEditStartTime = dt;
-        if (count < sortedDates.size() - 1) {  // Make sure we have a next record
-          trackFlowObj.varEditEndTime = sortedDates[count + 1];
-        } else {
-            trackFlowObj.varEditEndTime = null;  // No next record
-        }
-        if (count > 0) {  // Make sure we have a previous record
-          trackFlowObj.varLastHistoryRecordId = (Id) listSObj[count - 1].get('Id');  // ID of the previous history record
-        } else {
-            trackFlowObj.varLastHistoryRecordId = null;  // No previous record
-        }
-
+        trackFlowObj.varEditEndTime = null; 
         trackFlowObj.varType = listenerConfig.Type__c; 
 
         response.lstListenerFlow.add(trackFlowObj);
@@ -598,8 +566,7 @@ global with sharing class ListenerFlowController {
       for (Id recordId : sObjectMap.keySet()) {
         SObject record = sObjectMap.get(recordId);
         sObjectMapForParse.put(recordId, record);
-      }
-      System.debug('sObjectMapForParse: ' + sObjectMapForParse); 
+      } 
       controllerInstance.parentRecordsMap = sObjectMapForParse;
       targetRecordIds = new List<Id>(targetRecords); 
 

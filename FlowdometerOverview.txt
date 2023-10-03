@@ -116,13 +116,16 @@ Refactor
     To avoid potential DML errors while processing the historical records...
     I’m considering refactoring Flow 2 to create batches of records to send to Flow 3
     Flow 3 would then be refactored to receive these batches, and have a new loop at the beginning to iterate over them.
-    I'd need to make sure to store records to be created in collections, and then upload the collection in a single DML. Same for the updates.
+    I'd need to make sure to store all records to be created in a batch inside of collections, and then upload the full collection in a single DML. Same for the records to update.
     One consideration is that I really need to make sure that when we do the update, all the creates have finished, because on update...
     I need to reference the created records.
   Other ideas:
+    Adding a long texgt field on listener, handling one batch and putting the rest of the unhandled records into this field, updating the record, then adding a zero minute schedule..
+    To process the next batch, from this field, instead of running a query for them.
+  Some ideas I don't think I'll do:
     Move Flow 1 and 2 together, and then move flow 1 to always be scheduled for zero minutes, grabbing anything that can be processed and processing it, then updating a custom metadata to iterate my batches, resetting it at the end of the whole batch being processed, keeping every three minutes too?
     Using platform events for the last 3 DMLs - Update step, apex update listener, flow update listener
-    Adding a field on listener, handling one batch and putting the rest into this field, then 
+
 
 Question: do you think this is feasible? If so, what batch size would I want to put into Flow 3? And what's the total number of records I can fetch in Flow 2?
 Answer: Yes, here's how:
