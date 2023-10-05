@@ -51,8 +51,6 @@ global with sharing class ListenerFlowController {
   global Id varHistoryRecordId;
   @AuraEnabled
   global Id varLastHistoryRecordId;
-  public Integer batchSize = 30;
-
 
   // Inner class for ListenerFlowLatestResponse parameter setting on Flow record
   @TestVisible
@@ -69,21 +67,6 @@ global with sharing class ListenerFlowController {
       this.lstListenerFlow = new List<ListenerFlowController>();
     }
   }
-
-  // Class for sending simplified, serialized JSON to flow without unneccesary fields
-  public class SimplifiedListenerFlowController {
-    public Id varHistoryRecordId;
-    public String varCurrentFieldTracked;
-    public String varCurrentFieldValue;
-    public Id varCurrentObjectID;
-    public String varNameofTrackedRecord;
-    public Boolean varTerminalStage;
-    public String varTrackedCustomObjectName;
-    public Datetime varEditStartTime;
-    public Datetime varEditEndTime;
-    public Id varLastHistoryRecordId;
-    public String varType;
-  }  
 
   //Constructor class
   public ListenerFlowController() {
@@ -385,12 +368,10 @@ global with sharing class ListenerFlowController {
 
     // Query for history records
     Map<Id, List<SObject>> historyRecordsMap = controllerInstance.historyRecordsMap;
-    listenerConfig.Flowdometer__Last_Execution_On__c = Datetime.now();
     // HISTORY RECORDS QUERY to populate historyRecordsMap and sortingDateTimeMap
     for (SObject obj : Database.query(queryStr)) {
       Id parentId = (Id) obj.get(parentIdField);
       Datetime createdDate = (Datetime) obj.get('CreatedDate');
-
 
       // Populate historyRecordsMap
       if (historyRecordsMap.containsKey(parentId)) {
@@ -435,6 +416,12 @@ global with sharing class ListenerFlowController {
         System.debug('parentRecord: ' + parentRecord);
         Object currentFieldValue = parentRecord.get(fieldName);
         
+        // // Create a new EditableHistory instance and set its fields.
+        // EditableHistory editableRecord = new EditableHistory();
+        // editableRecord.Id = (String)createdHistoryRecord.get('Id');
+        // editableRecord.OldValue = (String)createdHistoryRecord.get('OldValue');
+        // editableRecord.NewValue = (String)currentFieldValue;
+        
         // Optionally, update the historyRecordsMap
         historyRecordsMap.put(oneHistoryParentId, new List<SObject>{ createdHistoryRecord });
       }
@@ -472,12 +459,6 @@ global with sharing class ListenerFlowController {
     System.debug('controllerInstance: ' + controllerInstance);
     System.debug('controllerInstance.sortingDateTimeMap: ' + controllerInstance.sortingDateTimeMap);
     System.debug('controllerInstance.historyRecordsMap: ' + controllerInstance.historyRecordsMap);
-    
-    // Initialize response list if null
-    if(response.lstListenerFlow == null) {
-      response.lstListenerFlow = new List<ListenerFlowController>();
-    }
-
     for (Id parentRecId : controllerInstance.sortingDateTimeMap.keySet()) {
       Integer count = 0;
       if(response.lstListenerFlow == null) {
@@ -548,56 +529,19 @@ global with sharing class ListenerFlowController {
         System.debug('trackFlowObj: ' + trackFlowObj);
         count++;
       }
-      System.debug('response.lstListenerFlow: ' + response.lstListenerFlow);
     }
     // Return batches and store the rest
-    System.debug('Batch size: ' + batchSize);
-    System.debug('response.lstListenerFlow.size(): ' + response.lstListenerFlow.size());
-
+    Integer batchSize = 30;
     if (response.lstListenerFlow.size() > batchSize) {
-      // 1. Batching: Create a list containing only the first 'batchSize' records
-      List<ListenerFlowController> firstBatch = new List<ListenerFlowController>();
-      for(Integer i = 0; i < batchSize; i++) {
-        firstBatch.add(response.lstListenerFlow[i]);
-      }
-      
-      // 2. Storing Unprocessed Records: Create a list of leftover records
-      List<SimplifiedListenerFlowController> remainingRecords = new List<SimplifiedListenerFlowController>();
-      for(Integer i = batchSize; i < response.lstListenerFlow.size(); i++) {
-        SimplifiedListenerFlowController simplifiedRecord = new SimplifiedListenerFlowController();
-        ListenerFlowController originalRecord = response.lstListenerFlow[i];
-        
-        // Copy fields
-        simplifiedRecord.varType = originalRecord.varType;
-        simplifiedRecord.varTrackedCustomObjectName = originalRecord.varTrackedCustomObjectName;
-        // ... copy other needed fields
-        simplifiedRecord.varEditStartTime = originalRecord.varEditStartTime;
-        simplifiedRecord.varEditEndTime = originalRecord.varEditEndTime;
-        // ... more fields to copy
-
-        remainingRecords.add(simplifiedRecord);
-      }
-
-      // Serialize and save the remaining records
-      String remainingRecordsJson = JSON.serialize(remainingRecords);
-      Integer fieldLimit = 131072; // Replace with the actual field character limit
-
-      // Check if serialized string is too large
-      while(remainingRecordsJson.length() > fieldLimit) {
-        // Remove the oldest record (assuming the list is sorted by varEditStartTime)
-        remainingRecords.remove(0);
-        // Re-serialize
-        remainingRecordsJson = JSON.serialize(remainingRecords);
-      }
-
-      // Update the listenerConfig to save unprocessed records
-      listenerConfig.Flowdometer__Unprocessed_History_Records__c = remainingRecordsJson;
-      
-      // Update the response to contain only the first batch
+      // 1. Batching: Limit to the first 30 records
+      List<ListenerFlowController> firstBatch = response.lstListenerFlow.subList(0, batchSize);
       response.lstListenerFlow = firstBatch;
       
-      // Save the updated listenerConfig
-      update listenerConfig;
+      // 2. Storing Unprocessed Records: Serialize and store leftover records
+      List<ListenerFlowController> remainingRecords = response.lstListenerFlow.subList(batchSize, response.lstListenerFlow.size());
+      String remainingRecordsJson = JSON.serialize(remainingRecords);
+      listenerConfig.Flowdometer__Unprocessed_History_Records__c = remainingRecordsJson;
+      update listenerConfig;  // Assuming DML operations are allowed here; if not, consider a different approach
     }
     response.hasRecords = !historyRecordsMap.isEmpty();
   }
@@ -627,7 +571,6 @@ global with sharing class ListenerFlowController {
     // Create an instance of ListenerFlowController
     ListenerFlowController controllerInstance = new ListenerFlowController();
     Listener__c listenerConfig = listenerConfigList[0].listenerConfig;
-    listenerConfig.Flowdometer__Last_Check__c = Datetime.now();
     String objName = listenerConfig.Object_Name__c;
     // Get the history object name based on the object name in the listener config
     String objHistoryName = getHistoryObjectName(listenerConfig.Object_Name__c);
@@ -641,18 +584,24 @@ global with sharing class ListenerFlowController {
     ListenerFlowLatestResponse response = new ListenerFlowLatestResponse();
     Map<Id, SObject> sObjectMapForParse = new Map<Id, SObject>();
 
-    // Initialize a List to hold either the deserialized or queried records.
-    List<ListenerFlowController> lstListenerFlow = new List<ListenerFlowController>();
-
     if (listenerConfigList.isEmpty()) {
       return responseList;
     }
 
     // 1. Fetch Unprocessed Records
+    //Listener__c listenerConfig = listenerConfigList[0].listenerConfig;
     String unprocessedRecordsJson = listenerConfig.Flowdometer__Unprocessed_History_Records__c;
+    //List<MyRecord> lstListenerFlow = new List<MyRecord>();
     if (String.isNotBlank(unprocessedRecordsJson)) {
-      lstListenerFlow = (List<ListenerFlowController>) JSON.deserialize(unprocessedRecordsJson, List<ListenerFlowController>.class);
-      response.lstListenerFlow = lstListenerFlow;
+      lstListenerFlow = (List<MyRecord>) JSON.deserialize(unprocessedRecordsJson, List<MyRecord>.class);
+      
+      // 2. Decision to Skip
+      // If you decide to skip when unprocessed records exist, return the special response.
+      ListenerFlowLatestResponse responseToSkip = new ListenerFlowLatestResponse();
+      responseToSkip.hasRecords = false;
+      responseToSkip.isCheckSuccess = true;
+      responseToSkip.lstListenerFlow = new List<ListenerFlowController>();
+      return new List<ListenerFlowLatestResponse>{ responseToSkip };
     }
 
     Set<Id> targetRecords = new Set<Id>();
@@ -668,9 +617,8 @@ global with sharing class ListenerFlowController {
         : '';
       String queryStr = buildQuery(objName, parentIdField, targetRecordIds, listenerConfig, isHistoryQuery, lastExecutionOn);
 
-      if (String.isNotBlank(terminalStageField)) {
+      if (String.isNotBlank(terminalStageField))
         queryStr += ', ' + terminalStageField;
-      }
       System.debug('queryStr: ' + queryStr);
       for (SObject sob : Database.query(queryStr)) {
         targetRecords.add(sob.Id);

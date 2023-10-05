@@ -385,12 +385,10 @@ global with sharing class ListenerFlowController {
 
     // Query for history records
     Map<Id, List<SObject>> historyRecordsMap = controllerInstance.historyRecordsMap;
-    listenerConfig.Flowdometer__Last_Execution_On__c = Datetime.now();
     // HISTORY RECORDS QUERY to populate historyRecordsMap and sortingDateTimeMap
     for (SObject obj : Database.query(queryStr)) {
       Id parentId = (Id) obj.get(parentIdField);
       Datetime createdDate = (Datetime) obj.get('CreatedDate');
-
 
       // Populate historyRecordsMap
       if (historyRecordsMap.containsKey(parentId)) {
@@ -434,6 +432,12 @@ global with sharing class ListenerFlowController {
         SObject parentRecord = controllerInstance.parentRecordsMap.get(oneHistoryParentId);
         System.debug('parentRecord: ' + parentRecord);
         Object currentFieldValue = parentRecord.get(fieldName);
+        
+        // // Create a new EditableHistory instance and set its fields.
+        // EditableHistory editableRecord = new EditableHistory();
+        // editableRecord.Id = (String)createdHistoryRecord.get('Id');
+        // editableRecord.OldValue = (String)createdHistoryRecord.get('OldValue');
+        // editableRecord.NewValue = (String)currentFieldValue;
         
         // Optionally, update the historyRecordsMap
         historyRecordsMap.put(oneHistoryParentId, new List<SObject>{ createdHistoryRecord });
@@ -627,7 +631,6 @@ global with sharing class ListenerFlowController {
     // Create an instance of ListenerFlowController
     ListenerFlowController controllerInstance = new ListenerFlowController();
     Listener__c listenerConfig = listenerConfigList[0].listenerConfig;
-    listenerConfig.Flowdometer__Last_Check__c = Datetime.now();
     String objName = listenerConfig.Object_Name__c;
     // Get the history object name based on the object name in the listener config
     String objHistoryName = getHistoryObjectName(listenerConfig.Object_Name__c);
