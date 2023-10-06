@@ -51,7 +51,7 @@ global with sharing class ListenerFlowController {
   global Id varHistoryRecordId;
   @AuraEnabled
   global Id varLastHistoryRecordId;
-  public Integer batchSize = 20;
+  public Integer batchSize = 30;
 
 
   // Inner class for ListenerFlowLatestResponse parameter setting on Flow record
@@ -124,7 +124,6 @@ global with sharing class ListenerFlowController {
   }
   // This method sorts the history records in ascending order of CreatedDate and ID, and updates the historyList parameter.
   public void sortHistoryList(List<SObject> historyList) {
-    System.debug('sortHistoryList called');
     List<CustomDatetimeSort> toSort = new List<CustomDatetimeSort>();
 
     for(SObject record : historyList) {
@@ -286,14 +285,12 @@ global with sharing class ListenerFlowController {
         
         // Handle the fields to select and the WHERE conditions based on query type
         if (isHistoryQuery) {
-            System.debug('Historical Query built');
             selectFields.addAll(new List<String>{'Field', 'OldValue', 'NewValue', 'CreatedDate', parentIdField});
             whereConditions.add('(Field =: fieldValue OR Field =: fieldName)');
             if (!targetRecordIds.isEmpty()) {
                 whereConditions.add(parentIdField + ' IN :targetRecordIds');
             }
         } else {
-            System.debug('Parent Records Query built');
             if (listenerConfig.Object_Name__c == 'Case') {
                 selectFields.add('CaseNumber');
             } else {
@@ -334,7 +331,6 @@ global with sharing class ListenerFlowController {
         Boolean isHistoryQuery,
         DateTime lastExecutionOn
     ) {
-        System.debug('getQueryModifiers called');
         Map<String, Object> queryModifiers = new Map<String, Object>{
             'includeOrderBy' => true,
             'includeLimit' => true,
@@ -386,7 +382,7 @@ global with sharing class ListenerFlowController {
     String objectSuffix = '__c';
     Boolean isHistoryQuery = true;
     String queryStr = buildQuery(objHistoryName, parentIdField, targetRecordIds, listenerConfig, true, lastExecutionOn);
-    System.debug('Query built: ' + queryStr);
+    System.debug('queryStr: ' + queryStr);
 
     // Query for history records
     Map<Id, List<SObject>> historyRecordsMap = controllerInstance.historyRecordsMap;
@@ -437,6 +433,7 @@ global with sharing class ListenerFlowController {
         
         // Fetch the current value from the parent record map
         SObject parentRecord = controllerInstance.parentRecordsMap.get(oneHistoryParentId);
+        System.debug('parentRecord: ' + parentRecord);
         Object currentFieldValue = parentRecord.get(fieldName);
         
         // Optionally, update the historyRecordsMap
@@ -551,37 +548,30 @@ global with sharing class ListenerFlowController {
         // Copy fields
         simplifiedRecord.varType = originalRecord.varType;
         simplifiedRecord.varTrackedCustomObjectName = originalRecord.varTrackedCustomObjectName;
+        // ... copy other needed fields
         simplifiedRecord.varEditStartTime = originalRecord.varEditStartTime;
         simplifiedRecord.varEditEndTime = originalRecord.varEditEndTime;
-        simplifiedRecord.varCurrentObjectID = originalRecord.varCurrentObjectID;
-        simplifiedRecord.varCurrentFieldTracked = originalRecord.varCurrentFieldTracked;
-        simplifiedRecord.varCurrentFieldValue = originalRecord.varCurrentFieldValue;
-        simplifiedRecord.varNameofTrackedRecord = originalRecord.varNameofTrackedRecord;
-        simplifiedRecord.varTerminalStage = originalRecord.varTerminalStage;
-        simplifiedRecord.varHistoryRecordId = originalRecord.varHistoryRecordId;
-        simplifiedRecord.varLastHistoryRecordId = originalRecord.varLastHistoryRecordId;
+        // ... more fields to copy
 
         remainingRecords.add(simplifiedRecord);
       }
 
       // Serialize and save the remaining records
       String remainingRecordsJson = JSON.serialize(remainingRecords);
-      Integer fieldLimit = 131072;
-      System.debug('Excess size of remainingRecordsJson: ' + (remainingRecordsJson.length() - fieldLimit));
+      Integer fieldLimit = 131072; // Replace with the actual field character limit
 
+      System.debug('Excess size of remainingRecordsJson: ' + remainingRecordsJson.length() - fieldLimit);
       // Check if serialized string is too large
       while(remainingRecordsJson.length() > fieldLimit) {
         // Remove the oldest record (assuming the list is sorted by varEditStartTime)        
         remainingRecords.remove(0);
         // Re-serialize
         remainingRecordsJson = JSON.serialize(remainingRecords);
-        System.debug('Updated excess size of remainingRecordsJson: ' + (remainingRecordsJson.length() - fieldLimit));
       }
 
       // Update the listenerConfig to save unprocessed records
       listenerConfig.Flowdometer__Unprocessed_History_Records__c = remainingRecordsJson;
-      listenerConfig.Flowdometer__isActive__c = true;
-
+      
       // Update the response to contain only the first batch
       response.lstListenerFlow = firstBatch;
       
@@ -643,8 +633,6 @@ global with sharing class ListenerFlowController {
     if (String.isNotBlank(unprocessedRecordsJson)) {
       lstListenerFlow = (List<ListenerFlowController>) JSON.deserialize(unprocessedRecordsJson, List<ListenerFlowController>.class);
       response.lstListenerFlow = lstListenerFlow;
-      // Clear out the unprocessed records field
-      listenerConfig.Flowdometer__Unprocessed_History_Records__c = '';
     }
 
     Set<Id> targetRecords = new Set<Id>();

@@ -566,22 +566,21 @@ global with sharing class ListenerFlowController {
 
       // Serialize and save the remaining records
       String remainingRecordsJson = JSON.serialize(remainingRecords);
-      Integer fieldLimit = 131072;
-      System.debug('Excess size of remainingRecordsJson: ' + (remainingRecordsJson.length() - fieldLimit));
+      Integer fieldLimit = 131072; // Replace with the actual field character limit
 
+      System.debug('Excess size of remainingRecordsJson: ' + (remainingRecordsJson.length() - fieldLimit));
       // Check if serialized string is too large
       while(remainingRecordsJson.length() > fieldLimit) {
         // Remove the oldest record (assuming the list is sorted by varEditStartTime)        
         remainingRecords.remove(0);
         // Re-serialize
         remainingRecordsJson = JSON.serialize(remainingRecords);
-        System.debug('Updated excess size of remainingRecordsJson: ' + (remainingRecordsJson.length() - fieldLimit));
       }
-
+      System.debug('listenerConfig: ' + listenerConfig);
       // Update the listenerConfig to save unprocessed records
       listenerConfig.Flowdometer__Unprocessed_History_Records__c = remainingRecordsJson;
-      listenerConfig.Flowdometer__isActive__c = true;
-
+      listenerConfig.Active__c = true;
+      
       // Update the response to contain only the first batch
       response.lstListenerFlow = firstBatch;
       
@@ -643,8 +642,6 @@ global with sharing class ListenerFlowController {
     if (String.isNotBlank(unprocessedRecordsJson)) {
       lstListenerFlow = (List<ListenerFlowController>) JSON.deserialize(unprocessedRecordsJson, List<ListenerFlowController>.class);
       response.lstListenerFlow = lstListenerFlow;
-      // Clear out the unprocessed records field
-      listenerConfig.Flowdometer__Unprocessed_History_Records__c = '';
     }
 
     Set<Id> targetRecords = new Set<Id>();
