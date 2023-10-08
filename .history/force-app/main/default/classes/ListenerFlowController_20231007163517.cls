@@ -519,6 +519,13 @@ global with sharing class ListenerFlowController {
         }
 
         trackFlowObj.varType = listenerConfig.Type__c; 
+        System.debug('lstListenerFlow Before Population: ' + response.lstListenerFlow.size());
+        if(!response.lstListenerFlow.contains(trackFlowObj)) {
+          response.lstListenerFlow.add(trackFlowObj);
+          //processedRecords.add(trackFlowObj);
+          processedRecordsMap.put((Id) SObj.get('Id'), true);          
+        }
+        System.debug('After Population: ' + response.lstListenerFlow.size());
 
         count++;
         System.debug('Parent Record Id: ' + parentRecId);
@@ -531,16 +538,12 @@ global with sharing class ListenerFlowController {
     // Return batches and store the rest
     if (response.lstListenerFlow.size() > batchSize) {
       System.debug('Excess records found. Saving unprocessed records.');
-      System.debug('lstListenerFlow Before Population: ' + response.lstListenerFlow.size());
-
       // 1. Batching: Create a list containing only the first 'batchSize' records
       List<ListenerFlowController> firstBatch = new List<ListenerFlowController>();
       for(Integer i = 0; i < batchSize; i++) {
         firstBatch.add(response.lstListenerFlow[i]);
-        processedRecordsMap.put((Id) response.lstListenerFlow[i].varHistoryRecordId, true);
       }
-      System.debug('After Population: ' + response.lstListenerFlow.size());
-
+      
       // 2. Storing Unprocessed Records: Create a list of leftover records
       List<SimplifiedListenerFlowController> remainingRecords = new List<SimplifiedListenerFlowController>();
       for(Integer i = batchSize; i < response.lstListenerFlow.size(); i++) {
@@ -600,6 +603,16 @@ global with sharing class ListenerFlowController {
       }
       // Replace the old remainingRecords list with the new one
       remainingRecords = recordsToKeep;
+      //remainingRecords.removeIf(record -> processedRecordsMap.containsKey(record.varHistoryRecordId));
+      // for (ListenerFlowController processed : processedRecords) {
+      //   remainingRecords.remove(processed);
+      // }
+
+
+
+
+      // Update the listenerConfig to save unprocessed records
+      listenerConfig.Flowdometer__Unprocessed_History_Records__c = remainingRecordsJson;
 
       // Update the response to contain only the first batch
       response.lstListenerFlow = firstBatch;
@@ -607,7 +620,7 @@ global with sharing class ListenerFlowController {
       if (remainingRecords.isEmpty()) {
         listenerConfig.Flowdometer__Unprocessed_History_Records__c = null; // or ''
       } else {
-          listenerConfig.Flowdometer__Unprocessed_History_Records__c = remainingRecordsJson;
+          listenerConfig.Flowdometer__Unprocessed_History_Records__c = JSON.serialize(remainingRecords);
       }
       // Save the updated listenerConfig
       update listenerConfig;
