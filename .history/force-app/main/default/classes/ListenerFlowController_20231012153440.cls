@@ -269,15 +269,6 @@ global with sharing class ListenerFlowController {
   
 // Section where we build and call the query ------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
-  // This method returns a list of historical IDs we already have, to exclude from the query.
-  private static List<Id> getHistoryRecordIdsToExclude() {
-    List<Id> idsToExclude = new List<Id>();
-    for (Flowdometer__Step__c step : [SELECT Flowdometer__History_Record_ID__c FROM Flowdometer__Step__c WHERE Flowdometer__History_Record_ID__c != null]) {
-        idsToExclude.add(step.Flowdometer__History_Record_ID__c);
-    }
-    return idsToExclude;
-  }
-
   // Called by: getLatestHistoryValues
   // This method builds the query string based on the listener configuration and query modifiers.
     @TestVisible
@@ -300,12 +291,6 @@ global with sharing class ListenerFlowController {
             if (!targetRecordIds.isEmpty()) {
                 whereConditions.add(parentIdField + ' IN :targetRecordIds');
             }
-            if(listenerConfig.Last_Execution_On__c == null) {
-              List<Id> historyRecordIdsToExclude = getHistoryRecordIdsToExclude();
-              if (!historyRecordIdsToExclude.isEmpty()) {
-                whereConditions.add('Id NOT IN :historyRecordIdsToExclude');
-              }
-            }         
         } else {
             System.debug('Parent Records Query built');
             if (listenerConfig.Object_Name__c == 'Case') {
@@ -471,8 +456,6 @@ global with sharing class ListenerFlowController {
   Integer batchSize,
   Map<Id, Boolean> processedRecordsMap
   ) {
-    List<SimplifiedListenerFlowController> remainingRecords = new List<SimplifiedListenerFlowController>();
-    String remainingRecordsJson;
     // Dynamically adjust batch size when less than our default
     if(response.lstListenerFlow.size() < batchSize) {
       batchSize = response.lstListenerFlow.size();
@@ -480,6 +463,7 @@ global with sharing class ListenerFlowController {
 
     // Return batches and store the rest
     if (response.lstListenerFlow.size() > 0) {
+      System.debug('Excess records found. Saving unprocessed records.');
       System.debug('lstListenerFlow Before Population: ' + response.lstListenerFlow.size());
 
       // 1. Batching: Create a list containing only the first 'batchSize' records
@@ -490,66 +474,65 @@ global with sharing class ListenerFlowController {
       }
       System.debug('After Population: ' + response.lstListenerFlow.size());
 
-      // If we have more records than the batch size, we need to store the rest
-      if (batchSize != response.lstListenerFlow.size()) {
-        // 2. Storing Unprocessed Records: Create a list of leftover records
-        for(Integer i = batchSize; i < response.lstListenerFlow.size(); i++) {
-          SimplifiedListenerFlowController simplifiedRecord = new SimplifiedListenerFlowController();
-          ListenerFlowController originalRecord = response.lstListenerFlow[i];
-          
-          // Set up the simplified record
-          simplifiedRecord.varType = originalRecord.varType;
-          simplifiedRecord.varTrackedCustomObjectName = originalRecord.varTrackedCustomObjectName;
-          simplifiedRecord.varEditStartTime = originalRecord.varEditStartTime;
-          simplifiedRecord.varEditEndTime = originalRecord.varEditEndTime;
-          simplifiedRecord.varCurrentObjectID = originalRecord.varCurrentObjectID;
-          simplifiedRecord.varCurrentFieldTracked = originalRecord.varCurrentFieldTracked;
-          simplifiedRecord.varCurrentFieldValue = originalRecord.varCurrentFieldValue;
-          simplifiedRecord.varNameofTrackedRecord = originalRecord.varNameofTrackedRecord;
-          simplifiedRecord.varTerminalStage = originalRecord.varTerminalStage;
-          simplifiedRecord.varHistoryRecordId = originalRecord.varHistoryRecordId;
-          simplifiedRecord.varLastHistoryRecordId = originalRecord.varLastHistoryRecordId;
+      // 2. Storing Unprocessed Records: Create a list of leftover records
+      List<SimplifiedListenerFlowController> remainingRecords = new List<SimplifiedListenerFlowController>();
+      for(Integer i = batchSize; i < response.lstListenerFlow.size(); i++) {
+        SimplifiedListenerFlowController simplifiedRecord = new SimplifiedListenerFlowController();
+        ListenerFlowController originalRecord = response.lstListenerFlow[i];
+        
+        // Set up the simplified record
+        simplifiedRecord.varType = originalRecord.varType;
+        simplifiedRecord.varTrackedCustomObjectName = originalRecord.varTrackedCustomObjectName;
+        simplifiedRecord.varEditStartTime = originalRecord.varEditStartTime;
+        simplifiedRecord.varEditEndTime = originalRecord.varEditEndTime;
+        simplifiedRecord.varCurrentObjectID = originalRecord.varCurrentObjectID;
+        simplifiedRecord.varCurrentFieldTracked = originalRecord.varCurrentFieldTracked;
+        simplifiedRecord.varCurrentFieldValue = originalRecord.varCurrentFieldValue;
+        simplifiedRecord.varNameofTrackedRecord = originalRecord.varNameofTrackedRecord;
+        simplifiedRecord.varTerminalStage = originalRecord.varTerminalStage;
+        simplifiedRecord.varHistoryRecordId = originalRecord.varHistoryRecordId;
+        simplifiedRecord.varLastHistoryRecordId = originalRecord.varLastHistoryRecordId;
 
-          remainingRecords.add(simplifiedRecord);
-        }
-        // Serialize remaining records
-        if (!remainingRecords.isEmpty()) {  // <-- Add this condition
-            remainingRecordsJson = JSON.serialize(remainingRecords);  // <-- Add this line
-        }
-        Integer fieldLimit = 131072;
-        System.debug('Excess size of remainingRecordsJson: ' + (remainingRecordsJson.length() - fieldLimit));
-        System.debug('Remaining Records JSON: ' + remainingRecordsJson);
-        System.debug('Remaining Records JSON Size: ' + remainingRecordsJson.length());
-        System.debug('Remaining Records: ' + remainingRecords);
-        System.debug('Remaining Records Size: ' + remainingRecords.size());
-        // Check if serialized string is too large
-        while(remainingRecordsJson.length() > fieldLimit) {
-          // Remove the oldest record (assuming the list is sorted by varEditStartTime)        
-          remainingRecords.remove(0);
-          // Re-serialize
-          remainingRecordsJson = JSON.serialize(remainingRecords);
-          System.debug('Latest excess size of remainingRecordsJson: ' + (remainingRecordsJson.length() - fieldLimit));
-        }
-
-        // Remove processed records from the remaining records
-        // Create a new list to hold the records to keep
-        List<SimplifiedListenerFlowController> recordsToKeep = new List<SimplifiedListenerFlowController>();
-
-        // Loop through remainingRecords to find records to keep
-        for (SimplifiedListenerFlowController record : remainingRecords) {
-          System.debug('Record to check: ' + record);
-          System.debug('Processed Records Map: ' + processedRecordsMap);
-          System.debug('Remaining Records: ' + remainingRecords);
-          if (!processedRecordsMap.containsKey(record.varHistoryRecordId)) {
-                System.debug('Record to keep: ' + record);
-                recordsToKeep.add(record);
-            } else {
-              System.debug('Record to remove: ' + record);
-            }
-        }
-        // Replace the old remainingRecords list with the new one
-        remainingRecords = recordsToKeep;
+        remainingRecords.add(simplifiedRecord);
       }
+      // Serialize remaining records
+      String remainingRecordsJson;
+      if (!remainingRecords.isEmpty()) {  // <-- Add this condition
+          remainingRecordsJson = JSON.serialize(remainingRecords);  // <-- Add this line
+      }
+      Integer fieldLimit = 131072;
+      System.debug('Excess size of remainingRecordsJson: ' + (remainingRecordsJson.length() - fieldLimit));
+      System.debug('Remaining Records JSON: ' + remainingRecordsJson);
+      System.debug('Remaining Records JSON Size: ' + remainingRecordsJson.length());
+      System.debug('Remaining Records: ' + remainingRecords);
+      System.debug('Remaining Records Size: ' + remainingRecords.size());
+      // Check if serialized string is too large
+      while(remainingRecordsJson.length() > fieldLimit) {
+        // Remove the oldest record (assuming the list is sorted by varEditStartTime)        
+        remainingRecords.remove(0);
+        // Re-serialize
+        remainingRecordsJson = JSON.serialize(remainingRecords);
+        System.debug('Latest excess size of remainingRecordsJson: ' + (remainingRecordsJson.length() - fieldLimit));
+      }
+
+      // Remove processed records from the remaining records
+      // Create a new list to hold the records to keep
+      List<SimplifiedListenerFlowController> recordsToKeep = new List<SimplifiedListenerFlowController>();
+
+      // Loop through remainingRecords to find records to keep
+      for (SimplifiedListenerFlowController record : remainingRecords) {
+        System.debug('Record to check: ' + record);
+        System.debug('Processed Records Map: ' + processedRecordsMap);
+        System.debug('Remaining Records: ' + remainingRecords);
+        if (!processedRecordsMap.containsKey(record.varHistoryRecordId)) {
+              System.debug('Record to keep: ' + record);
+              recordsToKeep.add(record);
+          } else {
+            System.debug('Record to remove: ' + record);
+          }
+      }
+      // Replace the old remainingRecords list with the new one
+      remainingRecords = recordsToKeep;
 
       // Update the response to contain only the first batch
       response.lstListenerFlow = firstBatch;

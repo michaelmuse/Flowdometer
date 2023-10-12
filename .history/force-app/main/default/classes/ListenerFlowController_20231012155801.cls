@@ -269,15 +269,6 @@ global with sharing class ListenerFlowController {
   
 // Section where we build and call the query ------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
-  // This method returns a list of historical IDs we already have, to exclude from the query.
-  private static List<Id> getHistoryRecordIdsToExclude() {
-    List<Id> idsToExclude = new List<Id>();
-    for (Flowdometer__Step__c step : [SELECT Flowdometer__History_Record_ID__c FROM Flowdometer__Step__c WHERE Flowdometer__History_Record_ID__c != null]) {
-        idsToExclude.add(step.Flowdometer__History_Record_ID__c);
-    }
-    return idsToExclude;
-  }
-
   // Called by: getLatestHistoryValues
   // This method builds the query string based on the listener configuration and query modifiers.
     @TestVisible
@@ -300,12 +291,6 @@ global with sharing class ListenerFlowController {
             if (!targetRecordIds.isEmpty()) {
                 whereConditions.add(parentIdField + ' IN :targetRecordIds');
             }
-            if(listenerConfig.Last_Execution_On__c == null) {
-              List<Id> historyRecordIdsToExclude = getHistoryRecordIdsToExclude();
-              if (!historyRecordIdsToExclude.isEmpty()) {
-                whereConditions.add('Id NOT IN :historyRecordIdsToExclude');
-              }
-            }         
         } else {
             System.debug('Parent Records Query built');
             if (listenerConfig.Object_Name__c == 'Case') {

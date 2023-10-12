@@ -300,7 +300,7 @@ global with sharing class ListenerFlowController {
             if (!targetRecordIds.isEmpty()) {
                 whereConditions.add(parentIdField + ' IN :targetRecordIds');
             }
-            if(listenerConfig.Last_Execution_On__c == null) {
+            if(listenerConfig.Last_Execution_On__c != null) {
               List<Id> historyRecordIdsToExclude = getHistoryRecordIdsToExclude();
               if (!historyRecordIdsToExclude.isEmpty()) {
                 whereConditions.add('Id NOT IN :historyRecordIdsToExclude');
