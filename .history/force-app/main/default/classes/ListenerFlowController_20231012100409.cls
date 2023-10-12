@@ -456,13 +456,8 @@ global with sharing class ListenerFlowController {
   Integer batchSize,
   Map<Id, Boolean> processedRecordsMap
   ) {
-    // Dynamically adjust batch size when less than our default
-    if(response.lstListenerFlow.size() < batchSize) {
-      batchSize = response.lstListenerFlow.size();
-    }
-
     // Return batches and store the rest
-    if (response.lstListenerFlow.size() > 0) {
+    if (response.lstListenerFlow.size() > batchSize) {
       System.debug('Excess records found. Saving unprocessed records.');
       System.debug('lstListenerFlow Before Population: ' + response.lstListenerFlow.size());
 

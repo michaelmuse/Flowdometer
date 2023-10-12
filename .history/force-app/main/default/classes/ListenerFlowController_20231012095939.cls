@@ -53,6 +53,8 @@ global with sharing class ListenerFlowController {
   global Id varLastHistoryRecordId;
   public List<ListenerFlowController> processedRecords = new List<ListenerFlowController>();
 
+
+
   // Inner class for ListenerFlowLatestResponse parameter setting on Flow record
   @TestVisible
   global class ListenerFlowLatestResponse {
@@ -456,13 +458,8 @@ global with sharing class ListenerFlowController {
   Integer batchSize,
   Map<Id, Boolean> processedRecordsMap
   ) {
-    // Dynamically adjust batch size when less than our default
-    if(response.lstListenerFlow.size() < batchSize) {
-      batchSize = response.lstListenerFlow.size();
-    }
-
     // Return batches and store the rest
-    if (response.lstListenerFlow.size() > 0) {
+    if (response.lstListenerFlow.size() > batchSize) {
       System.debug('Excess records found. Saving unprocessed records.');
       System.debug('lstListenerFlow Before Population: ' + response.lstListenerFlow.size());
 
@@ -628,8 +625,7 @@ global with sharing class ListenerFlowController {
     System.debug('response.lstListenerFlow.size(): ' + response.lstListenerFlow.size());
 
     // Batch the data and store the rest 
-    Integer batchSize = 20;
-    controllerInstance.handleBatchAndUnprocessedRecords(response, listenerConfig, batchSize, processedRecordsMap);
+    handleBatchAndUnprocessedRecords(response, listenerConfig, batchSize, processedRecordsMap);
 
     response.hasRecords = !historyRecordsMap.isEmpty();
   }
@@ -662,6 +658,7 @@ global with sharing class ListenerFlowController {
     Listener__c listenerConfig = listenerConfigList[0].listenerConfig;
     listenerConfig.Flowdometer__Last_Check__c = Datetime.now();
     String objName = listenerConfig.Object_Name__c;
+    Integer batchSize = 20;
     // Get the history object name based on the object name in the listener config
     String objHistoryName = getHistoryObjectName(listenerConfig.Object_Name__c);
     // Get parentIdField
@@ -681,8 +678,6 @@ global with sharing class ListenerFlowController {
       return responseList;
     }
 
-    Integer batchSize = 20;
-
     // When Historical Records Exist, use them instead of querying for them
     String unprocessedRecordsJson = listenerConfig.Flowdometer__Unprocessed_History_Records__c;
     if (String.isNotBlank(unprocessedRecordsJson)) {
@@ -691,7 +686,7 @@ global with sharing class ListenerFlowController {
       System.debug('Deserialized Records: ' + lstListenerFlow);
 
       // Batch the data and store the rest
-      controllerInstance.handleBatchAndUnprocessedRecords(response, listenerConfig, batchSize, new Map<Id, Boolean>());
+      handleBatchAndUnprocessedRecords(response, listenerConfig, batchSize, new Map<Id, Boolean>());
 
       response.isCheckSuccess = true;
       response.hasRecords = !lstListenerFlow.isEmpty();

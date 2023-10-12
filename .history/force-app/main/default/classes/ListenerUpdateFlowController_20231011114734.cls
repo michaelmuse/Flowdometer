@@ -5,7 +5,6 @@ global with sharing class ListenerUpdateFlowController {
     description=''
     category='ListenerUpdateFlowController'
   )
-  // 
   public static List<FlowUpdateResponse> updateFlowRecords(
     List<FlowUpdateRequest> listenerFlowToUpdateLst
   ) {
@@ -36,7 +35,6 @@ global with sharing class ListenerUpdateFlowController {
     } catch (Exception ex) {
       response.isCheckSuccess = false;
     }
-    System.debug('response from ListenerUpdateFlowController - ' + response);
     return new List<FlowUpdateResponse>{ response };
     // q: Could you write some code that I can add to this method, where if hasRecords and checkSuccess are both True, then we update the flow stored in {!FlowToUpdateLst}, and if either of those are False, then we don't update the flow stored in {!FlowToUpdateLst}?
     // a: I think you can do this with a decision element in the flow.  You can have the decision element check the values of the two variables and then branch accordingly.  If you want to do it in the apex class, you can do it like this:

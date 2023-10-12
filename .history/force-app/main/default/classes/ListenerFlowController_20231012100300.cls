@@ -456,13 +456,8 @@ global with sharing class ListenerFlowController {
   Integer batchSize,
   Map<Id, Boolean> processedRecordsMap
   ) {
-    // Dynamically adjust batch size when less than our default
-    if(response.lstListenerFlow.size() < batchSize) {
-      batchSize = response.lstListenerFlow.size();
-    }
-
     // Return batches and store the rest
-    if (response.lstListenerFlow.size() > 0) {
+    if (response.lstListenerFlow.size() > batchSize) {
       System.debug('Excess records found. Saving unprocessed records.');
       System.debug('lstListenerFlow Before Population: ' + response.lstListenerFlow.size());
 
@@ -628,7 +623,6 @@ global with sharing class ListenerFlowController {
     System.debug('response.lstListenerFlow.size(): ' + response.lstListenerFlow.size());
 
     // Batch the data and store the rest 
-    Integer batchSize = 20;
     controllerInstance.handleBatchAndUnprocessedRecords(response, listenerConfig, batchSize, processedRecordsMap);
 
     response.hasRecords = !historyRecordsMap.isEmpty();
@@ -680,7 +674,7 @@ global with sharing class ListenerFlowController {
     if (listenerConfigList.isEmpty()) {
       return responseList;
     }
-
+    
     Integer batchSize = 20;
 
     // When Historical Records Exist, use them instead of querying for them
