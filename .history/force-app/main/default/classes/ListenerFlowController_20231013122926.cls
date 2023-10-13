@@ -52,7 +52,6 @@ global with sharing class ListenerFlowController {
   @AuraEnabled
   global Id varLastHistoryRecordId;
   public List<ListenerFlowController> processedRecords = new List<ListenerFlowController>();
-  private static List<Id> historyRecordIdsToExclude;
 
   // Inner class for ListenerFlowLatestResponse parameter setting on Flow record
   @TestVisible
@@ -303,7 +302,7 @@ global with sharing class ListenerFlowController {
                 whereConditions.add(parentIdField + ' IN :targetRecordIds');
             }
             if(lastExecutionOn == null) {
-              historyRecordIdsToExclude = getHistoryRecordIdsToExclude();
+              List<Id> historyRecordIdsToExclude = getHistoryRecordIdsToExclude();
               if (!historyRecordIdsToExclude.isEmpty()) {
                 whereConditions.add('Id NOT IN :historyRecordIdsToExclude');
               }
@@ -321,6 +320,7 @@ global with sharing class ListenerFlowController {
             selectFields.add(listenerConfig.Field_To_Track__c);
             selectFields.add(listenerConfig.Type__c);
         }
+      }
 
         // Get query modifiers
         Map<String, Object> queryModifiers = getQueryModifiers(isHistoryQuery, lastExecutionOn);
@@ -334,12 +334,12 @@ global with sharing class ListenerFlowController {
             queryStr += ' WHERE ' + String.join(whereConditions, ' AND ');
         }
 
-        // Common query modifiers - Need to move to query modifiers method and sort parents by DSC, history by ASC
+        // Common query modifiers
         if ((Boolean)queryModifiers.get('includeOrderBy')) {
-            queryStr += isHistoryQuery ? ' ORDER BY ' + parentIdField + ', CreatedDate ASC' : ' ORDER BY Id, CreatedDate ASC';
+            queryStr += isHistoryQuery ? ' ORDER BY ' + parentIdField + ', CreatedDate ASC' : ' ORDER BY Id, CreatedDate ASC'; // maybe this should be DESC
         }
         if ((Boolean)queryModifiers.get('includeLimit')) {
-            queryStr += ' LIMIT 4000';
+            queryStr += ' LIMIT 10000';
         }
 
         return queryStr;
@@ -397,7 +397,7 @@ global with sharing class ListenerFlowController {
 
     // Query for history records
     Map<Id, List<SObject>> historyRecordsMap = controllerInstance.historyRecordsMap;
-    Datetime queryTimestamp  = Datetime.now();
+    listenerConfig.Flowdometer__Last_Execution_On__c = Datetime.now();
     // HISTORY RECORDS QUERY to populate historyRecordsMap and sortingDateTimeMap
     for (SObject obj : Database.query(queryStr)) {
       Id parentId = (Id) obj.get(parentIdField);
@@ -418,8 +418,6 @@ global with sharing class ListenerFlowController {
     }
 
     if (!historyRecordsMap.isEmpty()) {
-      // Only update Last Execution On if we have history records, otherwise we'll keep querying for the same records
-      listenerConfig.Flowdometer__Last_Execution_On__c = queryTimestamp;
       // Sort using sortHistoryList method
       for (Id parentId : historyRecordsMap.keySet()) {
         List<SObject> specificHistoryList = (List<SObject>) historyRecordsMap.get(parentId);
@@ -674,7 +672,7 @@ global with sharing class ListenerFlowController {
     String parentIdField = isCustomObject(objName) ? 'ParentId' : (objName + 'Id');
     String fieldValue = 'created';
     String fieldName = listenerConfig.Field_To_Track__c;
-    DateTime lastExecutionOn = listenerConfig.Last_Execution_On__c;
+    DateTime lastExecutionOn = listenerConfigList[0].lastExecutionOn;
     System.debug('lastExecutionOn in parseRecordsToFlow: ' + lastExecutionOn);
     List<ListenerFlowLatestResponse> responseList = new List<ListenerFlowLatestResponse>();
     ListenerFlowLatestResponse response = new ListenerFlowLatestResponse();
@@ -759,7 +757,7 @@ global with sharing class ListenerFlowController {
       response.isCheckSuccess = false;
       listenerConfig.Error_Message__c = 'Error: ' + e.getMessage() + ' Trace: ' + e.getStackTraceString();
     }
-    System.debug('listenerConfig: ' + listenerConfig);
+
     update listenerConfig;
 
     responseList.add(response);

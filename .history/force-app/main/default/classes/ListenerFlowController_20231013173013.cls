@@ -303,7 +303,7 @@ global with sharing class ListenerFlowController {
                 whereConditions.add(parentIdField + ' IN :targetRecordIds');
             }
             if(lastExecutionOn == null) {
-              historyRecordIdsToExclude = getHistoryRecordIdsToExclude();
+              List<Id> historyRecordIdsToExclude = getHistoryRecordIdsToExclude();
               if (!historyRecordIdsToExclude.isEmpty()) {
                 whereConditions.add('Id NOT IN :historyRecordIdsToExclude');
               }
@@ -397,7 +397,7 @@ global with sharing class ListenerFlowController {
 
     // Query for history records
     Map<Id, List<SObject>> historyRecordsMap = controllerInstance.historyRecordsMap;
-    Datetime queryTimestamp  = Datetime.now();
+    listenerConfig.Flowdometer__Last_Execution_On__c = Datetime.now();
     // HISTORY RECORDS QUERY to populate historyRecordsMap and sortingDateTimeMap
     for (SObject obj : Database.query(queryStr)) {
       Id parentId = (Id) obj.get(parentIdField);
@@ -418,8 +418,6 @@ global with sharing class ListenerFlowController {
     }
 
     if (!historyRecordsMap.isEmpty()) {
-      // Only update Last Execution On if we have history records, otherwise we'll keep querying for the same records
-      listenerConfig.Flowdometer__Last_Execution_On__c = queryTimestamp;
       // Sort using sortHistoryList method
       for (Id parentId : historyRecordsMap.keySet()) {
         List<SObject> specificHistoryList = (List<SObject>) historyRecordsMap.get(parentId);
@@ -759,7 +757,7 @@ global with sharing class ListenerFlowController {
       response.isCheckSuccess = false;
       listenerConfig.Error_Message__c = 'Error: ' + e.getMessage() + ' Trace: ' + e.getStackTraceString();
     }
-    System.debug('listenerConfig: ' + listenerConfig);
+
     update listenerConfig;
 
     responseList.add(response);

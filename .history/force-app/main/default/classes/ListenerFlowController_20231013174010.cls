@@ -759,7 +759,7 @@ global with sharing class ListenerFlowController {
       response.isCheckSuccess = false;
       listenerConfig.Error_Message__c = 'Error: ' + e.getMessage() + ' Trace: ' + e.getStackTraceString();
     }
-    System.debug('listenerConfig: ' + listenerConfig);
+
     update listenerConfig;
 
     responseList.add(response);
