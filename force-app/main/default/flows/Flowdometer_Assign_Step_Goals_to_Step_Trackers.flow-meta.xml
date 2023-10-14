@@ -56,6 +56,12 @@
                 <elementReference>$Record.Id</elementReference>
             </value>
         </inputAssignments>
+        <inputAssignments>
+            <field>Terminal_Stage__c</field>
+            <value>
+                <elementReference>$Record.Terminal_Stage__c</elementReference>
+            </value>
+        </inputAssignments>
         <object>Step__c</object>
     </recordUpdates>
     <start>

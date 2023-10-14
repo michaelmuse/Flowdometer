@@ -284,9 +284,7 @@ global with sharing class ListenerFlowController {
                 selectFields.add('Name');
             }
             selectFields.add(listenerConfig.Field_To_Track__c);
-            if(listenerConfig.Type__c != null) {
-              selectFields.add(listenerConfig.Type__c);
-            }
+            selectFields.add(listenerConfig.Type__c);
         }
 
         // Get query modifiers
@@ -296,7 +294,7 @@ global with sharing class ListenerFlowController {
         }
         
         // Construct the query
-        String queryStr = 'SELECT ' + String.join(selectFields, ', ') + ' FROM ' + tableName; //MAY NEED TO ADD BACK SPACE BEFORE FROM
+        String queryStr = 'SELECT ' + String.join(selectFields, ', ') + 'FROM ' + tableName; //MAY NEED TO ADD BACK SPACE BEFORE FROM
         if (!whereConditions.isEmpty()) {
             queryStr += ' WHERE ' + String.join(whereConditions, ' AND ');
         }
@@ -357,7 +355,7 @@ global with sharing class ListenerFlowController {
     String objectSuffix = '__c';
     Boolean isHistoryQuery = true;
     String queryStr = buildQuery(objHistoryName, parentIdField, targetRecordIds, listenerConfig, true, lastExecutionOn);
-    System.debug('History query built: ' + queryStr); 
+
     // Query for history records
     Map<Id, List<SObject>> historyRecordsMap = controllerInstance.historyRecordsMap;
     Datetime queryTimestamp  = Datetime.now();
@@ -618,22 +616,6 @@ global with sharing class ListenerFlowController {
   )
   public static List<ListenerFlowLatestResponse> parseRecordsToFlow(
   List<ListenerFlowLatestRequest> listenerConfigList) {
-
-  //START DEBUG
-      // Grab the first listenerConfig from the list
-  Listener__c firstListenerConfig = listenerConfigList[0].listenerConfig;
-
-  // Loop through each field in the Listener__c SObject
-  Map<String, Schema.SObjectField> fieldMap = Listener__c.SObjectType.getDescribe().fields.getMap();
-  for (String fieldName : fieldMap.keySet()) {
-      // Get the field value
-      Object fieldValue = firstListenerConfig.get(fieldName);
-      
-      // Debug print the field name and its value
-      System.debug('Field: ' + fieldName + ', Value: ' + fieldValue);
-  }
-  //End DEBUG
-
     // Create an instance of ListenerFlowController
     ListenerFlowController controllerInstance = new ListenerFlowController();
     Listener__c listenerConfig = listenerConfigList[0].listenerConfig;
@@ -686,7 +668,6 @@ global with sharing class ListenerFlowController {
     
     try {
       String queryStr = buildQuery(objName, parentIdField, targetRecordIds, listenerConfig, isHistoryQuery, lastExecutionOn);
-      System.debug('Parent query built: ' + queryStr);
 
       for (SObject sob : Database.query(queryStr)) {
         targetRecords.add(sob.Id);
@@ -731,7 +712,6 @@ global with sharing class ListenerFlowController {
     // Loop through responseList.lstListenerFlow and log the value of each item inside of it
     for (ListenerFlowController item : responseList[0].lstListenerFlow) {
     }
-    System.debug('responseList[0].lstListenerFlow: ' + responseList[0].lstListenerFlow);
     return responseList;
 
   }

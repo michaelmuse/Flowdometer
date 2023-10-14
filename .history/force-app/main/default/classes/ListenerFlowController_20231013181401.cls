@@ -1,3 +1,28 @@
+/*
+Class: ListenerFlowController
+Path: force-app\main\default\classes\ListenerFlowController.cls
+
+Purpose:
+This managed class primarily aids in the real-time monitoring and recording of changes occurring in specified fields of Salesforce objects, driven by configurations in the Listener__c custom object. 
+Its critical function is to construct SOQL queries intelligently, fetch and sort historical records, and encapsulate these results in a list of ListenerFlowLatestResponse objects.
+
+The strength of this class lies in its dynamic response to Invocable Actions called in Salesforce Flows via the parseRecordsToFlow method. 
+It performs two significant queries based on the Listener__c.Last_Execution_On__c field in the Listener__c custom object.
+
+If the Listener__c.Last_Execution_On__c field is null (indicating the query has not run before), the class queries all records of the object type, as specified by Listener.Object_Name__c. 
+It then queries all corresponding history records that match Listener__c.Field_To_Track__c, effectively syncing the "Created" history records with the values from the parent (tracked) record. 
+The results provide a comprehensive history of the creation and changes to the specified field for each record.
+
+If the Listener__c.Last_Execution_On__c is populated (indicating the query has run before), it executes similar queries but specifically focuses on records created since Listener__c.Last_Execution_On__c.
+
+The class then returns the complete or updated history to the flow, hence providing a robust and efficient way to monitor field changes of Salesforce objects based on listener configurations.
+
+Exception Handling:
+Upon experiencing any exceptions during execution, the class updates 'Error_Message__c' field on Listener__c and sets 'isCheckSuccess' to false in the response.
+
+Note: Optionally includes terminal stage and parent name fields in the output if specified in the Listener__c objects.
+*/
+
 global with sharing class ListenerFlowController {
   //This is a managed package, so we need global modifiers
   @AuraEnabled
@@ -12,6 +37,8 @@ global with sharing class ListenerFlowController {
   public Map<Id, SObject> parentRecordsMap = new Map<Id, SObject>();
   @AuraEnabled
   global String varNameofTrackedRecord;
+  @AuraEnabled
+  global Boolean varTerminalStage;
   @AuraEnabled
   global String varTrackedCustomObjectName;
   @AuraEnabled
@@ -50,6 +77,7 @@ global with sharing class ListenerFlowController {
     public String varCurrentFieldValue;
     public Id varCurrentObjectID;
     public String varNameofTrackedRecord;
+    public Boolean varTerminalStage;
     public String varTrackedCustomObjectName;
     public Datetime varEditStartTime;
     public Datetime varEditEndTime;
@@ -283,10 +311,11 @@ global with sharing class ListenerFlowController {
             } else {
                 selectFields.add('Name');
             }
-            selectFields.add(listenerConfig.Field_To_Track__c);
-            if(listenerConfig.Type__c != null) {
-              selectFields.add(listenerConfig.Type__c);
+            if (listenerConfig.TerminalStage__c != null) {
+                selectFields.add(listenerConfig.TerminalStage__c);
             }
+            selectFields.add(listenerConfig.Field_To_Track__c);
+            selectFields.add(listenerConfig.Type__c);
         }
 
         // Get query modifiers
@@ -296,7 +325,7 @@ global with sharing class ListenerFlowController {
         }
         
         // Construct the query
-        String queryStr = 'SELECT ' + String.join(selectFields, ', ') + ' FROM ' + tableName; //MAY NEED TO ADD BACK SPACE BEFORE FROM
+        String queryStr = 'SELECT ' + String.join(selectFields, ', ') + ' FROM ' + tableName;
         if (!whereConditions.isEmpty()) {
             queryStr += ' WHERE ' + String.join(whereConditions, ' AND ');
         }
@@ -357,7 +386,7 @@ global with sharing class ListenerFlowController {
     String objectSuffix = '__c';
     Boolean isHistoryQuery = true;
     String queryStr = buildQuery(objHistoryName, parentIdField, targetRecordIds, listenerConfig, true, lastExecutionOn);
-    System.debug('History query built: ' + queryStr); 
+
     // Query for history records
     Map<Id, List<SObject>> historyRecordsMap = controllerInstance.historyRecordsMap;
     Datetime queryTimestamp  = Datetime.now();
@@ -469,6 +498,7 @@ global with sharing class ListenerFlowController {
           simplifiedRecord.varCurrentFieldTracked = originalRecord.varCurrentFieldTracked;
           simplifiedRecord.varCurrentFieldValue = originalRecord.varCurrentFieldValue;
           simplifiedRecord.varNameofTrackedRecord = originalRecord.varNameofTrackedRecord;
+          simplifiedRecord.varTerminalStage = originalRecord.varTerminalStage;
           simplifiedRecord.varHistoryRecordId = originalRecord.varHistoryRecordId;
           simplifiedRecord.varLastHistoryRecordId = originalRecord.varLastHistoryRecordId;
 
@@ -571,6 +601,7 @@ global with sharing class ListenerFlowController {
         trackFlowObj.varCurrentObjectID = parentRecId;
         String parentName = getParentName(listenerConfig.Object_Name__c);
         trackFlowObj.varNameofTrackedRecord = (String) sObjectMap.get(parentRecId).get(parentName);
+        trackFlowObj.varTerminalStage = false; 
         trackFlowObj.varTrackedCustomObjectName = listenerConfig.Object_Name__c; 
         trackFlowObj.varEditStartTime = dt;
         if (count < sortedDates.size() - 1) {  // Make sure we have a next record
@@ -618,22 +649,6 @@ global with sharing class ListenerFlowController {
   )
   public static List<ListenerFlowLatestResponse> parseRecordsToFlow(
   List<ListenerFlowLatestRequest> listenerConfigList) {
-
-  //START DEBUG
-      // Grab the first listenerConfig from the list
-  Listener__c firstListenerConfig = listenerConfigList[0].listenerConfig;
-
-  // Loop through each field in the Listener__c SObject
-  Map<String, Schema.SObjectField> fieldMap = Listener__c.SObjectType.getDescribe().fields.getMap();
-  for (String fieldName : fieldMap.keySet()) {
-      // Get the field value
-      Object fieldValue = firstListenerConfig.get(fieldName);
-      
-      // Debug print the field name and its value
-      System.debug('Field: ' + fieldName + ', Value: ' + fieldValue);
-  }
-  //End DEBUG
-
     // Create an instance of ListenerFlowController
     ListenerFlowController controllerInstance = new ListenerFlowController();
     Listener__c listenerConfig = listenerConfigList[0].listenerConfig;
@@ -685,9 +700,14 @@ global with sharing class ListenerFlowController {
     Boolean isHistoryQuery = false;
     
     try {
+      String terminalStageField = (listenerConfig.TerminalStage__c != null)
+        ? listenerConfig.TerminalStage__c
+        : '';
       String queryStr = buildQuery(objName, parentIdField, targetRecordIds, listenerConfig, isHistoryQuery, lastExecutionOn);
-      System.debug('Parent query built: ' + queryStr);
 
+      if (String.isNotBlank(terminalStageField)) {
+        queryStr += ', ' + terminalStageField;
+      }
       for (SObject sob : Database.query(queryStr)) {
         targetRecords.add(sob.Id);
         sObjectMap.put(sob.Id, sob);
@@ -731,7 +751,6 @@ global with sharing class ListenerFlowController {
     // Loop through responseList.lstListenerFlow and log the value of each item inside of it
     for (ListenerFlowController item : responseList[0].lstListenerFlow) {
     }
-    System.debug('responseList[0].lstListenerFlow: ' + responseList[0].lstListenerFlow);
     return responseList;
 
   }

@@ -46,7 +46,8 @@ public class TestDataFactory {
     Listener__c listenerConfig = new Listener__c(
       Object_Name__c = objectName,
       Field_To_Track__c = fieldToTrack,
-      Last_Execution_On__c = lastExecutionOn
+      Last_Execution_On__c = lastExecutionOn,
+      Type = 
     );
   
     if (insertRecord) {

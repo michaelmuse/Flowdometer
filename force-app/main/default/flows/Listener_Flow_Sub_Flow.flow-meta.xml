@@ -3,8 +3,8 @@
     <actionCalls>
         <name>Update_Flow_Records</name>
         <label>Update Flow Records</label>
-        <locationX>378</locationX>
-        <locationY>3554</locationY>
+        <locationX>510</locationX>
+        <locationY>3962</locationY>
         <actionName>ListenerUpdateFlowController</actionName>
         <actionType>apex</actionType>
         <connector>
@@ -55,7 +55,7 @@
         <name>Set_Error_Message_Create_Flow_Tracker</name>
         <label>Set Error Message (Create Flow Tracker)</label>
         <locationX>378</locationX>
-        <locationY>2666</locationY>
+        <locationY>2966</locationY>
         <assignmentItems>
             <assignToReference>varErrorMessage</assignToReference>
             <operator>Assign</operator>
@@ -71,8 +71,8 @@
     <assignments>
         <name>Set_Error_Message_Create_Step_Tracker</name>
         <label>Set Error Message (Create Step Tracker)</label>
-        <locationX>994</locationX>
-        <locationY>3056</locationY>
+        <locationX>1126</locationX>
+        <locationY>3464</locationY>
         <assignmentItems>
             <assignToReference>varErrorMessage</assignToReference>
             <operator>Assign</operator>
@@ -80,15 +80,11 @@
                 <elementReference>$Flow.FaultMessage</elementReference>
             </value>
         </assignmentItems>
-        <connector>
-            <isGoTo>true</isGoTo>
-            <targetReference>Add_Error_Message_to_Listener</targetReference>
-        </connector>
     </assignments>
     <assignments>
         <name>Set_Error_Message_Get_All_Flows</name>
         <label>Set Error Message (Get All Flows)</label>
-        <locationX>1258</locationX>
+        <locationX>1390</locationX>
         <locationY>242</locationY>
         <assignmentItems>
             <assignToReference>varErrorMessage</assignToReference>
@@ -122,7 +118,7 @@
         <name>Set_Error_Message_Update_Flow</name>
         <label>Set Error Message (Update Flow)</label>
         <locationX>378</locationX>
-        <locationY>3878</locationY>
+        <locationY>4370</locationY>
         <assignmentItems>
             <assignToReference>varErrorMessage</assignToReference>
             <operator>Assign</operator>
@@ -138,8 +134,8 @@
     <assignments>
         <name>Set_Error_Message_Update_Last_Step</name>
         <label>Set Error Message (Update Last Step)</label>
-        <locationX>730</locationX>
-        <locationY>3272</locationY>
+        <locationX>862</locationX>
+        <locationY>3680</locationY>
         <assignmentItems>
             <assignToReference>varErrorMessage</assignToReference>
             <operator>Assign</operator>
@@ -150,6 +146,22 @@
         <connector>
             <isGoTo>true</isGoTo>
             <targetReference>Add_Error_Message_to_Listener</targetReference>
+        </connector>
+    </assignments>
+    <assignments>
+        <name>Set_Existing_Tracked_History_Records</name>
+        <label>Set Existing Tracked History Records</label>
+        <locationX>202</locationX>
+        <locationY>1058</locationY>
+        <assignmentItems>
+            <assignToReference>varExistingTrackedHistoryRecords</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <elementReference>Existing_Tracked_History_Records_Loop.History_Record_ID__c</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Existing_Tracked_History_Records_Loop</targetReference>
         </connector>
     </assignments>
     <assignments>
@@ -172,7 +184,7 @@
         <name>Set_Goal_ID</name>
         <label>Set Goal ID</label>
         <locationX>138</locationX>
-        <locationY>1274</locationY>
+        <locationY>1574</locationY>
         <assignmentItems>
             <assignToReference>varGoalStepChosen</assignToReference>
             <operator>Assign</operator>
@@ -210,7 +222,7 @@
         <name>Set_Latest_Tracker</name>
         <label>Set Latest Tracker Step</label>
         <locationX>466</locationX>
-        <locationY>2000</locationY>
+        <locationY>2300</locationY>
         <assignmentItems>
             <assignToReference>varLatestStepChosen</assignToReference>
             <operator>Assign</operator>
@@ -257,7 +269,7 @@
         <name>Set_up_Flow_Tracker</name>
         <label>Set up Flow Tracker</label>
         <locationX>114</locationX>
-        <locationY>2450</locationY>
+        <locationY>2750</locationY>
         <assignmentItems>
             <assignToReference>varFlowTrackerRecord.Account__c</assignToReference>
             <operator>Assign</operator>
@@ -347,6 +359,31 @@
         </connector>
     </assignments>
     <decisions>
+        <name>Already_Tracked</name>
+        <label>Already Tracked?</label>
+        <locationX>378</locationX>
+        <locationY>3248</locationY>
+        <defaultConnector>
+            <targetReference>Create_Step</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>Need Step</defaultConnectorLabel>
+        <rules>
+            <name>Step_Already_Tracked</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>varExistingTrackedHistoryRecords</leftValueReference>
+                <operator>Contains</operator>
+                <rightValue>
+                    <elementReference>varHistoryRecordId</elementReference>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Has_Records</targetReference>
+            </connector>
+            <label>Step Already Tracked</label>
+        </rules>
+    </decisions>
+    <decisions>
         <name>Check_if_Flows_were_found</name>
         <label>Check if Flows were found</label>
         <locationX>378</locationX>
@@ -375,7 +412,7 @@
         <name>Check_if_Steps_were_found</name>
         <label>Check if Steps were found</label>
         <locationX>114</locationX>
-        <locationY>950</locationY>
+        <locationY>1250</locationY>
         <defaultConnector>
             <targetReference>Latest_Tracker_Step</targetReference>
         </defaultConnector>
@@ -400,9 +437,9 @@
         <name>Flow_Exists</name>
         <label>Flow Exists</label>
         <locationX>378</locationX>
-        <locationY>2342</locationY>
+        <locationY>2642</locationY>
         <defaultConnector>
-            <targetReference>Create_Step</targetReference>
+            <targetReference>Already_Tracked</targetReference>
         </defaultConnector>
         <defaultConnectorLabel>Exists</defaultConnectorLabel>
         <rules>
@@ -425,7 +462,7 @@
         <name>Has_Records</name>
         <label>Has Records</label>
         <locationX>378</locationX>
-        <locationY>3662</locationY>
+        <locationY>4154</locationY>
         <defaultConnectorLabel>No</defaultConnectorLabel>
         <rules>
             <name>Yes</name>
@@ -453,8 +490,8 @@
     <decisions>
         <name>Previous_Step_Exists</name>
         <label>Previous Step Exists</label>
-        <locationX>378</locationX>
-        <locationY>3056</locationY>
+        <locationX>510</locationX>
+        <locationY>3464</locationY>
         <defaultConnector>
             <targetReference>Update_Last_Step</targetReference>
         </defaultConnector>
@@ -479,7 +516,7 @@
         <name>Record_Type_of_Step</name>
         <label>Record Type of Step</label>
         <locationX>270</locationX>
-        <locationY>1166</locationY>
+        <locationY>1466</locationY>
         <defaultConnector>
             <targetReference>Latest_Goal_Step</targetReference>
         </defaultConnector>
@@ -511,7 +548,7 @@
         <name>Record_Type_of_Step_Check</name>
         <label>Record Type of Step</label>
         <locationX>598</locationX>
-        <locationY>1892</locationY>
+        <locationY>2192</locationY>
         <defaultConnector>
             <targetReference>Latest_Tracker_Step</targetReference>
         </defaultConnector>
@@ -531,6 +568,13 @@
                 <operator>EqualTo</operator>
                 <rightValue>
                     <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>Latest_Tracker_Step.History_Record_ID__c</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <elementReference>varLastHistoryRecordId</elementReference>
                 </rightValue>
             </conditions>
             <connector>
@@ -630,10 +674,24 @@
     <interviewLabel>Listener Flow Sub Flow {!$Flow.CurrentDateTime}</interviewLabel>
     <label>Flowdometer - (3) Listener Creates Trackers</label>
     <loops>
+        <name>Existing_Tracked_History_Records_Loop</name>
+        <label>Existing Tracked History Records Loop</label>
+        <locationX>114</locationX>
+        <locationY>950</locationY>
+        <collectionReference>Get_ALL_Steps</collectionReference>
+        <iterationOrder>Asc</iterationOrder>
+        <nextValueConnector>
+            <targetReference>Set_Existing_Tracked_History_Records</targetReference>
+        </nextValueConnector>
+        <noMoreValuesConnector>
+            <targetReference>Check_if_Steps_were_found</targetReference>
+        </noMoreValuesConnector>
+    </loops>
+    <loops>
         <name>Latest_Goal_Step</name>
         <label>Latest Goal Step</label>
         <locationX>50</locationX>
-        <locationY>1058</locationY>
+        <locationY>1358</locationY>
         <collectionReference>Get_ALL_Steps</collectionReference>
         <iterationOrder>Asc</iterationOrder>
         <nextValueConnector>
@@ -647,7 +705,7 @@
         <name>Latest_Tracker_Step</name>
         <label>Latest Tracker Step</label>
         <locationX>378</locationX>
-        <locationY>1784</locationY>
+        <locationY>2084</locationY>
         <collectionReference>Get_ALL_Steps</collectionReference>
         <iterationOrder>Asc</iterationOrder>
         <nextValueConnector>
@@ -688,9 +746,9 @@
         <name>Create_Flow_Tracker</name>
         <label>Create Flow Tracker</label>
         <locationX>114</locationX>
-        <locationY>2558</locationY>
+        <locationY>2858</locationY>
         <connector>
-            <targetReference>Create_Step</targetReference>
+            <targetReference>Already_Tracked</targetReference>
         </connector>
         <faultConnector>
             <targetReference>Set_Error_Message_Create_Flow_Tracker</targetReference>
@@ -700,8 +758,8 @@
     <recordCreates>
         <name>Create_Step</name>
         <label>Create Step</label>
-        <locationX>378</locationX>
-        <locationY>2948</locationY>
+        <locationX>510</locationX>
+        <locationY>3356</locationY>
         <assignRecordIdToReference>varCurrentStepId</assignRecordIdToReference>
         <connector>
             <targetReference>Previous_Step_Exists</targetReference>
@@ -725,6 +783,12 @@
             <field>Flow__c</field>
             <value>
                 <elementReference>varFlowTrackerRecord.Id</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <field>History_Record_ID__c</field>
+            <value>
+                <elementReference>varHistoryRecordId</elementReference>
             </value>
         </inputAssignments>
         <inputAssignments>
@@ -827,7 +891,7 @@
         <locationY>842</locationY>
         <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
         <connector>
-            <targetReference>Check_if_Steps_were_found</targetReference>
+            <targetReference>Existing_Tracked_History_Records_Loop</targetReference>
         </connector>
         <faultConnector>
             <targetReference>Set_Error_Message_Get_All_Steps</targetReference>
@@ -856,6 +920,9 @@
         <queriedFields>HandleTimeWeekdays__c</queriedFields>
         <queriedFields>Plan_Next_Steps__c</queriedFields>
         <queriedFields>Terminal_Stage__c</queriedFields>
+        <queriedFields>History_Record_ID__c</queriedFields>
+        <queriedFields>StartDate__c</queriedFields>
+        <queriedFields>History_Record_ID_for_Last_Step__c</queriedFields>
         <sortField>CreatedDate</sortField>
         <sortOrder>Desc</sortOrder>
         <storeOutputAutomatically>true</storeOutputAutomatically>
@@ -863,7 +930,7 @@
     <recordUpdates>
         <name>Add_Error_Message_to_Listener</name>
         <label>Add Error Message to Listener</label>
-        <locationX>1258</locationX>
+        <locationX>1390</locationX>
         <locationY>350</locationY>
         <filterLogic>and</filterLogic>
         <filters>
@@ -885,7 +952,7 @@
         <name>Update_Flow</name>
         <label>Update Flow</label>
         <locationX>114</locationX>
-        <locationY>3770</locationY>
+        <locationY>4262</locationY>
         <faultConnector>
             <targetReference>Set_Error_Message_Update_Flow</targetReference>
         </faultConnector>
@@ -894,8 +961,8 @@
     <recordUpdates>
         <name>Update_Last_Step</name>
         <label>Update Last Step</label>
-        <locationX>466</locationX>
-        <locationY>3164</locationY>
+        <locationX>598</locationX>
+        <locationY>3572</locationY>
         <connector>
             <targetReference>Update_Flow_Records</targetReference>
         </connector>
@@ -913,7 +980,7 @@
         <inputAssignments>
             <field>Field_Value_Ending_Timestamp__c</field>
             <value>
-                <elementReference>varCurrentEditEndDateTime</elementReference>
+                <elementReference>varCurrentEditStartDateTime</elementReference>
             </value>
         </inputAssignments>
         <inputAssignments>
@@ -1044,6 +1111,13 @@
         <isOutput>true</isOutput>
     </variables>
     <variables>
+        <name>varExistingTrackedHistoryRecords</name>
+        <dataType>String</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+    <variables>
         <name>varFlowGoalRecord</name>
         <dataType>SObject</dataType>
         <isCollection>false</isCollection>
@@ -1082,6 +1156,27 @@
         <value>
             <booleanValue>false</booleanValue>
         </value>
+    </variables>
+    <variables>
+        <name>varHistoryRecordId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+    <variables>
+        <name>varHistoryRecords</name>
+        <dataType>String</dataType>
+        <isCollection>true</isCollection>
+        <isInput>true</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+    <variables>
+        <name>varLastHistoryRecordId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>true</isInput>
+        <isOutput>false</isOutput>
     </variables>
     <variables>
         <name>varLatestStep</name>
@@ -1137,7 +1232,7 @@
         <name>varStepGoalId</name>
         <dataType>String</dataType>
         <isCollection>false</isCollection>
-        <isInput>false</isInput>
+        <isInput>true</isInput>
         <isOutput>true</isOutput>
     </variables>
     <variables>

@@ -1,3 +1,51 @@
+//force-app\main\default\classes\TestDataFactory.cls (Data Factory class for Controller Tests)
+
+/*   
+
+TestDataFactory Class Method Summary:
+
+    1. createOpportunityHistoryRecords
+       - Parameters: 
+         - Id parentId: The parent Opportunity Id
+         - String field: The field name for history tracking
+         - Integer numRecords: The number of history records to create
+       - Returns: List<Opportunity>
+
+    2. createCaseHistoryRecords
+       - Parameters:
+         - Id parentId: The parent Case Id
+         - String field: The field name for history tracking
+         - Integer numRecords: The number of history records to create
+       - Returns: List<CaseHistory>
+
+    3. createlistenerConfig
+       - Parameters:
+         - DateTime lastExecutionOn: The last execution time for the Listener
+       - Returns: Listener__c
+
+    4. createOpportunity
+       - Parameters:
+         - String stageName: The stage name for the Opportunity
+       - Returns: Opportunity
+
+    5. createHistoryRecords
+       - Parameters:
+         - Integer numRecords: The number of History__c records to create
+       - Returns: List<History__c>
+
+    6. createAndUpdateOpportunities
+       - Parameters:
+         - Id parentId: The parent Account Id
+         - String field: The field name for history tracking
+         - Integer numRecords: The number of Opportunities to create and update
+       - Returns: List<Opportunity>
+
+    7. createCustomObjects
+       - Parameters:
+         - Integer numRecords: The number of Flow__c records to create
+       - Returns: List<Flow__c>
+*/
+
 public class TestDataFactory {
 
   public static List<Opportunity> createAndUpdateOpportunities(
@@ -12,8 +60,7 @@ public class TestDataFactory {
         Name='Test Opp ' + i,
         stageName='Prospecting',
         CloseDate=System.today(),
-        AccountId=parentId,
-        Type='New Business'
+        AccountId=parentId
       );
       opps.add(opp);
     }

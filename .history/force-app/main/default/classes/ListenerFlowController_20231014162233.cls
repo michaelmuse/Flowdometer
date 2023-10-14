@@ -285,7 +285,7 @@ global with sharing class ListenerFlowController {
             }
             selectFields.add(listenerConfig.Field_To_Track__c);
             if(listenerConfig.Type__c != null) {
-              selectFields.add(listenerConfig.Type__c);
+              whereConditions.add('Type =: varType');
             }
         }
 

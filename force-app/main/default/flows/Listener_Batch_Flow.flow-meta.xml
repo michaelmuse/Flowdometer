@@ -4,8 +4,8 @@
     <assignments>
         <name>FlowdoConfig_Value_Assignment</name>
         <label>FlowdoConfig Value Assignment</label>
-        <locationX>50</locationX>
-        <locationY>479</locationY>
+        <locationX>226</locationX>
+        <locationY>779</locationY>
         <assignmentItems>
             <assignToReference>varFlowdoConfig</assignToReference>
             <operator>Assign</operator>
@@ -20,8 +20,8 @@
     <decisions>
         <name>Check_If_the_Flow_is_Active</name>
         <label>Check If the Flow is Active</label>
-        <locationX>182</locationX>
-        <locationY>371</locationY>
+        <locationX>358</locationX>
+        <locationY>671</locationY>
         <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
         <rules>
             <name>Check_Listener_is_Active</name>
@@ -39,10 +39,59 @@
             <label>Check Listener is Active</label>
         </rules>
     </decisions>
+    <decisions>
+        <name>Has_This_Flow_Run_Before</name>
+        <label>Has This Flow Run Before?</label>
+        <locationX>50</locationX>
+        <locationY>276</locationY>
+        <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
+        <rules>
+            <name>First_Run</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.Flowdometer__Last_Execution_On__c</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Check_If_the_Flow_is_Active</targetReference>
+            </connector>
+            <label>First Run</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <name>Listener_Has_Unprocessed_Records</name>
+        <label>Listener Has Unprocessed Records</label>
+        <locationX>666</locationX>
+        <locationY>276</locationY>
+        <defaultConnectorLabel>Finished Processing</defaultConnectorLabel>
+        <rules>
+            <name>Has_Unprocessed_Records</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.Flowdometer__Unprocessed_History_Records__c</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Check_If_the_Flow_is_Active</targetReference>
+            </connector>
+            <label>Has Unprocessed Records</label>
+        </rules>
+    </decisions>
     <description>Flowdometer handler for setting up listeners for your object and field.</description>
     <environments>Default</environments>
+    <formulas>
+        <name>formInitialLastCheck</name>
+        <dataType>DateTime</dataType>
+        <expression>NOW() - (170 / 86400)</expression>
+    </formulas>
     <interviewLabel>Listener Batch Flow {!$Flow.CurrentDateTime}</interviewLabel>
-    <label>Flowdometer - (1) Listener Tracking Trigger</label>
+    <label>Flowdometer - Listener Tracking Trigger</label>
     <processMetadataValues>
         <name>BuilderType</name>
         <value>
@@ -63,10 +112,10 @@
     </processMetadataValues>
     <processType>AutoLaunchedFlow</processType>
     <start>
-        <locationX>56</locationX>
+        <locationX>232</locationX>
         <locationY>0</locationY>
         <connector>
-            <targetReference>Check_If_the_Flow_is_Active</targetReference>
+            <targetReference>Has_This_Flow_Run_Before</targetReference>
         </connector>
         <doesRequireRecordChangedToMeetCriteria>true</doesRequireRecordChangedToMeetCriteria>
         <filterLogic>and</filterLogic>
@@ -91,14 +140,26 @@
             <recordField>Last_Check__c</recordField>
             <timeSource>RecordField</timeSource>
         </scheduledPaths>
+        <scheduledPaths>
+            <name>Run_Every_0_Minutes</name>
+            <connector>
+                <targetReference>Listener_Has_Unprocessed_Records</targetReference>
+            </connector>
+            <label>Run Every 0 Minutes</label>
+            <maxBatchSize>1</maxBatchSize>
+            <offsetNumber>0</offsetNumber>
+            <offsetUnit>Minutes</offsetUnit>
+            <recordField>Last_Execution_On__c</recordField>
+            <timeSource>RecordField</timeSource>
+        </scheduledPaths>
         <triggerType>RecordAfterSave</triggerType>
     </start>
-    <status>Draft</status>
+    <status>Active</status>
     <subflows>
         <name>Listener_Config_Main_Flow</name>
         <label>Listener Config Main Flow</label>
-        <locationX>50</locationX>
-        <locationY>587</locationY>
+        <locationX>226</locationX>
+        <locationY>887</locationY>
         <flowName>Listener_Configuration_Main_Flow</flowName>
         <inputAssignments>
             <name>varFlowDoConfig</name>

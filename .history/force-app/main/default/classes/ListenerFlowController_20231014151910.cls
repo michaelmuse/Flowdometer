@@ -284,9 +284,7 @@ global with sharing class ListenerFlowController {
                 selectFields.add('Name');
             }
             selectFields.add(listenerConfig.Field_To_Track__c);
-            if(listenerConfig.Type__c != null) {
-              selectFields.add(listenerConfig.Type__c);
-            }
+            selectFields.add(listenerConfig.Type__c);
         }
 
         // Get query modifiers
@@ -618,22 +616,6 @@ global with sharing class ListenerFlowController {
   )
   public static List<ListenerFlowLatestResponse> parseRecordsToFlow(
   List<ListenerFlowLatestRequest> listenerConfigList) {
-
-  //START DEBUG
-      // Grab the first listenerConfig from the list
-  Listener__c firstListenerConfig = listenerConfigList[0].listenerConfig;
-
-  // Loop through each field in the Listener__c SObject
-  Map<String, Schema.SObjectField> fieldMap = Listener__c.SObjectType.getDescribe().fields.getMap();
-  for (String fieldName : fieldMap.keySet()) {
-      // Get the field value
-      Object fieldValue = firstListenerConfig.get(fieldName);
-      
-      // Debug print the field name and its value
-      System.debug('Field: ' + fieldName + ', Value: ' + fieldValue);
-  }
-  //End DEBUG
-
     // Create an instance of ListenerFlowController
     ListenerFlowController controllerInstance = new ListenerFlowController();
     Listener__c listenerConfig = listenerConfigList[0].listenerConfig;

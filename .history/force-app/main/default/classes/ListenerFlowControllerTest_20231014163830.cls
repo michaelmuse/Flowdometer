@@ -315,18 +315,10 @@ public class ListenerFlowControllerTest {
             'sortingDateTimeMap' => new Map<Id, List<Datetime>>()
         };
         
-        Listener__c queriedListenerConfig = [
-            SELECT 
-              Id, OwnerId, LastReferencedDate, LastViewedDate, CreatedDate, CreatedById, 
-              LastModifiedDate, LastModifiedById, SystemModstamp, TerminalStage__c, 
-              Name, IsDeleted, Type__c, Last_Execution_On__c, Object_Name__c, Field_To_Track__c, 
-              Unprocessed_History_Records__c,
-              Error_Message__c, Frequency__c, isActive__c,
-              Last_Check__c, Latest_Flow_Error_Message__c, Next_Check__c
-            FROM Listener__c 
-            LIMIT 1
-          ];
+        Listener__c queriedListenerConfig = [SELECT Id, Last_Execution_On__c, Object_Name__c, Field_To_Track__c, Flowdometer__Unprocessed_History_Records__c FROM Listener__c LIMIT 1];
         queriedListenerConfig.Last_Execution_On__c = null;
+        // listenerConfig.Last_Execution_On__c = null;  
+        // update new List<Listener__c> {listenerConfig};
     
         // Run the test using the utility method
         List<ListenerFlowController.ListenerFlowLatestResponse> records = runTest(queriedListenerConfig, historyRecordsMap, null, additionalParams, new Map<String, SObject>(), new Map<Id, List<Datetime>>());

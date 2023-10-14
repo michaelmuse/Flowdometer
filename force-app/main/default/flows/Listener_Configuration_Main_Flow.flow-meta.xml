@@ -3,8 +3,8 @@
     <actionCalls>
         <name>Query_and_Parse_History_Records_Latest</name>
         <label>Query and Parse History Records</label>
-        <locationX>314</locationX>
-        <locationY>1142</locationY>
+        <locationX>158</locationX>
+        <locationY>1250</locationY>
         <actionName>ListenerFlowController</actionName>
         <actionType>apex</actionType>
         <connector>
@@ -34,10 +34,33 @@
     </actionCalls>
     <apiVersion>55.0</apiVersion>
     <assignments>
+        <name>Set_current_item_variables_in_HistoryRecords</name>
+        <label>Set current item variables in HistoryRecords</label>
+        <locationX>138</locationX>
+        <locationY>1574</locationY>
+        <assignmentItems>
+            <assignToReference>varCurrentEditEndDateTime</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>Loop_Through_Parsed_Records.varEditEndTime</elementReference>
+            </value>
+        </assignmentItems>
+        <assignmentItems>
+            <assignToReference>varCurrentEditStartDateTime</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <elementReference>Loop_Through_Parsed_Records.varEditStartTime</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Create_Listener_Records_Using_Parsed_History_Records</targetReference>
+        </connector>
+    </assignments>
+    <assignments>
         <name>Set_Error_Message_Get_All_Record_Types</name>
         <label>Set Error Message (Get All Record Types)</label>
-        <locationX>1106</locationX>
-        <locationY>350</locationY>
+        <locationX>706</locationX>
+        <locationY>458</locationY>
         <assignmentItems>
             <assignToReference>varFlowDoConfig.Latest_Flow_Error_Message__c</assignToReference>
             <operator>Assign</operator>
@@ -53,8 +76,8 @@
     <assignments>
         <name>Set_Error_Message_No_Record_Types_Found</name>
         <label>Set Error Message (No Record Types Found)</label>
-        <locationX>842</locationX>
-        <locationY>458</locationY>
+        <locationX>442</locationX>
+        <locationY>566</locationY>
         <assignmentItems>
             <assignToReference>varFlowDoConfig.Latest_Flow_Error_Message__c</assignToReference>
             <operator>Assign</operator>
@@ -67,27 +90,10 @@
         </connector>
     </assignments>
     <assignments>
-        <name>Set_Error_Message_Update_Listener_after_History_Query</name>
-        <label>Set Error Message (Update Listener after History Query)</label>
-        <locationX>314</locationX>
-        <locationY>1874</locationY>
-        <assignmentItems>
-            <assignToReference>varFlowDoConfig.Latest_Flow_Error_Message__c</assignToReference>
-            <operator>Assign</operator>
-            <value>
-                <elementReference>$Flow.FaultMessage</elementReference>
-            </value>
-        </assignmentItems>
-        <connector>
-            <isGoTo>true</isGoTo>
-            <targetReference>Update_FlowdoConfig_0</targetReference>
-        </connector>
-    </assignments>
-    <assignments>
         <name>Set_Flow_Goal_RT</name>
         <label>Set Flow Goal RT</label>
-        <locationX>402</locationX>
-        <locationY>782</locationY>
+        <locationX>246</locationX>
+        <locationY>890</locationY>
         <assignmentItems>
             <assignToReference>varFlowGoalRT</assignToReference>
             <operator>Assign</operator>
@@ -102,8 +108,8 @@
     <assignments>
         <name>Set_Flow_Tracker_RT</name>
         <label>Set Flow Tracker RT</label>
-        <locationX>666</locationX>
-        <locationY>782</locationY>
+        <locationX>510</locationX>
+        <locationY>890</locationY>
         <assignmentItems>
             <assignToReference>varFlowTrackerRT</assignToReference>
             <operator>Assign</operator>
@@ -116,11 +122,10 @@
         </connector>
     </assignments>
     <assignments>
-        <description>Assign the Flowdometer Configurator record param from Batch to the Flow</description>
-        <name>Set_Last_Check</name>
-        <label>Set Last Check</label>
-        <locationX>50</locationX>
-        <locationY>1658</locationY>
+        <name>Set_Listener_isActive_back_to_true</name>
+        <label>Set Listener isActive back to true</label>
+        <locationX>158</locationX>
+        <locationY>1958</locationY>
         <assignmentItems>
             <assignToReference>updateFlowdoConfig.Id</assignToReference>
             <operator>Assign</operator>
@@ -129,52 +134,21 @@
             </value>
         </assignmentItems>
         <assignmentItems>
-            <assignToReference>updateFlowdoConfig.Last_Check__c</assignToReference>
+            <assignToReference>updateFlowdoConfig.isActive__c</assignToReference>
             <operator>Assign</operator>
             <value>
-                <elementReference>$Flow.CurrentDateTime</elementReference>
-            </value>
-        </assignmentItems>
-        <assignmentItems>
-            <assignToReference>updateFlowdoConfig.Last_Execution_On__c</assignToReference>
-            <operator>Assign</operator>
-            <value>
-                <elementReference>$Flow.CurrentDateTime</elementReference>
+                <booleanValue>true</booleanValue>
             </value>
         </assignmentItems>
         <connector>
-            <targetReference>Update_FlowdoConfig</targetReference>
-        </connector>
-    </assignments>
-    <assignments>
-        <description>Assign the Flowdometer Configurator record param from Batch to the Flow</description>
-        <name>Set_Last_Check_0</name>
-        <label>Set Last Check</label>
-        <locationX>578</locationX>
-        <locationY>1358</locationY>
-        <assignmentItems>
-            <assignToReference>updateFlowdoConfig.Id</assignToReference>
-            <operator>Assign</operator>
-            <value>
-                <elementReference>varFlowDoConfig.Id</elementReference>
-            </value>
-        </assignmentItems>
-        <assignmentItems>
-            <assignToReference>updateFlowdoConfig.Last_Check__c</assignToReference>
-            <operator>Assign</operator>
-            <value>
-                <elementReference>$Flow.CurrentDateTime</elementReference>
-            </value>
-        </assignmentItems>
-        <connector>
-            <targetReference>Update_FlowdoConfig_0</targetReference>
+            <targetReference>Turn_Trigger_Back_On</targetReference>
         </connector>
     </assignments>
     <assignments>
         <name>Set_Step_Goal_RT</name>
         <label>Set Step Goal RT</label>
-        <locationX>1106</locationX>
-        <locationY>782</locationY>
+        <locationX>950</locationX>
+        <locationY>890</locationY>
         <assignmentItems>
             <assignToReference>varStepGoalRT</assignToReference>
             <operator>Assign</operator>
@@ -189,8 +163,8 @@
     <assignments>
         <name>Set_Step_Tracker_RT</name>
         <label>Set Step Tracker RT</label>
-        <locationX>1370</locationX>
-        <locationY>782</locationY>
+        <locationX>1214</locationX>
+        <locationY>890</locationY>
         <assignmentItems>
             <assignToReference>varStepTrackerRT</assignToReference>
             <operator>Assign</operator>
@@ -205,7 +179,7 @@
     <decisions>
         <name>Check_FlowdoConfig</name>
         <label>Check FlowdoConfig</label>
-        <locationX>974</locationX>
+        <locationX>635</locationX>
         <locationY>134</locationY>
         <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
         <rules>
@@ -219,7 +193,7 @@
                 </rightValue>
             </conditions>
             <connector>
-                <targetReference>Get_ALL_Record_Types</targetReference>
+                <targetReference>Reset_Trigger</targetReference>
             </connector>
             <label>isActive Config</label>
         </rules>
@@ -227,8 +201,8 @@
     <decisions>
         <name>Check_Object_Type</name>
         <label>Check Object Type</label>
-        <locationX>1238</locationX>
-        <locationY>566</locationY>
+        <locationX>1082</locationX>
+        <locationY>674</locationY>
         <defaultConnector>
             <targetReference>Record_Types</targetReference>
         </defaultConnector>
@@ -267,8 +241,8 @@
     <decisions>
         <name>Check_Record_Type_Name</name>
         <label>Check Record Type Name</label>
-        <locationX>666</locationX>
-        <locationY>674</locationY>
+        <locationX>510</locationX>
+        <locationY>782</locationY>
         <defaultConnector>
             <targetReference>Record_Types</targetReference>
         </defaultConnector>
@@ -307,10 +281,10 @@
     <decisions>
         <name>Check_Records</name>
         <label>Check Records</label>
-        <locationX>314</locationX>
-        <locationY>1250</locationY>
+        <locationX>158</locationX>
+        <locationY>1358</locationY>
         <defaultConnector>
-            <targetReference>Set_Last_Check_0</targetReference>
+            <targetReference>Set_Listener_isActive_back_to_true</targetReference>
         </defaultConnector>
         <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
         <rules>
@@ -339,8 +313,8 @@
     <decisions>
         <name>Copy_1_of_Check_Record_Type_Name</name>
         <label>Check Record Type Name</label>
-        <locationX>1370</locationX>
-        <locationY>674</locationY>
+        <locationX>1214</locationX>
+        <locationY>782</locationY>
         <defaultConnector>
             <targetReference>Record_Types</targetReference>
         </defaultConnector>
@@ -379,8 +353,8 @@
     <decisions>
         <name>Found_Record_Types</name>
         <label>Found Record Types?</label>
-        <locationX>578</locationX>
-        <locationY>350</locationY>
+        <locationX>300</locationX>
+        <locationY>458</locationY>
         <defaultConnector>
             <targetReference>Set_Error_Message_No_Record_Types_Found</targetReference>
         </defaultConnector>
@@ -409,21 +383,21 @@
         <name>Loop_Through_Parsed_Records</name>
         <label>Loop Through Parsed Records</label>
         <locationX>50</locationX>
-        <locationY>1358</locationY>
+        <locationY>1466</locationY>
         <collectionReference>lstListenerFlow</collectionReference>
         <iterationOrder>Asc</iterationOrder>
         <nextValueConnector>
-            <targetReference>Create_Listener_Records_Using_Parsed_History_Records</targetReference>
+            <targetReference>Set_current_item_variables_in_HistoryRecords</targetReference>
         </nextValueConnector>
         <noMoreValuesConnector>
-            <targetReference>Set_Last_Check</targetReference>
+            <targetReference>Set_Listener_isActive_back_to_true</targetReference>
         </noMoreValuesConnector>
     </loops>
     <loops>
         <name>Record_Types</name>
         <label>Record Types</label>
-        <locationX>314</locationX>
-        <locationY>458</locationY>
+        <locationX>158</locationX>
+        <locationY>566</locationY>
         <collectionReference>RecordTypes</collectionReference>
         <iterationOrder>Asc</iterationOrder>
         <nextValueConnector>
@@ -455,8 +429,8 @@
     <recordLookups>
         <name>Get_ALL_Record_Types</name>
         <label>Get ALL Record Types</label>
-        <locationX>578</locationX>
-        <locationY>242</locationY>
+        <locationX>300</locationX>
+        <locationY>350</locationY>
         <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
         <connector>
             <targetReference>Found_Record_Types</targetReference>
@@ -503,24 +477,45 @@
         <sortOrder>Asc</sortOrder>
     </recordLookups>
     <recordUpdates>
-        <name>Update_FlowdoConfig</name>
-        <label>Update FlowdoConfig</label>
-        <locationX>50</locationX>
-        <locationY>1766</locationY>
-        <faultConnector>
-            <targetReference>Set_Error_Message_Update_Listener_after_History_Query</targetReference>
-        </faultConnector>
+        <name>Reset_Trigger</name>
+        <label>Reset Trigger</label>
+        <locationX>300</locationX>
+        <locationY>242</locationY>
+        <connector>
+            <targetReference>Get_ALL_Record_Types</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Id</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>varFlowDoConfig.Id</elementReference>
+            </value>
+        </filters>
+        <inputAssignments>
+            <field>isActive__c</field>
+            <value>
+                <booleanValue>false</booleanValue>
+            </value>
+        </inputAssignments>
+        <object>Listener__c</object>
+    </recordUpdates>
+    <recordUpdates>
+        <name>Turn_Trigger_Back_On</name>
+        <label>Turn Trigger Back On</label>
+        <locationX>158</locationX>
+        <locationY>2066</locationY>
         <inputReference>updateFlowdoConfig</inputReference>
     </recordUpdates>
     <recordUpdates>
         <name>Update_FlowdoConfig_0</name>
         <label>Update FlowdoConfig</label>
-        <locationX>578</locationX>
-        <locationY>2240</locationY>
+        <locationX>442</locationX>
+        <locationY>674</locationY>
         <inputReference>updateFlowdoConfig</inputReference>
     </recordUpdates>
     <start>
-        <locationX>848</locationX>
+        <locationX>509</locationX>
         <locationY>0</locationY>
         <connector>
             <targetReference>Check_FlowdoConfig</targetReference>
@@ -531,7 +526,7 @@
         <name>Create_Listener_Records_Using_Parsed_History_Records</name>
         <label>Create Tracker Records Using Parsed History Records</label>
         <locationX>138</locationX>
-        <locationY>1466</locationY>
+        <locationY>1682</locationY>
         <connector>
             <targetReference>Loop_Through_Parsed_Records</targetReference>
         </connector>
@@ -573,6 +568,36 @@
             </value>
         </inputAssignments>
         <inputAssignments>
+            <name>varFlowGoalRT</name>
+            <value>
+                <elementReference>varFlowGoalRT</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>varFlowTrackerRT</name>
+            <value>
+                <elementReference>varFlowTrackerRT</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>varHistoryRecordId</name>
+            <value>
+                <elementReference>Loop_Through_Parsed_Records.varHistoryRecordId</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>varHistoryRecords</name>
+            <value>
+                <elementReference>varHistoryRecords</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>varLastHistoryRecordId</name>
+            <value>
+                <elementReference>Loop_Through_Parsed_Records.varLastHistoryRecordId</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
             <name>varListenerId</name>
             <value>
                 <elementReference>varFlowDoConfig.Id</elementReference>
@@ -582,6 +607,18 @@
             <name>varNameofTrackedRecord</name>
             <value>
                 <elementReference>Loop_Through_Parsed_Records.varNameofTrackedRecord</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>varStepGoalRT</name>
+            <value>
+                <elementReference>varStepGoalRT</elementReference>
+            </value>
+        </inputAssignments>
+        <inputAssignments>
+            <name>varStepTrackerRT</name>
+            <value>
+                <elementReference>varStepTrackerRT</elementReference>
             </value>
         </inputAssignments>
         <inputAssignments>
@@ -600,30 +637,6 @@
             <name>varType</name>
             <value>
                 <elementReference>Loop_Through_Parsed_Records.varType</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <name>varFlowGoalRT</name>
-            <value>
-                <elementReference>varFlowGoalRT</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <name>varFlowTrackerRT</name>
-            <value>
-                <elementReference>varFlowTrackerRT</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <name>varStepGoalRT</name>
-            <value>
-                <elementReference>varStepGoalRT</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <name>varStepTrackerRT</name>
-            <value>
-                <elementReference>varStepTrackerRT</elementReference>
             </value>
         </inputAssignments>
         <storeOutputAutomatically>true</storeOutputAutomatically>
@@ -681,6 +694,27 @@
         <objectType>Listener__c</objectType>
     </variables>
     <variables>
+        <name>varCurrentEditEndDateTime</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+    <variables>
+        <name>varCurrentEditStartDateTime</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+    <variables>
+        <name>varCurrentHistoryRecord</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+    <variables>
         <name>varFlowDoConfig</name>
         <dataType>SObject</dataType>
         <isCollection>false</isCollection>
@@ -699,6 +733,20 @@
         <name>varFlowTrackerRT</name>
         <dataType>String</dataType>
         <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+    <variables>
+        <name>varHistoryRecordId</name>
+        <dataType>String</dataType>
+        <isCollection>false</isCollection>
+        <isInput>false</isInput>
+        <isOutput>true</isOutput>
+    </variables>
+    <variables>
+        <name>varHistoryRecords</name>
+        <dataType>String</dataType>
+        <isCollection>true</isCollection>
         <isInput>false</isInput>
         <isOutput>true</isOutput>
     </variables>

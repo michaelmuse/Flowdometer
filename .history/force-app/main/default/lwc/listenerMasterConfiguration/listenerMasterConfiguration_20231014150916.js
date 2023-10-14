@@ -183,6 +183,7 @@ export default class ListenerMasterConfiguration extends NavigationMixin(Lightni
         listener.Flowdometer__Object_Name__c = this.selectedSObject;
         listener.Flowdometer__Field_To_Track__c = this.selectedField;
         listener.Flowdometer__Type__c = this.type;
+        listener.Flowdometer__TerminalStage__c = this.terminalStage;
 
         createListenerRecord({newRecord: listener})
         .then(result => {

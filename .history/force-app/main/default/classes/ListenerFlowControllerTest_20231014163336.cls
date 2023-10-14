@@ -315,18 +315,10 @@ public class ListenerFlowControllerTest {
             'sortingDateTimeMap' => new Map<Id, List<Datetime>>()
         };
         
-        Listener__c queriedListenerConfig = [
-            SELECT 
-              Id, OwnerId, LastReferencedDate, LastViewedDate, CreatedDate, CreatedById, 
-              LastModifiedDate, LastModifiedById, SystemModstamp, TerminalStage__c, 
-              Name, IsDeleted, Type__c, Last_Execution_On__c, Object_Name__c, Field_To_Track__c, 
-              Unprocessed_History_Records__c,
-              Error_Message__c, Frequency__c, isActive__c,
-              Last_Check__c, Latest_Flow_Error_Message__c, Next_Check__c
-            FROM Listener__c 
-            LIMIT 1
-          ];
+        Listener__c queriedListenerConfig = [SELECT Id, Last_Execution_On__c, Object_Name__c, Field_To_Track__c, Flowdometer__Unprocessed_History_Records__c FROM Listener__c LIMIT 1];
         queriedListenerConfig.Last_Execution_On__c = null;
+        // listenerConfig.Last_Execution_On__c = null;  
+        // update new List<Listener__c> {listenerConfig};
     
         // Run the test using the utility method
         List<ListenerFlowController.ListenerFlowLatestResponse> records = runTest(queriedListenerConfig, historyRecordsMap, null, additionalParams, new Map<String, SObject>(), new Map<Id, List<Datetime>>());
@@ -369,7 +361,7 @@ public class ListenerFlowControllerTest {
         // Fetch a Listener__c record where Last_Execution_On__c is NULL
         Listener__c queriedListenerConfig = [SELECT Id, Last_Execution_On__c, Object_Name__c, Field_To_Track__c, Flowdometer__Type__c FROM Listener__c WHERE Last_Execution_On__c = NULL LIMIT 1];
         queriedListenerConfig.Last_Execution_On__c = null;
-        queriedListenerConfig.Type__c = 'Type';
+        queriedListenerConfig.Type__c = "Type";
 
         // Fetch Opportunities to populate targetRecordIds
         List<Opportunity> opportunities = [SELECT Id FROM Opportunity LIMIT 2];
@@ -388,7 +380,7 @@ public class ListenerFlowControllerTest {
         String expectedQuery = 'SELECT Id, Name';
 
         // Finish constructing the query
-        expectedQuery += ', ' + queriedListenerConfig.Field_To_Track__c + ', ' + queriedListenerConfig.Type__c + ' FROM Opportunity ORDER BY Id, CreatedDate ASC LIMIT 4000';
+        expectedQuery += ', ' + queriedListenerConfig.Field_To_Track__c + ' FROM Opportunity ORDER BY Id, CreatedDate ASC LIMIT 4000';
 
         // Assert: Check if the actual query string matches the expected one
         System.assertEquals(expectedQuery, actualQuery, 'Query does not match expected value for Scenario 2');
@@ -427,7 +419,6 @@ public class ListenerFlowControllerTest {
         // Fetch a Listener__c record; assume it exists, so no WHERE clause
         Listener__c queriedListenerConfig = [SELECT Id, Last_Execution_On__c, Object_Name__c, Field_To_Track__c, Flowdometer__Type__c FROM Listener__c LIMIT 1];
         queriedListenerConfig.Last_Execution_On__c = DateTime.now().addMinutes(-10);  // 10 minutes before now
-        queriedListenerConfig.Type__c = 'Type';
 
         // Fetch Opportunities to populate targetRecordIds
         List<Opportunity> opportunities = [SELECT Id FROM Opportunity LIMIT 2];
@@ -445,7 +436,7 @@ public class ListenerFlowControllerTest {
 
         // Initialize the base query for parent record query
         String expectedQuery = 'SELECT Id, Name';
-        expectedQuery += ', ' + queriedListenerConfig.Field_To_Track__c + ', ' + queriedListenerConfig.Type__c + ' FROM ' + objName;
+        expectedQuery += ', ' + queriedListenerConfig.Field_To_Track__c + ' FROM ' + objName;
         expectedQuery += ' ORDER BY Id, CreatedDate ASC LIMIT 4000';
 
         // Assert: Check if the actual query string matches the expected one

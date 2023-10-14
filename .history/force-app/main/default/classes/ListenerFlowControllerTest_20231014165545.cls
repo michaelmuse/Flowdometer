@@ -318,11 +318,11 @@ public class ListenerFlowControllerTest {
         Listener__c queriedListenerConfig = [
             SELECT 
               Id, OwnerId, LastReferencedDate, LastViewedDate, CreatedDate, CreatedById, 
-              LastModifiedDate, LastModifiedById, SystemModstamp, TerminalStage__c, 
+              LastModifiedDate, LastModifiedById, SystemModstamp, TerminalStage__c, Last_Check__c,
               Name, IsDeleted, Type__c, Last_Execution_On__c, Object_Name__c, Field_To_Track__c, 
-              Unprocessed_History_Records__c,
-              Error_Message__c, Frequency__c, isActive__c,
-              Last_Check__c, Latest_Flow_Error_Message__c, Next_Check__c
+              Flowdometer__Unprocessed_History_Records__c,
+              Flowdometer__Error_Message__c, Flowdometer__Frequency__c, Flowdometer__isActive__c,
+              Flowdometer__Last_Check__c, Flowdometer__Latest_Flow_Error_Message__c, Flowdometer__Next_Check__c
             FROM Listener__c 
             LIMIT 1
           ];
