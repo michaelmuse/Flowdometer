@@ -238,13 +238,15 @@ global with sharing class ListenerFlowController {
 
   // Define the listenerConfigList variable
   public static List<ListenerFlowLatestRequest> listenerConfigList;
-  
+
 // Section where we build and call the query ------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
   // This method returns a list of historical IDs we already have, to exclude from the query.
   private static List<Id> getHistoryRecordIdsToExclude() {
     List<Id> idsToExclude = new List<Id>();
-    for (Flowdometer__Step__c step : [SELECT Flowdometer__History_Record_ID__c FROM Flowdometer__Step__c WHERE Flowdometer__History_Record_ID__c != null ORDER BY CreatedDate DESC LIMIT 3999]) {
+    for (Flowdometer__Step__c step : [SELECT Flowdometer__History_Record_ID__c FROM Flowdometer__Step__c WHERE Flowdometer__History_Record_ID__c != null ORDER BY CreatedDate DESC LIMIT 1000]) {
+        System.debug('in getHistoryRecordIdsToExclude');
+        Limits.getCpuTime();
         idsToExclude.add(step.Flowdometer__History_Record_ID__c);
     }
     return idsToExclude;
@@ -306,7 +308,7 @@ global with sharing class ListenerFlowController {
             queryStr += isHistoryQuery ? ' ORDER BY ' + parentIdField + ', CreatedDate ASC' : ' ORDER BY Id, CreatedDate ASC';
         }
         if ((Boolean)queryModifiers.get('includeLimit')) {
-            queryStr += ' LIMIT 4000';
+            queryStr += ' LIMIT 1500';
         }
 
         return queryStr;
@@ -362,22 +364,40 @@ global with sharing class ListenerFlowController {
     Map<Id, List<SObject>> historyRecordsMap = controllerInstance.historyRecordsMap;
     Datetime queryTimestamp  = Datetime.now();
     // HISTORY RECORDS QUERY to populate historyRecordsMap and sortingDateTimeMap
-    for (SObject obj : Database.query(queryStr)) {
-      Id parentId = (Id) obj.get(parentIdField);
-      Datetime createdDate = (Datetime) obj.get('CreatedDate');
+    Integer startCpuTime = Limits.getCpuTime();
+    Integer cpuTimeLimit = 9000; // 90% of the 10-second limit for synchronous transactions
 
-      // Populate historyRecordsMap
-      if (historyRecordsMap.containsKey(parentId)) {
-        historyRecordsMap.get(parentId).add(obj);
-      } else {
-        historyRecordsMap.put(parentId, new List<SObject>{ obj });
-      }
-      // Populate sortingDateTimeMap
-      if (controllerInstance.sortingDateTimeMap.containsKey(parentId)) {
-        controllerInstance.sortingDateTimeMap.get(parentId).add(createdDate);
-      } else {
-        controllerInstance.sortingDateTimeMap.put(parentId, new List<Datetime>{ createdDate });
-      }
+    for (SObject obj : Database.query(queryStr)) {
+        //Count number of iterations in this loop
+        Integer count = 0;
+        count = count + 1;
+        System.debug('in getLatestHistoryValues, run number: ' + count);
+        Limits.getCpuTime();
+        
+        // Check the CPU time at the start of each iteration
+        if (Limits.getCpuTime() - startCpuTime > cpuTimeLimit) {
+            // Handle the situation, e.g., by flagging records that still need processing
+            break;
+        }
+
+        Id parentId = (Id) obj.get(parentIdField);
+        Datetime createdDate = (Datetime) obj.get('CreatedDate');
+
+        // Optimize map access for historyRecordsMap
+        List<SObject> historyList = historyRecordsMap.get(parentId);
+        if (historyList == null) {
+            historyList = new List<SObject>();
+            historyRecordsMap.put(parentId, historyList);
+        }
+        historyList.add(obj);
+
+        // Optimize map access for sortingDateTimeMap
+        List<Datetime> dateTimeList = controllerInstance.sortingDateTimeMap.get(parentId);
+        if (dateTimeList == null) {
+            dateTimeList = new List<Datetime>();
+            controllerInstance.sortingDateTimeMap.put(parentId, dateTimeList);
+        }
+        dateTimeList.add(createdDate);
     }
 
     if (!historyRecordsMap.isEmpty()) {
@@ -457,6 +477,8 @@ global with sharing class ListenerFlowController {
       if (batchSize != response.lstListenerFlow.size()) {
         // 2. Storing Unprocessed Records: Create a list of leftover records
         for(Integer i = batchSize; i < response.lstListenerFlow.size(); i++) {
+          System.debug('in handleBatchAndUnprocessedRecords');
+          Limits.getCpuTime();
           SimplifiedListenerFlowController simplifiedRecord = new SimplifiedListenerFlowController();
           ListenerFlowController originalRecord = response.lstListenerFlow[i];
           
@@ -583,7 +605,11 @@ global with sharing class ListenerFlowController {
         } else {
             trackFlowObj.varLastHistoryRecordId = null;  // No previous record
         }
-        trackFlowObj.varType = String.valueOf(sObjectMap.get(parentRecId).get(listenerConfig.Type__c));
+        if (listenerConfig.Type__c != null) {
+          trackFlowObj.varType = String.valueOf(sObjectMap.get(parentRecId).get(listenerConfig.Type__c));
+        } else {
+          trackFlowObj.varType = null;
+        }
         response.lstListenerFlow.add(trackFlowObj);
         count++;
       }

@@ -388,7 +388,7 @@ public class ListenerFlowControllerTest {
         String expectedQuery = 'SELECT Id, Name';
 
         // Finish constructing the query
-        expectedQuery += ', ' + queriedListenerConfig.Field_To_Track__c + ', ' + queriedListenerConfig.Type__c + ' FROM Opportunity ORDER BY Id, CreatedDate ASC LIMIT 4000';
+        expectedQuery += ', ' + queriedListenerConfig.Field_To_Track__c + ', ' + queriedListenerConfig.Type__c + ' FROM Opportunity ORDER BY Id, CreatedDate ASC LIMIT 1500';
 
         // Assert: Check if the actual query string matches the expected one
         System.assertEquals(expectedQuery, actualQuery, 'Query does not match expected value for Scenario 2');
@@ -417,7 +417,7 @@ public class ListenerFlowControllerTest {
         String expectedQuery = 'SELECT Id, Field, OldValue, NewValue, CreatedDate, ' + parentIdField;
         expectedQuery += ' FROM ' + objName;
         expectedQuery += ' WHERE (Field =: fieldValue OR Field =: fieldName) AND ' + parentIdField + ' IN :targetRecordIds AND CreatedDate > :lastExecutionOn';
-        expectedQuery += ' ORDER BY ' + parentIdField + ', CreatedDate ASC LIMIT 4000';
+        expectedQuery += ' ORDER BY ' + parentIdField + ', CreatedDate ASC LIMIT 1500';
 
         // Assert: Check if the actual query string matches the expected one
         System.assertEquals(expectedQuery, actualQuery, 'Query does not match expected value for Scenario 3');
@@ -446,7 +446,7 @@ public class ListenerFlowControllerTest {
         // Initialize the base query for parent record query
         String expectedQuery = 'SELECT Id, Name';
         expectedQuery += ', ' + queriedListenerConfig.Field_To_Track__c + ', ' + queriedListenerConfig.Type__c + ' FROM ' + objName;
-        expectedQuery += ' ORDER BY Id, CreatedDate ASC LIMIT 4000';
+        expectedQuery += ' ORDER BY Id, CreatedDate ASC LIMIT 1500';
 
         // Assert: Check if the actual query string matches the expected one
         System.assertEquals(expectedQuery, actualQuery, 'Query does not match expected value for Scenario 4');
