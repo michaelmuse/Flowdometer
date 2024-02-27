@@ -127,8 +127,9 @@ Refactor
     Using platform events for the last 3 DMLs - Update step, apex update listener, flow update listener
 
 
-Question: do you think this is feasible? If so, what batch size would I want to put into Flow 3? And what's the total number of records I can fetch in Flow 2?
-Answer: Yes, here's how:
+Question to ChatGPT: do you think this is feasible? If so, what batch size would I want to put into Flow 3? And what's the total number of records I can fetch in Flow 2?
+
+Answer from ChatGPT: Yes, here's how:
   Limit-Constrained Operations Overview
   Let's break down the governor limit-sensitive operations based on your overview.
 
