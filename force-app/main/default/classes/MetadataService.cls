@@ -68,11 +68,11 @@ public class MetadataService {
 			handleSaveResults(results[0]);
 		}
 		// Creating a custom field
-		public static void enableFieldHistoryTracking(String sObjectAPIName,String fieldAPIName){
-				String[] objList =new String[] {sObjectAPIName};
+		public static void enableFieldHistoryTracking(String sObjectApiName,String fieldAPIName){
+				String[] objList =new String[] {sObjectApiName};
 				List<MetadataService.Metadata> deployList=new List<MetadataService.Metadata>();
 				MetadataService.MetadataPort service=createService();
-				MetadataService.CustomObject cusObj=(MetadataService.CustomObject) service.readMetadata('CustomObject', objList).getRecords()[0];  
+				MetadataService.CustomObject cusObj=(MetadataService.CustomObject) service.readMetadata('CustomObject', objList).getRecords()[0];
 				cusObj.enableHistory=(cusObj.enableHistory == NULL || cusObj.enableHistory == TRUE) ? TRUE : FALSE;
 				if(!cusObj.enableHistory){
 						cusObj.enableHistory=true;
@@ -86,11 +86,11 @@ public class MetadataService {
 				List<MetadataService.SaveResult> results=service.updateMetadata(new List<MetadataService.CustomObject>{cusObj});
 		}
 	// Method for checking field tracking=true
-	public static Boolean validateHistoryEnabled(String sObjectAPIName){
-			String[] objList =new String[] {sObjectAPIName};
+	public static Boolean validateHistoryEnabled(String sObjectApiName){
+			String[] objList =new String[] {sObjectApiName};
 			List<MetadataService.Metadata> deployList=new List<MetadataService.Metadata>();
 			MetadataService.MetadataPort service=createService();
-			MetadataService.CustomObject cusObj=(MetadataService.CustomObject) service.readMetadata('CustomObject', objList).getRecords()[0]; 
+			MetadataService.CustomObject cusObj=(MetadataService.CustomObject) service.readMetadata('CustomObject', objList).getRecords()[0];
 			if(cusObj.enableHistory == NULL || cusObj.enableHistory == FALSE){
 					cusObj.enableHistory=false;
 			} else {

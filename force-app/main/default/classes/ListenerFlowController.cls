@@ -154,17 +154,19 @@ global with sharing class ListenerFlowController
     @TestVisible
     private static String getStringNotNull(Object valueObj)
     {
-        if (valueObj == null)
-            return '';
-        return String.valueOf(valueObj);
+        if (valueObj != null)
+        {
+            return String.valueOf(valueObj);
+        }
+        
+        return '';
     }
     
     // Called by: getLatestHistoryValues
     // This method returns a boolean value of whether the object passed in is a custom object or not.
-    public static Boolean isCustomObject(String objectname)
+    public static Boolean isCustomObject(String objectName)
     {
-        SObjectType objToken = Schema.getGlobalDescribe().get(objectname);
-        return (objToken != null && objToken.getDescribe().isCustom());
+        return Schema.getGlobalDescribe().get(objectName).getDescribe().isCustom();
     }
     
     // Define the object name history variable
