@@ -1,4 +1,4 @@
-public with sharing class MetaDataUtilityCls
+public class MetaDataUtilityCls
 {
     public static final String HISTORY_ENABLED_HAS_NO_LIMITS = 'HISTORY_ENABLED_HAS_NO_LIMITS';
     public static final String HISTORY_NOT_ENABLED_EARLIER_BUT_ENABLED_NOW = 'HISTORY_NOT_ENABLED_EARLIER_BUT_ENABLED_NOW';
@@ -71,21 +71,26 @@ public with sharing class MetaDataUtilityCls
     {
         Map<String, String> objectAPIToLabelMap = new Map<String, String>();
         Map<String, String> objectAPINameMap = new Map<String, String>();
-        Map<String, String> objectLabelAPINameMap = new Map<String, String>();
         Map<String, Schema.SObjectType> globalDescribeMap = Schema.getGlobalDescribe();
         
-        for (String globalDescribeKey : globalDescribeMap.keySet())
+        for (SObjectType sobjectType : Schema.getGlobalDescribe().values())
         {
-            Schema.SObjectType currentSObjectType = globalDescribeMap.get(globalDescribeKey);
-            String name = currentSObjectType.getDescribe().getName();
-            String label = currentSObjectType.getDescribe().getLabel();
+            String name = sobjectType.getDescribe().getName();
+            String label = sobjectType.getDescribe().getLabel();
             
-            if (!name.containsIgnoreCase('history') && !name.containsIgnoreCase('tag') &&
+            if (sobjectType.getDescribe().isAccessible() &&
+                sobjectType.getDescribe().isDeletable() &&
+                sobjectType.getDescribe().isCreateable() &&
+                !sobjectType.getDescribe().isCustomSetting())
+            {
+                objectAPIToLabelMap.put(name, label);
+            }
+            
+            /*if (!name.containsIgnoreCase('history') && !name.containsIgnoreCase('tag') &&
                 !name.containsIgnoreCase('share') && !name.containsIgnoreCase('feed') && !name.containsIgnoreCase('changeevent'))
             {
                 objectAPIToLabelMap.put(name, label);
-                objectLabelAPINameMap.put(label, name);
-            }
+            }*/
         }
         
         for (String key : getSortedKeySet(objectAPIToLabelMap))
@@ -329,5 +334,4 @@ public with sharing class MetaDataUtilityCls
         insert newRecord;
         return newRecord.Id;
     }
-
 }

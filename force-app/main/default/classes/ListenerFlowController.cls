@@ -1,4 +1,4 @@
-global with sharing class ListenerFlowController
+global class ListenerFlowController
 {
     //This is a managed package, so we need global modifiers
     @AuraEnabled
@@ -166,7 +166,13 @@ global with sharing class ListenerFlowController
     // This method returns a boolean value of whether the object passed in is a custom object or not.
     public static Boolean isCustomObject(String objectName)
     {
-        return Schema.getGlobalDescribe().get(objectName).getDescribe().isCustom();
+        SObjectType sObjectType = Schema.getGlobalDescribe().get(objectName);
+        if(sObjectType == null)
+        {
+            return false;
+        }
+        
+        return sObjectType.getDescribe().isCustom();
     }
     
     // Define the object name history variable
@@ -765,15 +771,10 @@ global with sharing class ListenerFlowController
     //  * @param listenerConfigList List of listener configuration records.
     //  * @return List<ListenerFlowLatestResponse> A list of response objects containing the fetched data.
     //  */
-    @InvocableMethod(
-        label='Query & Parse History Records'
-        description='Used to query History Records in Flow'
-        category='ListenerFlowController'
-    )
-    public static List<ListenerFlowLatestResponse> parseRecordsToFlow(
-        List<ListenerFlowLatestRequest> listenerConfigList)
+    
+    @InvocableMethod( Label='Query & Parse History Records' Description='Used to query History Records in Flow' Category='ListenerFlowController' )
+    public static List<ListenerFlowLatestResponse> parseRecordsToFlow(List<ListenerFlowLatestRequest> listenerConfigList)
     {
-        
         //START DEBUG
         // Grab the first listenerConfig from the list
         Listener__c firstListenerConfig = listenerConfigList[0].listenerConfig;

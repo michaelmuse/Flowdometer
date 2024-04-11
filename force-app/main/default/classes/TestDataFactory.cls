@@ -1,33 +1,33 @@
-public class TestDataFactory
+public class  TestDataFactory
 {
     public static List<Opportunity> createAndUpdateOpportunities(Id parentId, String field, Integer numRecords)
     {
         // Create Opportunities
-        List<Opportunity> opps = new List<Opportunity>();
+        List<Opportunity> opportunities = new List<Opportunity>();
         for (Integer i = 0; i < numRecords; i++)
         {
             Opportunity opp = new Opportunity(
                 Name = 'Test Opp ' + i,
-                stageName = 'Prospecting',
+                StageName = 'Prospecting',
                 CloseDate = System.today(),
                 AccountId = parentId,
                 Type = 'New Business'
             );
             
-            opps.add(opp);
+            opportunities.add(opp);
         }
         
-        insert opps;
+        insert opportunities;
         
         // Update Opportunities to generate history records
-        for (Opportunity opp : opps)
+        for (Opportunity opp : opportunities)
         {
-            opp.put(field, 'New Value ' + DateTime.now().getTime()); // Update the field to track
+            opp.put(field, 'New Value ' + Datetime.now().getTime()); // Update the field to track
         }
         
-        update opps;
+        update opportunities;
         
-        return opps; // Return the list of updated Opportunities
+        return opportunities; // Return the list of updated Opportunities
     }
     
     public static Case createCase(String subject, String status)
@@ -41,12 +41,12 @@ public class TestDataFactory
         return newCase;
     }
     
-    public static Listener__c createlistenerConfig(String objectName, String fieldToTrack, DateTime lastExecutionOn, Boolean doInsert)
+    public static Flowdometer__Listener__c createListenerConfig(String objectName, String fieldToTrack, Datetime lastExecutionOn, Boolean doInsert)
     {
-        Listener__c listenerConfig = new Listener__c(
-            Object_Name__c = objectName,
-            Field_To_Track__c = fieldToTrack,
-            Last_Execution_On__c = lastExecutionOn
+        Flowdometer__Listener__c listenerConfig = new Flowdometer__Listener__c(
+            Flowdometer__Object_Name__c = objectName,
+            Flowdometer__Field_To_Track__c = fieldToTrack,
+            Flowdometer__Last_Execution_On__c = lastExecutionOn
         );
         
         if (doInsert)
@@ -77,7 +77,7 @@ public class TestDataFactory
             historyRecords.add(
                 new Opportunity(
                     Name = 'Test Opportunity ' + i,
-                    stageName = stageName, // Use the provided stageName parameter
+                    StageName = stageName, // Use the provided stageName parameter
                     CloseDate = Date.today().addDays(10)
                 )
             );

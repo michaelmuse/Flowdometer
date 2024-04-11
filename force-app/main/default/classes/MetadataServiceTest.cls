@@ -25,9 +25,9 @@
  **/
 
 /**
- * This is a dummy test class to obtain 100% coverage for the generated WSDL2Apex code, it is not a funcitonal test class
+ * This is a dummy test class to obtain 100% coverage for the generated WSDL2Apex code, it is not a functional test class
  **/
-@isTest
+@IsTest
 private class MetadataServiceTest {
   /**
    * Dummy Metadata API web service mock class (see MetadataCreateJobTest.cls for a better example)
@@ -42,7 +42,6 @@ private class MetadataServiceTest {
     Test.startTest();
     MetadataService.MetadataPort metaDataPort = new MetadataService.MetadataPort();
     MetaDataUtilityCls.grantFieldEditAccess(
-      'Test_Permission_Set',
       'Test_Object__c',
       'Test_Field__c'
     );
@@ -62,82 +61,111 @@ private class MetadataServiceTest {
       String responseType
     ) {
       if (request instanceof MetadataService.retrieve_element)
+      {
         response.put(
-          'response_x',
-          new MetadataService.retrieveResponse_element()
+            'response_x',
+            new MetadataService.retrieveResponse_element()
         );
+      }
       else if (request instanceof MetadataService.checkDeployStatus_element)
+      {
         response.put(
-          'response_x',
-          new MetadataService.checkDeployStatusResponse_element()
+            'response_x',
+            new MetadataService.checkDeployStatusResponse_element()
         );
+      }
       else if (request instanceof MetadataService.listMetadata_element)
+      {
         response.put(
-          'response_x',
-          new MetadataService.listMetadataResponse_element()
+            'response_x',
+            new MetadataService.listMetadataResponse_element()
         );
+      }
       else if (request instanceof MetadataService.checkRetrieveStatus_element)
+      {
         response.put(
-          'response_x',
-          new MetadataService.checkRetrieveStatusResponse_element()
+            'response_x',
+            new MetadataService.checkRetrieveStatusResponse_element()
         );
+      }
       else if (request instanceof MetadataService.describeMetadata_element)
+      {
         response.put(
-          'response_x',
-          new MetadataService.describeMetadataResponse_element()
+            'response_x',
+            new MetadataService.describeMetadataResponse_element()
         );
+      }
       else if (request instanceof MetadataService.deploy_element)
+      {
         response.put(
-          'response_x',
-          new MetadataService.deployResponse_element()
+            'response_x',
+            new MetadataService.deployResponse_element()
         );
+      }
       else if (request instanceof MetadataService.updateMetadata_element)
+      {
         response.put(
-          'response_x',
-          new MetadataService.updateMetadataResponse_element()
+            'response_x',
+            new MetadataService.updateMetadataResponse_element()
         );
+      }
       else if (request instanceof MetadataService.renameMetadata_element)
+      {
         response.put(
-          'response_x',
-          new MetadataService.renameMetadataResponse_element()
+            'response_x',
+            new MetadataService.renameMetadataResponse_element()
         );
+      }
       else if (request instanceof MetadataService.cancelDeploy_element)
+      {
         response.put(
-          'response_x',
-          new MetadataService.cancelDeployResponse_element()
+            'response_x',
+            new MetadataService.cancelDeployResponse_element()
         );
+      }
       else if (request instanceof MetadataService.deleteMetadata_element)
+      {
         response.put(
-          'response_x',
-          new MetadataService.deleteMetadataResponse_element()
+            'response_x',
+            new MetadataService.deleteMetadataResponse_element()
         );
+      }
       else if (request instanceof MetadataService.upsertMetadata_element)
+      {
         response.put(
-          'response_x',
-          new MetadataService.upsertMetadataResponse_element()
+            'response_x',
+            new MetadataService.upsertMetadataResponse_element()
         );
+      }
       else if (request instanceof MetadataService.createMetadata_element)
+      {
         response.put(
-          'response_x',
-          new MetadataService.createMetadataResponse_element()
+            'response_x',
+            new MetadataService.createMetadataResponse_element()
         );
-      else if (
-        request instanceof MetadataService.deployRecentValidation_element
-      )
+      }
+      else if (request instanceof MetadataService.deployRecentValidation_element)
+      {
         response.put(
-          'response_x',
-          new MetadataService.deployRecentValidationResponse_element()
+            'response_x',
+            new MetadataService.deployRecentValidationResponse_element()
         );
+      }
       else if (request instanceof MetadataService.describeValueType_element)
+      {
         response.put(
-          'response_x',
-          new MetadataService.describeValueTypeResponse_element()
+            'response_x',
+            new MetadataService.describeValueTypeResponse_element()
         );
+      }
       else if (request instanceof MetadataService.checkRetrieveStatus_element)
+      {
         response.put(
-          'response_x',
-          new MetadataService.checkRetrieveStatusResponse_element()
+            'response_x',
+            new MetadataService.checkRetrieveStatusResponse_element()
         );
+      }
+      
       return;
     }
   }
@@ -868,16 +896,16 @@ private class MetadataServiceTest {
     new MetadataService.CustomMetadataValue();
     new MetadataService.HistoryRetentionPolicy();
     new MetadataService.UpsertResult();
-    new MetaDataService.Territory2RuleAssociation();
+    new MetadataService.Territory2RuleAssociation();
     new MetadataService.ManagedTopics();
-    new MetaDataService.XOrgHub();
-    new MetaDataService.FlowWaitEventInputParameter();
+    new MetadataService.XOrgHub();
+    new MetadataService.FlowWaitEventInputParameter();
     new MetadataService.ManagedTopic();
     new MetadataService.Territory2RuleItem();
     new MetadataService.DataPipeline();
     new MetadataService.UiPlugin();
     new MetadataService.Territory2Rule();
-    new MetaDataService.XOrgHubSharedObject();
+    new MetadataService.XOrgHubSharedObject();
     new MetadataService.Territory2Type();
     new MetadataService.CorsWhitelistOrigin();
     new MetadataService.StandardFieldTranslation();
@@ -918,73 +946,73 @@ private class MetadataServiceTest {
     new MetadataService.FeedItemSettings();
     new MetadataService.FlowBaseElement();
     new MetadataService.Territory2();
-    new MetaDataService.deployRecentValidationResponse_element();
-    new MetaDataService.SharingCriteriaRule();
-    new MetaDataService.ActionLinkGroupTemplate();
-    new MetaDataService.MatchingRule();
-    new MetaDataService.describeValueType_element();
-    new MetaDataService.LicensedCustomPermissions();
-    new MetaDataService.MatchingRuleItem();
-    new MetaDataService.MarketingResourceType();
-    new MetaDataService.SharingBaseRule();
-    new MetaDataService.MatchingRules();
-    new MetaDataService.deployRecentValidation_element();
-    new MetaDataService.ActionLinkTemplate();
-    new MetaDataService.SharingTerritoryRule();
-    new MetaDataService.PersonalJourneySettings();
-    new MetaDataService.LicenseDefinition();
-    new MetaDataService.AccountSharingRuleSettings();
-    new MetaDataService.NamedCredential();
-    new MetaDataService.DescribeValueTypeResult();
-    new MetaDataService.ReadSharingTerritoryRuleResult();
-    new MetaDataService.readSharingTerritoryRuleResponse_element();
+    new MetadataService.deployRecentValidationResponse_element();
+    new MetadataService.SharingCriteriaRule();
+    new MetadataService.ActionLinkGroupTemplate();
+    new MetadataService.MatchingRule();
+    new MetadataService.describeValueType_element();
+    new MetadataService.LicensedCustomPermissions();
+    new MetadataService.MatchingRuleItem();
+    new MetadataService.MarketingResourceType();
+    new MetadataService.SharingBaseRule();
+    new MetadataService.MatchingRules();
+    new MetadataService.deployRecentValidation_element();
+    new MetadataService.ActionLinkTemplate();
+    new MetadataService.SharingTerritoryRule();
+    new MetadataService.PersonalJourneySettings();
+    new MetadataService.LicenseDefinition();
+    new MetadataService.AccountSharingRuleSettings();
+    new MetadataService.NamedCredential();
+    new MetadataService.DescribeValueTypeResult();
+    new MetadataService.ReadSharingTerritoryRuleResult();
+    new MetadataService.readSharingTerritoryRuleResponse_element();
     new MetadataService.ReadPersonalJourneySettingsResult();
-    new MetaDataService.readPersonalJourneySettingsResponse_element();
-    new MetaDataService.ReadMarketingResourceTypeResult();
-    new MetaDataService.readMarketingResourceTypeResponse_element();
-    new MetaDataService.ReadSharingCriteriaRuleResult();
-    new MetaDataService.readSharingCriteriaRuleResponse_element();
-    new MetaDataService.ReadLicenseDefinitionResult();
-    new MetaDataService.readLicenseDefinitionResponse_element();
-    new MetaDataService.ReadActionLinkGroupTemplateResult();
-    new MetaDataService.readActionLinkGroupTemplateResponse_element();
-    new MetaDataService.ReadNamedCredentialResult();
-    new MetaDataService.readNamedCredentialResponse_element();
-    new MetaDataService.ReadSharingOwnerRuleResult();
-    new MetaDataService.readSharingOwnerRuleResponse_element();
-    new MetaDataService.ReadSharingBaseRuleResult();
-    new MetaDataService.readSharingBaseRuleResponse_element();
-    new MetaDataService.ReadMatchingRulesResult();
-    new MetaDataService.readMatchingRulesResponse_element();
-    new MetaDataService.ReadMatchingRuleResult();
-    new MetaDataService.readMatchingRuleResponse_element();
-    new MetaDataService.SharingOwnerRule();
-    new MetaDataService.PicklistEntry();
-    new MetaDataService.ValueTypeField();
-    new MetaDataService.DashboardGridComponent();
-    new MetaDataService.AllOrNoneHeader_element();
-    new MetaDataService.WeightedSourceCategory();
-    new MetaDataService.Territory2SettingsOpportunityFilter();
-    new MetaDataService.PathAssistantStep();
-    new MetaDataService.DashboardGridLayout();
-    new MetaDataService.PlatformActionList();
-    new MetaDataService.FeedFilterCriterion();
-    new MetaDataService.PathAssistant();
-    new MetaDataService.PlatformCachePartition();
-    new MetaDataService.FlowDefinition();
-    new MetaDataService.WaveTemplateBundle();
-    new MetaDataService.TransactionSecurityAction();
-    new MetaDataService.PlatformActionListItem();
-    new MetaDataService.PlatformCachePartitionType();
-    new MetaDataService.TransactionSecurityPolicy();
-    new MetaDataService.KnowledgeCommunitiesSettings();
-    new MetaDataService.PathAssistantSettings();
-    new MetaDataService.AnalyticsCloudComponentLayoutItem();
-    new MetaDataService.CustomFeedFilter();
-    new MetaDataService.LeadConvertSettings();
-    new MetaDataService.ForecastingCategoryMapping();
-    new MetaDataService.LiveChatSensitiveDataRule();
-    new MetaDataService.TransactionSecurityNotification();
+    new MetadataService.readPersonalJourneySettingsResponse_element();
+    new MetadataService.ReadMarketingResourceTypeResult();
+    new MetadataService.readMarketingResourceTypeResponse_element();
+    new MetadataService.ReadSharingCriteriaRuleResult();
+    new MetadataService.readSharingCriteriaRuleResponse_element();
+    new MetadataService.ReadLicenseDefinitionResult();
+    new MetadataService.readLicenseDefinitionResponse_element();
+    new MetadataService.ReadActionLinkGroupTemplateResult();
+    new MetadataService.readActionLinkGroupTemplateResponse_element();
+    new MetadataService.ReadNamedCredentialResult();
+    new MetadataService.readNamedCredentialResponse_element();
+    new MetadataService.ReadSharingOwnerRuleResult();
+    new MetadataService.readSharingOwnerRuleResponse_element();
+    new MetadataService.ReadSharingBaseRuleResult();
+    new MetadataService.readSharingBaseRuleResponse_element();
+    new MetadataService.ReadMatchingRulesResult();
+    new MetadataService.readMatchingRulesResponse_element();
+    new MetadataService.ReadMatchingRuleResult();
+    new MetadataService.readMatchingRuleResponse_element();
+    new MetadataService.SharingOwnerRule();
+    new MetadataService.PicklistEntry();
+    new MetadataService.ValueTypeField();
+    new MetadataService.DashboardGridComponent();
+    new MetadataService.AllOrNoneHeader_element();
+    new MetadataService.WeightedSourceCategory();
+    new MetadataService.Territory2SettingsOpportunityFilter();
+    new MetadataService.PathAssistantStep();
+    new MetadataService.DashboardGridLayout();
+    new MetadataService.PlatformActionList();
+    new MetadataService.FeedFilterCriterion();
+    new MetadataService.PathAssistant();
+    new MetadataService.PlatformCachePartition();
+    new MetadataService.FlowDefinition();
+    new MetadataService.WaveTemplateBundle();
+    new MetadataService.TransactionSecurityAction();
+    new MetadataService.PlatformActionListItem();
+    new MetadataService.PlatformCachePartitionType();
+    new MetadataService.TransactionSecurityPolicy();
+    new MetadataService.KnowledgeCommunitiesSettings();
+    new MetadataService.PathAssistantSettings();
+    new MetadataService.AnalyticsCloudComponentLayoutItem();
+    new MetadataService.CustomFeedFilter();
+    new MetadataService.LeadConvertSettings();
+    new MetadataService.ForecastingCategoryMapping();
+    new MetadataService.LiveChatSensitiveDataRule();
+    new MetadataService.TransactionSecurityNotification();
     new MetadataService.DelegateGroup();
     new MetadataService.EventDelivery();
     new MetadataService.EventSubscription();
@@ -994,10 +1022,10 @@ private class MetadataServiceTest {
     new MetadataService.WaveApplication();
     new MetadataService.WaveDataset();
     new MetadataService.WaveDashboard();
-    new MetaDataService.WaveDataflow();
-    new MetaDataService.WaveLens();
-    new MetaDataService.OrgPreferenceSettings();
-    new MetaDataService.SearchSettings();
+    new MetadataService.WaveDataflow();
+    new MetadataService.WaveLens();
+    new MetadataService.OrgPreferenceSettings();
+    new MetadataService.SearchSettings();
     new MetadataService.GlobalPicklistValue();
     new MetadataService.PicklistValue();
     new MetadataService.KeywordList();
@@ -1397,10 +1425,10 @@ private class MetadataServiceTest {
     new MetadataService.readModerationRuleResponse_element().getResult();
     new MetadataService.readWaveApplicationResponse_element().getResult();
     new MetadataService.readWaveDatasetResponse_element().getResult();
-    new MetaDataService.readWaveDataflowResponse_element().getResult();
-    new MetaDataService.readWaveLensResponse_element().getResult();
-    new MetaDataService.readOrgPreferenceSettingsResponse_element().getResult();
-    new MetaDataService.readSearchSettingsResponse_element().getResult();
+    new MetadataService.readWaveDataflowResponse_element().getResult();
+    new MetadataService.readWaveLensResponse_element().getResult();
+    new MetadataService.readOrgPreferenceSettingsResponse_element().getResult();
+    new MetadataService.readSearchSettingsResponse_element().getResult();
     new MetadataService.readGlobalPicklistValueResponse_element().getResult();
     new MetadataService.readPicklistValueResponse_element().getResult();
     new MetadataService.readContentAssetResponse_element().getResult();

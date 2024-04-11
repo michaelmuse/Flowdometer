@@ -57,9 +57,7 @@
                                         <lightning-input type="text" name="type"
                                                          label="Type (optional, use the field APIName)"
                                                          onblur={handleChanges}
-                                                         field-level-help="OPTIONAL: Type should be blank unless you plan on having different goal times for different Types of this object (ie: New Business vs Renewal Opportunities may expect different sales cycle times).
-                                                         If so, put the API Name of the field you are using to identify these types here in the Type field. If you need to combine two or more fields to get all Type permutations, you can build a formula field to concatenate them, and pass that in here. Use the API Name here, so for custom fields, it should end with __c.">
-
+                                                         field-level-help={typeHelpText}>
                                         </lightning-input>
                                     </div>
                                 </div>

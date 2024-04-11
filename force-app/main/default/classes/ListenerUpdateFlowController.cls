@@ -1,4 +1,4 @@
-global with sharing class ListenerUpdateFlowController
+global class ListenerUpdateFlowController
 {
     //This method is called from the flow to update the flow records with the current object id and name
     @InvocableMethod( label='Update Flow Records' description='' category='ListenerUpdateFlowController' )
@@ -10,21 +10,23 @@ global with sharing class ListenerUpdateFlowController
         {
             MetaDataUtilityCls.setLookupFieldMaps('Flowdometer__Flow__c');
             System.debug('listenerFlowToUpdateLst - ' + listenerFlowToUpdateLst);
+            
             for (FlowUpdateRequest req : listenerFlowToUpdateLst)
             {
                 Flowdometer__Flow__c listenerFlow = new Flowdometer__Flow__c(
                     Id = req.varFlowID
                 );
-                String fieldToUpdate = MetaDataUtilityCls.lookUpAPINameMap.containsKey(
-                    req.varCurrentObjectName
-                )
+                String fieldToUpdate = MetaDataUtilityCls.lookUpAPINameMap.containsKey(req.varCurrentObjectName)
                     ? MetaDataUtilityCls.lookUpAPINameMap.get(req.varCurrentObjectName)
                     : null;
+                
                 System.debug('fieldToUpdate - ' + fieldToUpdate);
+                
                 if (fieldToUpdate != null)
                 {
                     listenerFlow.put(fieldToUpdate, req.varCurrentObjectID);
                 }
+                
                 listenerFlow.Flowdometer__Most_Recent_Step__c = req.currentStepId;
                 System.debug('listenerFlow - ' + listenerFlow);
                 listenerFlowToUpdate.add(listenerFlow);
@@ -36,6 +38,7 @@ global with sharing class ListenerUpdateFlowController
         {
             response.isCheckSuccess = false;
         }
+        
         System.debug('response from ListenerUpdateFlowController - ' + response);
         
         return new List<FlowUpdateResponse>

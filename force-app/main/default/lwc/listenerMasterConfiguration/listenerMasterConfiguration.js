@@ -10,23 +10,18 @@ import checkFieldHistoryStatus from '@salesforce/apex/MetaDataUtilityCls.checkFi
 import createListenerRecord from '@salesforce/apex/MetaDataUtilityCls.createListenerRecord';
 
 export default class ListenerMasterConfiguration extends NavigationMixin(LightningElement) {
-    @track showRadio = false;
+    isLoading = false;
+    showRadio = false;
     keyIndex = 0;
     selectedSObject;
     @track selectedField;
     @track sObjectOptions = [];
     @track sObjectFieldsOptions = [];
     @track selectedRadio;
-    @api isLoading = false;
     @track configName;
-    @track description;
     @track type;
-    @track valueType;
-    @track radioValue = 'All Records';
-    @track recordIdVal;
     fieldHistoryStatus;
     error;
-    @api recordId;
     @track itemList = [
         {
             id: 0
@@ -35,10 +30,10 @@ export default class ListenerMasterConfiguration extends NavigationMixin(Lightni
 
     handleChanges(event) {
         const fieldName = event.target.name;
-        if (fieldName == 'configName') {
+        if (fieldName === 'configName') {
             this.configName = event.target.value;
             console.log('configValue - ' + JSON.stringify(this.configName));
-        } else if (fieldName == 'type') {
+        } else if (fieldName === 'type') {
             this.type = event.target.value;
             console.log('type - ' + JSON.stringify(this.type));
         } else {
@@ -133,7 +128,7 @@ export default class ListenerMasterConfiguration extends NavigationMixin(Lightni
         console.log('Detail Value Field -' + JSON.stringify(event.detail.value));
     }
 
-    handleRadioChange(event) {
+    /*handleRadioChange(event) {
         const selectedOption = event.detail.value;
         console.log('selectedRadio with value: ' + selectedOption);
         if (selectedOption == "Individual Records") {
@@ -141,7 +136,7 @@ export default class ListenerMasterConfiguration extends NavigationMixin(Lightni
         } else {
             this.showRadio = false;
         }
-    }
+    }*/
 
     async handleSubmitValidation() {
         this.toggleLoading();
@@ -195,13 +190,12 @@ export default class ListenerMasterConfiguration extends NavigationMixin(Lightni
 
         createListenerRecord({newRecord: listener})
             .then(result => {
-                this.recordId = result;
                 console.log(result);
 
                 this[NavigationMixin.Navigate]({
                     type: 'standard__recordPage',
                     attributes: {
-                        recordId: this.recordId,
+                        recordId: result,
                         objectApiName: 'Flowdometer__Listener__c',
                         actionName: 'view'
                     }
@@ -247,5 +241,11 @@ export default class ListenerMasterConfiguration extends NavigationMixin(Lightni
                 filterName: 'Recent'
             }
         });
+    }
+
+    get typeHelpText() {
+        return 'OPTIONAL: Type should be blank unless you plan on having different goal times for different Types of this object (ie: New Business vs Renewal Opportunities may expect different sales cycle times).\n'
+            + ' If so, put the API Name of the field you are using to identify these types here in the Type field. If you need to combine two or more fields to get all Type permutations, you can build a formula field to concatenate them, and pass that in here.'
+            + ' Use the API Name here, so for custom fields, it should end with __c.'
     }
 }
