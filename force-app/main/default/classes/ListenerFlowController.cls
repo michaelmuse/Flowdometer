@@ -9,7 +9,7 @@ global class ListenerFlowController
     global String varCurrentObjectID;
     @AuraEnabled
     public Map<Id, List<SObject>> historyRecordsMap;
-    public Map<Id, List<Datetime>> sortingDateTimeMap;
+    public Map<Id, List<Datetime>> sortingDatetimeMap;
     public Map<Id, SObject> parentRecordsMap = new Map<Id, SObject>();
     @AuraEnabled
     global String varNameofTrackedRecord;
@@ -66,7 +66,7 @@ global class ListenerFlowController
     {
         // Initialize our collection of history records and the sorting map
         this.historyRecordsMap = new Map<Id, List<SObject>>();
-        this.sortingDateTimeMap = new Map<Id, List<Datetime>>();
+        this.sortingDatetimeMap = new Map<Id, List<Datetime>>();
     }
     // Class for making editable history records
     public class EditableHistory
@@ -79,10 +79,10 @@ global class ListenerFlowController
     }
     public class MockHistoryObject
     {
-        public DateTime CreatedDate { get; set; }
+        public Datetime CreatedDate { get; set; }
         public Id Id { get; set; }
         
-        public MockHistoryObject(DateTime CreatedDate, Id Id)
+        public MockHistoryObject(Datetime CreatedDate, Id Id)
         {
             this.CreatedDate = CreatedDate;
             this.Id = Id;
@@ -93,15 +93,15 @@ global class ListenerFlowController
     public class HistoryValuesResult
     {
         public Map<Id, List<SObject>> historyRecordsMap;
-        public Map<Id, List<Datetime>> sortingDateTimeMap;
+        public Map<Id, List<Datetime>> sortingDatetimeMap;
         
         public HistoryValuesResult(
             Map<Id, List<SObject>> historyRecordsMap,
-            Map<Id, List<Datetime>> sortingDateTimeMap
+            Map<Id, List<Datetime>> sortingDatetimeMap
         )
         {
             this.historyRecordsMap = historyRecordsMap;
-            this.sortingDateTimeMap = sortingDateTimeMap;
+            this.sortingDatetimeMap = sortingDatetimeMap;
         }
     }
     // This method sorts the history records in ascending order of CreatedDate and ID, and updates the historyList parameter.
@@ -143,7 +143,7 @@ global class ListenerFlowController
         for (SObject record : historyList)
         {
             MockHistoryObject mockRecord = new MockHistoryObject(
-                (DateTime) record.get('CloseDate'), // Note the change here
+                (Datetime) record.get('CloseDate'), // Note the change here
                 (Id) record.get('Id')
             );
             mockHistoryList.add(mockRecord);
@@ -281,7 +281,7 @@ global class ListenerFlowController
         global Listener__c listenerConfig;
         
         @InvocableVariable
-        global DateTime lastExecutionOn;
+        global Datetime lastExecutionOn;
     }
     
     // Define the listenerConfigList variable
@@ -317,7 +317,7 @@ global class ListenerFlowController
         List<Id> targetRecordIds,
         Listener__c listenerConfig,
         Boolean isHistoryQuery,
-        DateTime lastExecutionOn
+        Datetime lastExecutionOn
     )
     {
         List<String> selectFields = new List<String>
@@ -394,7 +394,7 @@ global class ListenerFlowController
     @TestVisible
     private static Map<String, Object> getQueryModifiers(
         Boolean isHistoryQuery,
-        DateTime lastExecutionOn
+        Datetime lastExecutionOn
     )
     {
         Map<String, Object> queryModifiers = new Map<String, Object>
@@ -428,13 +428,13 @@ global class ListenerFlowController
     private static HistoryValuesResult getLatestHistoryValues(
         List<Id> targetRecordIds,
         Listener__c listenerConfig,
-        DateTime lastExecutionOn,
+        Datetime lastExecutionOn,
         ListenerFlowController controllerInstance,
         String objHistoryName,
         String parentIdField
     )
     {
-        controllerInstance.sortingDateTimeMap.clear();
+        controllerInstance.sortingDatetimeMap.clear();
         String fieldValue = 'created';
         String fieldName = listenerConfig.Field_To_Track__c;
         String objectSuffix = '__c';
@@ -444,7 +444,7 @@ global class ListenerFlowController
         // Query for history records
         Map<Id, List<SObject>> historyRecordsMap = controllerInstance.historyRecordsMap;
         Datetime queryTimestamp = Datetime.now();
-        // HISTORY RECORDS QUERY to populate historyRecordsMap and sortingDateTimeMap
+        // HISTORY RECORDS QUERY to populate historyRecordsMap and sortingDatetimeMap
         Integer startCpuTime = Limits.getCpuTime();
         Integer cpuTimeLimit = 9000; // 90% of the 10-second limit for synchronous transactions
         
@@ -475,12 +475,12 @@ global class ListenerFlowController
             }
             historyList.add(obj);
             
-            // Optimize map access for sortingDateTimeMap
-            List<Datetime> dateTimeList = controllerInstance.sortingDateTimeMap.get(parentId);
+            // Optimize map access for sortingDatetimeMap
+            List<Datetime> dateTimeList = controllerInstance.sortingDatetimeMap.get(parentId);
             if (dateTimeList == null)
             {
                 dateTimeList = new List<Datetime>();
-                controllerInstance.sortingDateTimeMap.put(parentId, dateTimeList);
+                controllerInstance.sortingDatetimeMap.put(parentId, dateTimeList);
             }
             dateTimeList.add(createdDate);
         }
@@ -545,7 +545,7 @@ global class ListenerFlowController
         }
         
         // Return both maps in a wrapper class
-        return new HistoryValuesResult(controllerInstance.historyRecordsMap, controllerInstance.sortingDateTimeMap);
+        return new HistoryValuesResult(controllerInstance.historyRecordsMap, controllerInstance.sortingDatetimeMap);
     }
     
     public void handleBatchAndUnprocessedRecords(
@@ -673,12 +673,12 @@ global class ListenerFlowController
         }
         SObject SObj = null;
         // Loop through the history records
-        for (Id parentRecId : controllerInstance.sortingDateTimeMap.keySet())
+        for (Id parentRecId : controllerInstance.sortingDatetimeMap.keySet())
         {
             Integer count = 0;
             
             // Loop through the history records for each parent record
-            for (Datetime dt : controllerInstance.sortingDateTimeMap.get(parentRecId))
+            for (Datetime dt : controllerInstance.sortingDatetimeMap.get(parentRecId))
             {
                 ListenerFlowController trackFlowObj = new ListenerFlowController();
                 List<SObject> listSObj = controllerInstance.historyRecordsMap.get(parentRecId);
@@ -707,7 +707,7 @@ global class ListenerFlowController
                     fieldValue = String.valueOf(SObj.get('NewValue'));
                 }
                 
-                List<Datetime> sortedDates = controllerInstance.sortingDateTimeMap.get(parentRecId);
+                List<Datetime> sortedDates = controllerInstance.sortingDatetimeMap.get(parentRecId);
                 
                 // Populating trackFlowObj
                 trackFlowObj.varHistoryRecordId = (Id) SObj.get('Id');
@@ -803,7 +803,7 @@ global class ListenerFlowController
         String parentIdField = isCustomObject(objName) ? 'ParentId' : (objName + 'Id');
         String fieldValue = 'created';
         String fieldName = listenerConfig.Field_To_Track__c;
-        DateTime lastExecutionOn = listenerConfig.Last_Execution_On__c;
+        Datetime lastExecutionOn = listenerConfig.Last_Execution_On__c;
         List<ListenerFlowLatestResponse> responseList = new List<ListenerFlowLatestResponse>();
         ListenerFlowLatestResponse response = new ListenerFlowLatestResponse();
         Map<Id, SObject> sObjectMapForParse = new Map<Id, SObject>();
@@ -871,7 +871,7 @@ global class ListenerFlowController
             );
             
             Map<Id, List<SObject>> historyRecordsMap = historyResult.historyRecordsMap;
-            Map<Id, List<Datetime>> sortingDateTimeMap = historyResult.sortingDateTimeMap;
+            Map<Id, List<Datetime>> sortingDatetimeMap = historyResult.sortingDatetimeMap;
             Set<Id> oneHistoryParentIds = new Set<Id>();
             for (Id parentId : historyRecordsMap.keySet())
             {

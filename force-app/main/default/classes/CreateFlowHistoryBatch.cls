@@ -35,7 +35,6 @@ global class CreateFlowHistoryBatch implements Queueable, Database.Batchable<SOb
         
         SObjectType sObjectType = Schema.getGlobalDescribe().get(listener.Flowdometer__Object_Name__c).getDescribe().getSObjectType();
         
-        String additionalFelds;
         String query =
             'SELECT ' + QueryBuilderUtils.getHistoryFields(sObjectType)
             + ' FROM ' + QueryBuilderUtils.getRecordHistoryObjectName(sObjectType)

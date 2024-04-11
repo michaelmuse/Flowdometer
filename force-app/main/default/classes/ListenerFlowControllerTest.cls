@@ -4,7 +4,6 @@ public class ListenerFlowControllerTest
     // Class-level static variables for storing test data across methods
     static Map<Id, List<SObject>> historyRecordsMap;
     static Flowdometer__Listener__c listenerConfig;
-    static Flowdometer__Listener__c listenerConfigWExecution;
     static Case parentCase;
     static List<Listener__c> testListeners;
     static List<ListenerFlowController.ListenerFlowLatestResponse> responseList = new List<ListenerFlowController.ListenerFlowLatestResponse>();

@@ -71,7 +71,6 @@ public class MetaDataUtilityCls
     {
         Map<String, String> objectAPIToLabelMap = new Map<String, String>();
         Map<String, String> objectAPINameMap = new Map<String, String>();
-        Map<String, Schema.SObjectType> globalDescribeMap = Schema.getGlobalDescribe();
         
         for (SObjectType sobjectType : Schema.getGlobalDescribe().values())
         {

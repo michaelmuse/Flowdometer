@@ -1,5 +1,5 @@
 //Thanks to ProfessorFlow and UnofficialSF for this Open Source Component!
-@isTest
+@IsTest
 global class CalculateBusinessHoursDiffTest
 {
     @IsTest

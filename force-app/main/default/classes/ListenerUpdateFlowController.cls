@@ -1,7 +1,7 @@
 global class ListenerUpdateFlowController
 {
     //This method is called from the flow to update the flow records with the current object id and name
-    @InvocableMethod( label='Update Flow Records' description='' category='ListenerUpdateFlowController' )
+    @InvocableMethod( Label='Update Flow Records' Description='' Category='ListenerUpdateFlowController' )
     public static List<FlowUpdateResponse> updateFlowRecords(List<FlowUpdateRequest> listenerFlowToUpdateLst)
     {
         FlowUpdateResponse response = new FlowUpdateResponse();
