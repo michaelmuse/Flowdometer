@@ -77,19 +77,11 @@ public class MetaDataUtilityCls
             String name = sobjectType.getDescribe().getName();
             String label = sobjectType.getDescribe().getLabel();
             
-            if (sobjectType.getDescribe().isAccessible() &&
-                sobjectType.getDescribe().isDeletable() &&
-                sobjectType.getDescribe().isCreateable() &&
-                !sobjectType.getDescribe().isCustomSetting())
-            {
-                objectAPIToLabelMap.put(name, label);
-            }
-            
-            /*if (!name.containsIgnoreCase('history') && !name.containsIgnoreCase('tag') &&
+            if (!name.containsIgnoreCase('history') && !name.containsIgnoreCase('tag') &&
                 !name.containsIgnoreCase('share') && !name.containsIgnoreCase('feed') && !name.containsIgnoreCase('changeevent'))
             {
                 objectAPIToLabelMap.put(name, label);
-            }*/
+            }
         }
         
         for (String key : getSortedKeySet(objectAPIToLabelMap))
