@@ -55,3 +55,6 @@ temp_*.cls
 
 # Illuminated Cloud files
 IlluminatedCloud/
+
+# VSCode history files
+.history/
