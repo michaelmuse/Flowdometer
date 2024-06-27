@@ -7,4 +7,7 @@
 .sfdx
 .vscode
 
+# Ignore MetadataService
+force-app/apex-mdapi/
+
 coverage/

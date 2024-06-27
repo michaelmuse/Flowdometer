@@ -5,27 +5,27 @@ import Modal from "c/modal";
 let element;
 
 describe("c-modal", () => {
-  beforeEach(() => {
-    // Create initial element
-    element = createElement("c-modal", {
-      is: Modal
+    beforeEach(() => {
+        // Create initial element
+        element = createElement("c-modal", {
+            is: Modal
+        });
+        document.body.appendChild(element);
     });
-    document.body.appendChild(element);
-  });
-  it("should emit close event when closed", async () => {
-    const handler = jest.fn();
-    element.addEventListener("close", handler);
+    it("should emit close event when closed", async () => {
+        const handler = jest.fn();
+        element.addEventListener("close", handler);
 
-    await Promise.resolve(); // Wait for any asynchronous DOM updates
-    const closeButton = element.shadowRoot.querySelector("button.close");
-    console.log("Close button:", closeButton);
+        await Promise.resolve(); // Wait for any asynchronous DOM updates
+        const closeButton = element.shadowRoot.querySelector("button.close");
+        console.log("Close button:", closeButton);
 
-    if (closeButton) {
-      closeButton.click();
-    }
+        if (closeButton) {
+            closeButton.click();
+        }
 
-    return Promise.resolve().then(() => {
-      expect(handler).toHaveBeenCalled();
+        return Promise.resolve().then(() => {
+            expect(handler).toHaveBeenCalled();
+        });
     });
-  });
 });

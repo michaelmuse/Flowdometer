@@ -1,3 +1,7 @@
 <apex:page standardController="Checklist__c">
-<iframe src="https://app.process.st/checklists/{!Checklist__c.Process_St_ID__c}" width="1000" height="1000" ></iframe>
+    <iframe
+        src="https://app.process.st/checklists/{!Checklist__c.Process_St_ID__c}"
+        width="1000"
+        height="1000"
+    ></iframe>
 </apex:page>

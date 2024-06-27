@@ -6,17 +6,18 @@
         </div>
         <div class="slds-modal__content">
             <slot name="content"></slot>
-            
+
             <!-- Conditionally render iframe or text content -->
             <template if:true={currentModalContentIsIframe}>
                 <iframe
-                    src={decodedModalContent}    
-                    class="responsive-iframe" 
-                    style="border: 1px solid rgba(0, 0, 0, 0.1);" 
-                    width="600" 
-                    height="500" 
-                    allow="clipboard-write" 
-                    allowfullscreen>
+                    src={decodedModalContent}
+                    class="responsive-iframe"
+                    style="border: 1px solid rgba(0, 0, 0, 0.1)"
+                    width="600"
+                    height="500"
+                    allow="clipboard-write"
+                    allowfullscreen
+                >
                 </iframe>
             </template>
             <template if:false={currentModalContentIsIframe}>
@@ -24,13 +25,22 @@
             </template>
         </div>
         <div class="slds-modal__footer">
-            <lightning-input type="toggle" label="Mark as Complete" checked={isStepCompleted} onchange={handleToggleChange}></lightning-input>
-            <button 
-                class="slds-button slds-button_neutral close" 
-                aria-label="Close modal" 
+            <lightning-input
+                type="toggle"
+                label="Mark as Complete"
+                checked={isStepCompleted}
+                onchange={handleToggleChange}
+            ></lightning-input>
+            <button
+                class="slds-button slds-button_neutral close"
+                aria-label="Close modal"
                 title="Close modal"
-                onclick={handleClose}>
-                <lightning-icon icon-name="utility:close" alternative-text="Close"></lightning-icon>
+                onclick={handleClose}
+            >
+                <lightning-icon
+                    icon-name="utility:close"
+                    alternative-text="Close"
+                ></lightning-icon>
                 Close
             </button>
         </div>
