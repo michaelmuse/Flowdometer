@@ -122,7 +122,6 @@ public inherited sharing class MetaDataUtilityCls {
     }
 
     //This method is used to get the fields from the object
-    @AuraEnabled(Cacheable=true)
     public static Map<String, String> getSObjectFields(String objectName) {
         Map<String, String> fieldSetMap = new Map<String, String>();
         Map<String, String> fieldNameAPISetMap = new Map<String, String>();
@@ -156,7 +155,6 @@ public inherited sharing class MetaDataUtilityCls {
     }
 
     //This method is used to get all the objects from the org
-    @AuraEnabled(Cacheable=true)
     public static Map<String, String> getAllSObjectsInOrg() {
         Map<String, String> objectAPIToLabelMap = new Map<String, String>();
         Map<String, String> objectAPINameMap = new Map<String, String>();
@@ -202,6 +200,7 @@ public inherited sharing class MetaDataUtilityCls {
         //permission set, objectAPINameWLookup, LookupFieldAPIName
         try {
             MetadataService.MetadataPort service = MetadataService.createService();
+            service.timeout_x = 120000; //Set timeout to maximum allowable callout time (2 min)
             MetadataService.PermissionSet permissionSet = (MetadataService.PermissionSet) service.readMetadata(
                     'PermissionSet',
                     new List<String>{ FLOWDOMETER_PERMISSION_SET_NAME }
@@ -251,7 +250,6 @@ public inherited sharing class MetaDataUtilityCls {
     }
 
     //This method checks if the selected field has history tracking enabled. If field history isn't enabled, then it shows the user a message to 'Enable the History tracking'.
-    @AuraEnabled(Cacheable=true)
     public static String checkFieldHistoryStatus(
         String sObjectApiName,
         String fieldName
@@ -428,14 +426,5 @@ public inherited sharing class MetaDataUtilityCls {
         }
 
         return null;
-    }
-
-    //This method is used to create the Listener record
-    @AuraEnabled
-    public static String createListenerRecord(
-        Flowdometer__Listener__c newRecord
-    ) {
-        insert newRecord;
-        return newRecord.Id;
     }
 }

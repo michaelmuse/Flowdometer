@@ -1,19 +1,18 @@
 // noinspection InconsistentSalesforceApiVersion
 
-import { LightningElement, track, api, wire } from "lwc";
+import { LightningElement, track, wire } from "lwc";
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
 import { NavigationMixin } from "lightning/navigation";
 import { CloseActionScreenEvent } from "lightning/actions";
-import getAllSObjectsInOrg from "@salesforce/apex/MetaDataUtilityCls.getAllSObjectsInOrg";
-import getSObjectFields from "@salesforce/apex/MetaDataUtilityCls.getSObjectFields";
-import checkFieldHistoryStatus from "@salesforce/apex/MetaDataUtilityCls.checkFieldHistoryStatus";
-import createListenerRecord from "@salesforce/apex/MetaDataUtilityCls.createListenerRecord";
+import getAllSObjectsInOrg from "@salesforce/apex/ListenerMasterConfigurationController.getAllSObjectsInOrg";
+import getSObjectFields from "@salesforce/apex/ListenerMasterConfigurationController.getSObjectFields";
+import checkFieldHistoryStatus from "@salesforce/apex/ListenerMasterConfigurationController.checkFieldHistoryStatus";
+import createListenerRecord from "@salesforce/apex/ListenerMasterConfigurationController.createListenerRecord";
 
 export default class ListenerMasterConfiguration extends NavigationMixin(
     LightningElement
 ) {
     isLoading = false;
-    showRadio = false;
     keyIndex = 0;
     selectedSObject;
     @track selectedField;
@@ -42,43 +41,16 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
         }
     }
 
-    get options() {
-        return [
-            { label: "All Records", value: "All Records" },
-            { label: "Individual Records", value: "Individual Records" }
-        ];
-    }
-
-    addRow() {
-        ++this.keyIndex;
-        var newItem = [{ id: this.keyIndex }];
-        this.itemList = this.itemList.concat(newItem);
-    }
-
-    removeRow(event) {
-        if (this.itemList.length >= 2) {
-            this.itemList = this.itemList.filter(function (element) {
-                return (
-                    parseInt(element.id) !== parseInt(event.target.accessKey)
-                );
-            });
-        }
-    }
-
     @wire(getAllSObjectsInOrg, {})
     getAllSObjectsInOrg({ error, data }) {
         this.toggleLoading();
-        //console.log('initialLoading initially set to:', this.isLoading);
-        //console.log('stringified JSON initially'+ JSON.stringify(data));
         if (data) {
             let picklistOptions = [];
-            //console.log('data ==> '+JSON.stringify(data));
             for (let key in data) {
                 picklistOptions.push({ value: key, label: data[key] });
             }
             console.log(`retrieved ${picklistOptions.length} sobjects`);
             this.sObjectOptions = picklistOptions;
-            //console.log('JSON stringify in IF' + JSON.stringify(this.sObjectOptions));
         } else if (error) {
             this.error = error;
         }
@@ -95,7 +67,7 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
                 }
                 this.sObjectFieldsOptions = picklistOptions;
                 console.log(JSON.stringify(this.sObjectFieldsOptions));
-                //console.log('initialLoading changed to:', this.isLoading);
+                d;
             })
             .catch((error) => {
                 console.error(JSON.stringify(error));
@@ -106,15 +78,6 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
 
     toggleLoading() {
         this.isLoading = !this.isLoading;
-    }
-
-    updateLoadingStatus() {
-        console.log("sObjectOptions - " + this.sObjectOptions);
-        console.log("sObjectFieldsOptions - " + this.sObjectFieldsOptions);
-        if (this.sObjectOptions && this.sObjectFieldsOptions) {
-            this.isLoading = false;
-            console.log("initialLoading set to False");
-        }
     }
 
     handleSObjectChange(event) {
@@ -138,16 +101,6 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
             "Detail Value Field -" + JSON.stringify(event.detail.value)
         );
     }
-
-    /*handleRadioChange(event) {
-        const selectedOption = event.detail.value;
-        console.log('selectedRadio with value: ' + selectedOption);
-        if (selectedOption == "Individual Records") {
-            this.showRadio = true;
-        } else {
-            this.showRadio = false;
-        }
-    }*/
 
     async handleSubmitValidation() {
         this.toggleLoading();
@@ -191,7 +144,6 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
                 this.fieldHistoryStatus === "HISTORY_ENABLED_ALREADY" ||
                 this.fieldHistoryStatus === "HISTORY_ENABLED_HAS_LIMITS"
             ) {
-                //window.close();
                 // Wait for the createListenerRec to complete
                 await this.createListenerRec();
             } else {
@@ -247,11 +199,6 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
     // handle error from child components
     errorCallback(error, stack) {
         this.error = error;
-    }
-
-    // handle errors from self (submit button press)
-    handleFormError(event) {
-        this.error = event.detail;
     }
 
     // handle errors from self
