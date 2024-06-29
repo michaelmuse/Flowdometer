@@ -37,11 +37,37 @@ public class MetadataService {
 
         return vfContent.substring(startIndex, endIndex);
     }
+
+    private static String sanitizeApiName(String label) {
+        // Step 0: Replace all white space with underscores
+        String result = label.replaceAll(' ', '_');
+
+        // Step 1: Remove all non-alphanumeric characters except underscore
+        result = result.replaceAll('[^a-zA-Z0-9_]', '');
+
+        // Step 2: Ensure the string begins with a letter
+        if (String.isNotEmpty(result) && result.startsWith('_')) {
+            result = result.substringAfter('_');
+        }
+
+        // Step 3: Remove any occurrence of two consecutive underscores
+        while (result.contains('__')) {
+            result = result.replace('__', '_');
+        }
+
+        // Step 4: Ensure the string does not end with an underscore
+        if (result.endsWith('_')) {
+            result = result.substring(0, result.length() - 1);
+        }
+
+        return result;
+    }
+
     // Creating lookup field - MJM
     public static void createLookupField(string fldName, string objName, string relatedTo, string relationshipLabel){
         MetadataService.MetadataPort service=createService();
         MetadataService.CustomField customField=new MetadataService.CustomField();
-        String apiName=fldName.replaceAll('[^a-zA-Z0-9]', '_');
+        String apiName=sanitizeApiName(fldName);
         customField.fullName=objName + '.' + apiName + '__c';
         customField.label=fldName;
         customField.type_x='Lookup';
