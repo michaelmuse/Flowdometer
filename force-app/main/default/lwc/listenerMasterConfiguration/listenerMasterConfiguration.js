@@ -21,6 +21,7 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
     @track selectedRadio;
     @track configName;
     @track type;
+    @track enableHistory;
     fieldHistoryStatus;
     error;
     @track itemList = [
@@ -37,7 +38,11 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
         } else if (fieldName === "type") {
             this.type = event.target.value;
             console.log("type - " + JSON.stringify(this.type));
-        } else {
+        } else if (fieldName === "enableHistory") {
+            this.enableHistory = event.target.checked;
+            console.log(
+                "enableHistory - " + JSON.stringify(this.enableHistory)
+            );
         }
     }
 
@@ -170,6 +175,7 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
         listener.Flowdometer__Object_Name__c = this.selectedSObject;
         listener.Flowdometer__Field_To_Track__c = this.selectedField;
         listener.Flowdometer__Type__c = this.type;
+        listener.Flowdometer__Enable_History__c = this.enableHistory;
 
         createListenerRecord({ newRecord: listener })
             .then((result) => {

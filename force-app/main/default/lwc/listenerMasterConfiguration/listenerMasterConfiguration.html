@@ -26,66 +26,65 @@
                             Create a Listener to track your process:
                         </span>
                     </h3>
-                    <div
-                        aria-hidden="false"
-                        class="slds-section__content slds-var-p-horizontal_medium"
-                    >
-                        <div class="slds-form" role="list">
-                            <div class="slds-form__row">
-                                <div class="slds-form__item" role="listitem">
-                                    <div
-                                        class="slds-form-element slds-form-element_horizontal slds-is-editing"
-                                    >
-                                        <lightning-combobox
-                                            name="objectName"
-                                            label="Object To Track"
-                                            value={selectedSObject}
-                                            placeholder="Select Object Name"
-                                            options={sObjectOptions}
-                                            onchange={handleSObjectChange}
-                                            field-level-help="Choose Object that has the field you'd like Tracked"
-                                            required
-                                        >
-                                        </lightning-combobox>
-                                    </div>
-                                </div>
-                                <div class="slds-form__item" role="listitem">
-                                    <div
-                                        class="slds-form-element slds-form-element_horizontal slds-is-editing"
-                                    >
-                                        <lightning-combobox
-                                            name="fieldName"
-                                            label="Field To Track"
-                                            value={selectedField}
-                                            placeholder="Select Field Name"
-                                            options={sObjectFieldsOptions}
-                                            onchange={handleFieldChange}
-                                            field-level-help="Choose Field (eg: Status or Stage) you'd like to track changes on"
-                                            required
-                                        >
-                                        </lightning-combobox>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div class="slds-form" role="list">
-                            <div class="slds-form__row">
-                                <div class="slds-form__item" role="listitem">
-                                    <div
-                                        class="slds-form-element slds-form-element_horizontal slds-is-editing slds-form-element_1-col"
-                                    >
-                                        <lightning-input
-                                            type="text"
-                                            name="type"
-                                            label="Type (optional, use the field APIName)"
-                                            onblur={handleChanges}
-                                            field-level-help={typeHelpText}
-                                        >
-                                        </lightning-input>
-                                    </div>
-                                </div>
-                            </div>
+                    <div class="slds-grid slds-wrap slds-gutters">
+                      <div class="slds-col slds-size_1-of-2">
+                            <lightning-combobox
+                              name="objectName"
+                              label="Object To Track"
+                              value={selectedSObject}
+                              placeholder="Select Object Name"
+                              options={sObjectOptions}
+                              onchange={handleSObjectChange}
+                              field-level-help="Choose Object that has the field you'd like Tracked"
+                              variant="label-inline"
+                              required
+                            >
+                            </lightning-combobox>
+                        </div>
+                      <div class="slds-col slds-size_1-of-2">
+                            <lightning-combobox
+                              name="fieldName"
+                              label="Field To Track"
+                              value={selectedField}
+                              placeholder="Select Field Name"
+                              options={sObjectFieldsOptions}
+                              onchange={handleFieldChange}
+                              field-level-help="Choose Field (eg: Status or Stage) you'd like to track changes on"
+                              variant="label-inline"
+                              required
+                            >
+                            </lightning-combobox>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2">
+                            <lightning-input
+                              type="text"
+                              name="type"
+                              label="Type (optional, use the field APIName)"
+                              onblur={handleChanges}
+                              field-level-help={typeHelpText}
+                              variant="label-inline"
+                            >
+                            </lightning-input>
+                        </div>
+                        <div class="slds-col slds-size_1-of-2 slds-form-element slds-form-element_horizontal">
+                            <label class="slds-form-element__label">
+                              Enable History
+                            </label>
+                            <lightning-helptext
+                              content="Enables history querying for this Listener"
+                            >
+                            </lightning-helptext>
+                            <lightning-input
+                              type="toggle"
+                              name="enableHistory"
+                              label="Enable History"
+                              onchange={handleChanges}
+                              message-toggle-active="Enabled"
+                              message-toggle-inactive="Disabled"
+                              variant="label-hidden"
+                            >
+                            </lightning-input>
                         </div>
                     </div>
                 </div>
