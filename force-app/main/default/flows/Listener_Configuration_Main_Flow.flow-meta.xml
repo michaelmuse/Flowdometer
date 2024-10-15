@@ -34,6 +34,22 @@
     </actionCalls>
     <apiVersion>55.0</apiVersion>
     <assignments>
+        <name>Error_updating_tracker_Flow</name>
+        <label>Error updating tracker Flow</label>
+        <locationX>442</locationX>
+        <locationY>2174</locationY>
+        <assignmentItems>
+            <assignToReference>varFlowDoConfig.Latest_Flow_Error_Message__c</assignToReference>
+            <operator>Assign</operator>
+            <value>
+                <stringValue>Errror updating Tracker Flow in Finds Changed Records: {!$Flow.FaultMessage}</stringValue>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Update_FlowdoConfig_0</targetReference>
+        </connector>
+    </assignments>
+    <assignments>
         <name>Set_current_item_variables_in_HistoryRecords</name>
         <label>Set current item variables in HistoryRecords</label>
         <locationX>138</locationX>
@@ -59,13 +75,13 @@
     <assignments>
         <name>Set_Error_Message_Get_All_Record_Types</name>
         <label>Set Error Message (Get All Record Types)</label>
-        <locationX>706</locationX>
+        <locationX>970</locationX>
         <locationY>458</locationY>
         <assignmentItems>
             <assignToReference>varFlowDoConfig.Latest_Flow_Error_Message__c</assignToReference>
             <operator>Assign</operator>
             <value>
-                <elementReference>$Flow.FaultMessage</elementReference>
+                <stringValue>Error getting Record Types in Finds Changed Records: {!$Flow.FaultMessage}</stringValue>
             </value>
         </assignmentItems>
         <connector>
@@ -76,7 +92,7 @@
     <assignments>
         <name>Set_Error_Message_No_Record_Types_Found</name>
         <label>Set Error Message (No Record Types Found)</label>
-        <locationX>442</locationX>
+        <locationX>706</locationX>
         <locationY>566</locationY>
         <assignmentItems>
             <assignToReference>varFlowDoConfig.Latest_Flow_Error_Message__c</assignToReference>
@@ -86,6 +102,7 @@
             </value>
         </assignmentItems>
         <connector>
+            <isGoTo>true</isGoTo>
             <targetReference>Update_FlowdoConfig_0</targetReference>
         </connector>
     </assignments>
@@ -179,7 +196,7 @@
     <decisions>
         <name>Check_FlowdoConfig</name>
         <label>Check FlowdoConfig</label>
-        <locationX>635</locationX>
+        <locationX>833</locationX>
         <locationY>134</locationY>
         <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
         <rules>
@@ -187,6 +204,13 @@
             <conditionLogic>and</conditionLogic>
             <conditions>
                 <leftValueReference>varFlowDoConfig.isActive__c</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>true</booleanValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>varFlowDoConfig.Enable_History__c</leftValueReference>
                 <operator>EqualTo</operator>
                 <rightValue>
                     <booleanValue>true</booleanValue>
@@ -353,7 +377,7 @@
     <decisions>
         <name>Found_Record_Types</name>
         <label>Found Record Types?</label>
-        <locationX>300</locationX>
+        <locationX>432</locationX>
         <locationY>458</locationY>
         <defaultConnector>
             <targetReference>Set_Error_Message_No_Record_Types_Found</targetReference>
@@ -429,7 +453,7 @@
     <recordLookups>
         <name>Get_ALL_Record_Types</name>
         <label>Get ALL Record Types</label>
-        <locationX>300</locationX>
+        <locationX>432</locationX>
         <locationY>350</locationY>
         <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
         <connector>
@@ -479,7 +503,7 @@
     <recordUpdates>
         <name>Reset_Trigger</name>
         <label>Reset Trigger</label>
-        <locationX>300</locationX>
+        <locationX>432</locationX>
         <locationY>242</locationY>
         <connector>
             <targetReference>Get_ALL_Record_Types</targetReference>
@@ -505,23 +529,26 @@
         <label>Turn Trigger Back On</label>
         <locationX>158</locationX>
         <locationY>2066</locationY>
+        <faultConnector>
+            <targetReference>Error_updating_tracker_Flow</targetReference>
+        </faultConnector>
         <inputReference>updateFlowdoConfig</inputReference>
     </recordUpdates>
     <recordUpdates>
         <name>Update_FlowdoConfig_0</name>
         <label>Update FlowdoConfig</label>
         <locationX>442</locationX>
-        <locationY>674</locationY>
+        <locationY>2282</locationY>
         <inputReference>updateFlowdoConfig</inputReference>
     </recordUpdates>
     <start>
-        <locationX>509</locationX>
+        <locationX>707</locationX>
         <locationY>0</locationY>
         <connector>
             <targetReference>Check_FlowdoConfig</targetReference>
         </connector>
     </start>
-    <status>Active</status>
+    <status>Draft</status>
     <subflows>
         <name>Create_Listener_Records_Using_Parsed_History_Records</name>
         <label>Create Tracker Records Using Parsed History Records</label>
@@ -619,12 +646,6 @@
             <name>varStepTrackerRT</name>
             <value>
                 <elementReference>varStepTrackerRT</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <name>varTerminalStage</name>
-            <value>
-                <elementReference>Loop_Through_Parsed_Records.varTerminalStage</elementReference>
             </value>
         </inputAssignments>
         <inputAssignments>

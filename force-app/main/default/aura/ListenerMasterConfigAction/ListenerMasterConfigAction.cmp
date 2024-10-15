@@ -1,3 +1,6 @@
-<aura:component implements="flexipage:availableForRecordHome,force:hasRecordId,lightning:actionOverride" access="global" >
+<aura:component
+    implements="flexipage:availableForRecordHome,force:hasRecordId,lightning:actionOverride"
+    access="global"
+>
     <c:listenerMasterConfiguration></c:listenerMasterConfiguration>
 </aura:component>

@@ -41,6 +41,6 @@ iframe {
 .vertical-line {
     width: 1px;
     background-color: #ccc;
-    height: 24px;  /* Adjust the height as needed */
+    height: 24px; /* Adjust the height as needed */
     margin-left: 8px;
 }

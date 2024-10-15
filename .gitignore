@@ -49,3 +49,12 @@ desktop.ini
 *.temp
 *.tmp
 temp_*.cls
+
+# IntelliJ files
+.idea/
+
+# Illuminated Cloud files
+IlluminatedCloud/
+
+# VSCode history files
+.history/

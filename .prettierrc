@@ -1,4 +1,8 @@
 {
+  "plugins": ["prettier-plugin-apex"],
+  "printWidth": 80,
+  "tabWidth": 4,
+  "useTabs": false,
   "trailingComma": "none",
   "overrides": [
     {

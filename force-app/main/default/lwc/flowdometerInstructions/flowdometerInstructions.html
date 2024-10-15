@@ -5,23 +5,39 @@
             <!-- Tiles on the left -->
             <ul class="slds-welcome-mat__tiles slds-size_1-of-2">
                 <template for:each={steps} for:item="step" for:index="index">
-                    <li class={tileClass} data-index={index} key={step.label} onclick={handleStepCompleted}>
+                    <li
+                        class={tileClass}
+                        data-index={index}
+                        key={step.label}
+                        onclick={handleStepCompleted}
+                    >
                         <div class="slds-welcome-mat__tile-figure">
                             <div class="icon-wrapper">
-                                <lightning-icon icon-name={step.iconName} size="medium"></lightning-icon>
+                                <lightning-icon
+                                    icon-name={step.iconName}
+                                    size="medium"
+                                ></lightning-icon>
                                 <div class="vertical-line"></div>
                             </div>
-                        </div>                        
+                        </div>
                         <div class="slds-welcome-mat__tile-body">
-                            <h3 class="slds-welcome-mat__tile-title">{step.label}</h3>
-                            <p class="slds-welcome-mat__tile-description">{step.description}</p>
+                            <h3 class="slds-welcome-mat__tile-title">
+                                {step.label}
+                            </h3>
+                            <p class="slds-welcome-mat__tile-description">
+                                {step.description}
+                            </p>
                         </div>
                     </li>
                 </template>
             </ul>
 
             <!-- Info (Modal) on the right -->
-            <div class="slds-welcome-mat__info slds-size_1-of-2" tabindex="0" role="region">
+            <div
+                class="slds-welcome-mat__info slds-size_1-of-2"
+                tabindex="0"
+                role="region"
+            >
                 <!-- Conditionally rendered modal component -->
                 <template if:true={isModalOpen}>
                     <c-modal onclose={handleClose}>
