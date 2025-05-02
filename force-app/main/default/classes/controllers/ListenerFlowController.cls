@@ -775,21 +775,9 @@ global class ListenerFlowController
     @InvocableMethod( Label='Query & Parse History Records' Description='Used to query History Records in Flow' Category='ListenerFlowController' )
     public static List<ListenerFlowLatestResponse> parseRecordsToFlow(List<ListenerFlowLatestRequest> listenerConfigList)
     {
-        //START DEBUG
-        // Grab the first listenerConfig from the list
-        Listener__c firstListenerConfig = listenerConfigList[0].listenerConfig;
-        
-        // Loop through each field in the Listener__c SObject
-        Map<String, Schema.SObjectField> fieldMap = Listener__c.SObjectType.getDescribe().fields.getMap();
-        for (String fieldName : fieldMap.keySet())
-        {
-            // Get the field value
-            Object fieldValue = firstListenerConfig.get(fieldName);
-            
-            // Debug print the field name and its value
-            System.debug('Field: ' + fieldName + ', Value: ' + fieldValue);
-        }
-        //End DEBUG
+        // DEBUG BLOCK REMOVED: iterating every Listener__c field caused SObjectException when
+        // fields weren\'t selected in the test context.  If detailed field logging is needed in the
+        // future, wrap individual field access in try/catch or ensure the query selects each field.
         
         // Create an instance of ListenerFlowController
         ListenerFlowController controllerInstance = new ListenerFlowController();
