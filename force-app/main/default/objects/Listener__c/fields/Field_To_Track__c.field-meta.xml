@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Field_To_Track__c</fullName>
+    <deprecated>false</deprecated>
     <description>A designated field within the monitored object whose alterations are tracked by Flowdometer.</description>
     <externalId>false</externalId>
     <inlineHelpText>Choose Field (eg: Status or Stage) you&apos;d like to track changes on</inlineHelpText>

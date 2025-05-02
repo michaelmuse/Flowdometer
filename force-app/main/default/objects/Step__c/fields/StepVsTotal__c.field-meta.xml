@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>StepVsTotal__c</fullName>
+    <deprecated>false</deprecated>
     <externalId>false</externalId>
     <formula>IF(Goal_Field_Change_Handle_Time_Hrs__c&gt;0,
 (Goal_Field_Change_Handle_Time_Hrs__c/ Flow__r.Goal_Total_Handle_Time__c),IF(Final_Handle_Time__c &gt; 0,

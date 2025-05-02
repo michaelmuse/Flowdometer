@@ -48,7 +48,6 @@
             <assignToReference>FlowToUpdateLst</assignToReference>
             <name>lstFlowToUpdate</name>
         </outputParameters>
-        <versionSegment>1</versionSegment>
     </actionCalls>
     <apiVersion>49.0</apiVersion>
     <assignments>
@@ -60,7 +59,7 @@
             <assignToReference>varErrorMessage</assignToReference>
             <operator>Assign</operator>
             <value>
-                <elementReference>$Flow.FaultMessage</elementReference>
+                <stringValue>Error creating tracker Flow in Creates Trackers: {!$Flow.FaultMessage}</stringValue>
             </value>
         </assignmentItems>
         <connector>
@@ -77,7 +76,7 @@
             <assignToReference>varErrorMessage</assignToReference>
             <operator>Assign</operator>
             <value>
-                <elementReference>$Flow.FaultMessage</elementReference>
+                <stringValue>Error creating tracker Step in Creates Trackers: {!$Flow.FaultMessage}</stringValue>
             </value>
         </assignmentItems>
     </assignments>
@@ -90,7 +89,7 @@
             <assignToReference>varErrorMessage</assignToReference>
             <operator>Assign</operator>
             <value>
-                <elementReference>$Flow.FaultMessage</elementReference>
+                <stringValue>Error getting all Flows in Creates Trackers: {!$Flow.FaultMessage}</stringValue>
             </value>
         </assignmentItems>
         <connector>
@@ -106,7 +105,7 @@
             <assignToReference>varErrorMessage</assignToReference>
             <operator>Assign</operator>
             <value>
-                <elementReference>$Flow.FaultMessage</elementReference>
+                <stringValue>Error getting all steps in Creates Trackers: {!$Flow.FaultMessage}</stringValue>
             </value>
         </assignmentItems>
         <connector>
@@ -123,7 +122,7 @@
             <assignToReference>varErrorMessage</assignToReference>
             <operator>Assign</operator>
             <value>
-                <elementReference>$Flow.FaultMessage</elementReference>
+                <stringValue>Error updating tracker Flow in Creates Trackers: {!$Flow.FaultMessage}</stringValue>
             </value>
         </assignmentItems>
         <connector>
@@ -140,7 +139,7 @@
             <assignToReference>varErrorMessage</assignToReference>
             <operator>Assign</operator>
             <value>
-                <elementReference>$Flow.FaultMessage</elementReference>
+                <stringValue>Error updating Last Step in Creates Trackers: {!$Flow.FaultMessage}</stringValue>
             </value>
         </assignmentItems>
         <connector>
@@ -204,13 +203,6 @@
             <operator>Assign</operator>
             <value>
                 <elementReference>Latest_Goal_Step.Plan_Next_Steps__c</elementReference>
-            </value>
-        </assignmentItems>
-        <assignmentItems>
-            <assignToReference>varTerminalStage</assignToReference>
-            <operator>Assign</operator>
-            <value>
-                <elementReference>Latest_Goal_Step.Terminal_Stage__c</elementReference>
             </value>
         </assignmentItems>
         <connector>
@@ -821,12 +813,6 @@
                 <elementReference>varStepGoalId</elementReference>
             </value>
         </inputAssignments>
-        <inputAssignments>
-            <field>Terminal_Stage__c</field>
-            <value>
-                <elementReference>varTerminalStage</elementReference>
-            </value>
-        </inputAssignments>
         <object>Step__c</object>
     </recordCreates>
     <recordLookups>
@@ -1016,7 +1002,7 @@
             <targetReference>Find_ALL_Flows</targetReference>
         </connector>
     </start>
-    <status>Active</status>
+    <status>Draft</status>
     <variables>
         <name>checkSuccess</name>
         <dataType>Boolean</dataType>

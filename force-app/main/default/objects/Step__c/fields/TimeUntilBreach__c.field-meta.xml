@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>TimeUntilBreach__c</fullName>
+    <deprecated>false</deprecated>
     <externalId>false</externalId>
     <formula>IF(AND(NOT(Terminal_Stage__c),NOT(isGoal__c)),MAX(IF(AND(NOT(ISBLANK(BreachTime__c)), StepActive__c ), BreachTime__c-NOW(),null),0),null)</formula>
     <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
