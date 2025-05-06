@@ -439,7 +439,8 @@ public class ListenerFlowControllerTest {
                 Flowdometer__isActive__c,
                 Flowdometer__Last_Check__c,
                 Flowdometer__Latest_Flow_Error_Message__c,
-                Flowdometer__Next_Check__c
+                Flowdometer__Next_Check__c,
+                Flowdometer__Enable_History__c
             FROM Flowdometer__Listener__c
             LIMIT 1
         ];

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Description__c</fullName>
+    <description>Description of what the feature does</description>
+    <externalId>false</externalId>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText>Provide details about what this feature controls and the impact of enabling/disabling it</inlineHelpText>
+    <label>Description</label>
+    <required>false</required>
+    <type>TextArea</type>
+</CustomField> 

@@ -5,7 +5,7 @@
         <label>Update Flow Records</label>
         <locationX>510</locationX>
         <locationY>3962</locationY>
-        <actionName>Flowdometer__ListenerUpdateFlowController</actionName>
+        <actionName>ListenerUpdateFlowController</actionName>
         <actionType>apex</actionType>
         <connector>
             <targetReference>Has_Records</targetReference>
@@ -35,18 +35,18 @@
                 <elementReference>varFlowTrackerRecord.Id</elementReference>
             </value>
         </inputParameters>
-        <nameSegment>Flowdometer__ListenerUpdateFlowController</nameSegment>
+        <nameSegment>ListenerUpdateFlowController</nameSegment>
         <outputParameters>
             <assignToReference>hasRecords</assignToReference>
-            <n>hasRecords</n>
+            <name>hasRecords</name>
         </outputParameters>
         <outputParameters>
-            <assignToReference>isCheckSuccess</assignToReference>
-            <n>isCheckSuccess</n>
+            <assignToReference>checkSuccess</assignToReference>
+            <name>isCheckSuccess</name>
         </outputParameters>
         <outputParameters>
-            <assignToReference>lstFlowToUpdate</assignToReference>
-            <n>lstFlowToUpdate</n>
+            <assignToReference>FlowToUpdateLst</assignToReference>
+            <name>lstFlowToUpdate</name>
         </outputParameters>
     </actionCalls>
     <apiVersion>49.0</apiVersion>
@@ -467,7 +467,7 @@
                 </rightValue>
             </conditions>
             <conditions>
-                <leftValueReference>isCheckSuccess</leftValueReference>
+                <leftValueReference>checkSuccess</leftValueReference>
                 <operator>EqualTo</operator>
                 <rightValue>
                     <booleanValue>true</booleanValue>
@@ -942,7 +942,7 @@
         <faultConnector>
             <targetReference>Set_Error_Message_Update_Flow</targetReference>
         </faultConnector>
-        <inputReference>lstFlowToUpdate</inputReference>
+        <inputReference>FlowToUpdateLst</inputReference>
     </recordUpdates>
     <recordUpdates>
         <name>Update_Last_Step</name>
@@ -1002,9 +1002,9 @@
             <targetReference>Find_ALL_Flows</targetReference>
         </connector>
     </start>
-    <status>Active</status>
+    <status>Draft</status>
     <variables>
-        <n>isCheckSuccess</n>
+        <name>checkSuccess</name>
         <dataType>Boolean</dataType>
         <isCollection>false</isCollection>
         <isInput>false</isInput>
@@ -1014,7 +1014,7 @@
         </value>
     </variables>
     <variables>
-        <n>lstFlowToUpdate</n>
+        <name>FlowToUpdateLst</name>
         <dataType>SObject</dataType>
         <isCollection>true</isCollection>
         <isInput>false</isInput>

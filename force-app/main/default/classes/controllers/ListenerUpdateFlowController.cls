@@ -6,17 +6,17 @@ global class ListenerUpdateFlowController {
         Category='ListenerUpdateFlowController'
     )
     public static List<FlowUpdateResponse> updateFlowRecords(
-        List<FlowUpdateRequest> listenerFlowToUpdateLst
+        List<FlowUpdateRequest> lstFlowToUpdate
     ) {
         FlowUpdateResponse response = new FlowUpdateResponse();
         List<Flowdometer__Flow__c> listenerFlowToUpdate = new List<Flowdometer__Flow__c>();
         try {
             MetaDataUtilityCls.setLookupFieldMaps('Flowdometer__Flow__c');
             System.debug(
-                'listenerFlowToUpdateLst - ' + listenerFlowToUpdateLst
+                'listenerFlowToUpdateLst - ' + lstFlowToUpdate
             );
 
-            for (FlowUpdateRequest req : listenerFlowToUpdateLst) {
+            for (FlowUpdateRequest req : lstFlowToUpdate) {
                 Flowdometer__Flow__c listenerFlow = new Flowdometer__Flow__c(
                     Id = req.varFlowID
                 );

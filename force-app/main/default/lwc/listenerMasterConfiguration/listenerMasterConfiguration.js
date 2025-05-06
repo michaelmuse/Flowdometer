@@ -72,7 +72,6 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
                 }
                 this.sObjectFieldsOptions = picklistOptions;
                 console.log(JSON.stringify(this.sObjectFieldsOptions));
-                d;
             })
             .catch((error) => {
                 console.error(JSON.stringify(error));
@@ -117,6 +116,11 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
                 ": Listener"
         ); // format is using API names, not labels
         try {
+            // Additional validation before making the server call
+            if (!this.selectedSObject || !this.selectedField) {
+                throw new Error('Please select both an object and a field to track.');
+            }
+
             // Wait for the checkFieldHistoryStatus to complete
             this.fieldHistoryStatus = await checkFieldHistoryStatus({
                 sObjectApiName: this.selectedSObject,
@@ -129,7 +133,32 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
                     JSON.stringify(this.fieldHistoryStatus)
             );
 
-            if (this.fieldHistoryStatus === "HISTORY_ENABLED_HAS_NO_LIMITS") {
+            // If the response starts with WARNING, show it as a warning but proceed
+            if (this.fieldHistoryStatus && this.fieldHistoryStatus.startsWith('WARNING:')) {
+                this.dispatchEvent(
+                    new ShowToastEvent({
+                        title: "Warning",
+                        message: this.fieldHistoryStatus,
+                        variant: "warning",
+                        mode: "sticky"
+                    })
+                );
+                // Continue despite warning
+                await this.createListenerRec();
+            }
+            // If the response starts with ERROR, show it as an error and stop
+            else if (this.fieldHistoryStatus && this.fieldHistoryStatus.startsWith('ERROR:')) {
+                this.dispatchEvent(
+                    new ShowToastEvent({
+                        title: "Error",
+                        message: this.fieldHistoryStatus.substring(6), // Remove 'ERROR:' prefix
+                        variant: "error",
+                        mode: "sticky"
+                    })
+                );
+                this.toggleLoading(); // Re-enable the form
+            }
+            else if (this.fieldHistoryStatus === "HISTORY_ENABLED_HAS_NO_LIMITS") {
                 console.log(
                     "Inside - " + JSON.stringify(this.fieldHistoryStatus)
                 );
@@ -163,8 +192,28 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
         } catch (error) {
             this.error = error;
             this.fieldHistoryStatus = undefined;
-        } finally {
-            this.toggleLoading(); // Ensure this is set to false only after all async operations are done.
+            
+            // Display a more user-friendly error message based on the error type
+            let errorMessage = error.body ? error.body.message : (error.message || 'Unknown error');
+            
+            // Handle specific error cases
+            if (errorMessage.includes('Read timed out') || errorMessage.includes('CalloutException')) {
+                errorMessage = 'The operation timed out. This might be due to the complexity of the object structure or network issues. Please try again or choose a different object.';
+            } else if (errorMessage.includes('bounds')) {
+                errorMessage = 'There was an error processing the object names. Please try a different object or contact your administrator.';
+            }
+            
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: "Error",
+                    message: errorMessage,
+                    variant: "error",
+                    mode: "sticky"
+                })
+            );
+            
+            // Re-enable the form
+            this.toggleLoading();
         }
     }
 
@@ -177,28 +226,88 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
         listener.Flowdometer__Type__c = this.type;
         listener.Flowdometer__Enable_History__c = this.enableHistory;
 
+        this.isNavigatingAway = false; // Flag to track if navigation is in progress
+
         createListenerRecord({ newRecord: listener })
             .then((result) => {
-                console.log(result);
-
-                this[NavigationMixin.Navigate](
-                    {
-                        type: "standard__recordPage",
-                        attributes: {
-                            recordId: result,
-                            objectApiName: "Flowdometer__Listener__c",
-                            actionName: "view"
-                        }
-                    },
-                    true
+                console.log("Listener created with ID: " + result);
+                
+                // Set flag to prevent duplicate navigation
+                if (this.isNavigatingAway) return;
+                this.isNavigatingAway = true;
+                
+                // Show success message before navigation
+                this.dispatchEvent(
+                    new ShowToastEvent({
+                        title: "Success",
+                        message: "Listener record created successfully",
+                        variant: "success"
+                    })
                 );
-
-                this.closeAction();
+                
+                // Add a small delay before navigation to ensure toast is visible
+                setTimeout(() => {
+                    try {
+                        this[NavigationMixin.Navigate](
+                            {
+                                type: "standard__recordPage",
+                                attributes: {
+                                    recordId: result,
+                                    objectApiName: "Flowdometer__Listener__c",
+                                    actionName: "view"
+                                }
+                            },
+                            // Set replace to false to maintain browser history
+                            false
+                        );
+                        
+                        // Close action only after successful navigation
+                        this.closeAction();
+                    } catch (navError) {
+                        console.error("Navigation error: ", navError);
+                        // If navigation fails, still show the record was created
+                        this.dispatchEvent(
+                            new ShowToastEvent({
+                                title: "Created Successfully",
+                                message: "Listener was created but there was an issue with navigation. Please check the Listeners tab.",
+                                variant: "success",
+                                mode: "sticky"
+                            })
+                        );
+                        
+                        // Safer fallback navigation to the object home
+                        this[NavigationMixin.Navigate]({
+                            type: "standard__objectPage",
+                            attributes: {
+                                objectApiName: "Flowdometer__Listener__c",
+                                actionName: "list"
+                            },
+                            state: {
+                                filterName: "Recent"
+                            }
+                        });
+                    }
+                }, 100);
+                
                 this.selectedField = undefined;
             })
             .catch((error) => {
-                console.log(JSON.stringify(error));
+                console.error("Error creating listener: ", JSON.stringify(error));
                 this.error = error;
+                
+                // Show detailed error to user
+                let errorMessage = error.body?.message || error.message || 'Unknown error';
+                this.dispatchEvent(
+                    new ShowToastEvent({
+                        title: "Error Creating Listener",
+                        message: errorMessage,
+                        variant: "error",
+                        mode: "sticky"
+                    })
+                );
+                
+                // Re-enable form
+                this.toggleLoading();
             });
     }
 

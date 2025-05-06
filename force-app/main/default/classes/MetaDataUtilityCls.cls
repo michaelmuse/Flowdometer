@@ -192,15 +192,113 @@ public inherited sharing class MetaDataUtilityCls {
         return keySetList;
     }
 
-    //This method is used to grant field edit access via our permission set
+    // Helper method to retry operations that might have transient failures
+    private static Object retryOperation(RetryableOperation operation, Integer maxRetries) {
+        Integer retryCount = 0;
+        Exception lastException;
+        
+        while (retryCount < maxRetries) {
+            try {
+                return operation.execute();
+            } catch (CalloutException ce) {
+                lastException = ce;
+                // Only retry on timeout-related errors
+                if (!ce.getMessage().containsIgnoreCase('timed out') && 
+                    !ce.getMessage().containsIgnoreCase('timeout')) {
+                    throw ce;
+                }
+                retryCount++;
+                if (retryCount < maxRetries) {
+                    // Exponential backoff: wait longer between each retry
+                    Integer waitTime = Math.min(2000 * (Integer)Math.pow(2, retryCount), 8000); // Max 8 seconds
+                    System.debug(LoggingLevel.INFO, 'Retrying operation after waiting ' + waitTime + 'ms. Attempt ' + (retryCount + 1) + ' of ' + maxRetries);
+                    wait(waitTime);
+                }
+            }
+        }
+        
+        // If we get here, all retries failed
+        throw lastException;
+    }
+    
+    // Helper method to wait/sleep (simulated in Apex)
+    private static void wait(Integer milliseconds) {
+        Long startTime = System.currentTimeMillis();
+        while (System.currentTimeMillis() - startTime < milliseconds) {
+            // Simulate wait by using some CPU time
+            // Keep this minimal to avoid hitting CPU limits
+            if (Math.mod(System.currentTimeMillis() - startTime, 500) == 0) {
+                // Check every 500ms to reduce CPU usage
+                System.debug(LoggingLevel.FINEST, 'Waiting...');
+            }
+        }
+    }
+    
+    // Interface for operations that can be retried
+    public interface RetryableOperation {
+        Object execute();
+    }
+    
     public static void grantFieldEditAccess(
         String objectApiName,
         String fieldApiName
     ) {
         //permission set, objectAPINameWLookup, LookupFieldAPIName
         try {
+            // Check if retry is enabled via feature flag
+            Boolean useRetry = FeatureFlagUtil.isEnabled(FeatureFlagUtil.FEATURE_RETRY_METADATA_OPERATIONS);
+            
+            if (useRetry) {
+                // Use the retry mechanism for this operation
+                retryOperation(new GrantFieldAccessOperation(objectApiName, fieldApiName), 3);
+            } else {
+                // Use the direct method without retry
+                MetadataService.MetadataPort service = MetadataService.createService();
+                service.timeout_x = 180000; // Increase timeout to 3 minutes
+                MetadataService.PermissionSet permissionSet = (MetadataService.PermissionSet) service.readMetadata(
+                        'PermissionSet',
+                        new List<String>{ FLOWDOMETER_PERMISSION_SET_NAME }
+                    )
+                    .getRecords()[0];
+                MetadataService.PermissionSetFieldPermissions fieldPermission = new MetadataService.PermissionSetFieldPermissions();
+                fieldPermission.field = objectApiName + '.' + fieldApiName;
+                fieldPermission.editable = true;
+                fieldPermission.readable = true;
+                permissionSet.fieldPermissions.add(fieldPermission);
+
+                List<MetadataService.SaveResult> results = service.updateMetadata(
+                    new List<MetadataService.Metadata>{ permissionSet }
+                );
+
+                if (results != null && !results.isEmpty()) {
+                    MetadataService.handleSaveResults(results[0]);
+                }
+            }
+        } catch (CalloutException ce) {
+            // Specific handling for timeout errors
+            String errorMsg = 'A timeout occurred while updating permissions: ' + ce.getMessage();
+            System.debug(LoggingLevel.ERROR, errorMsg + '\n' + ce.getStackTraceString());
+            // In a production environment, you might want to log this to a custom object or send an email notification
+        } catch (Exception e) {
+            // Log the error but don't throw an exception to allow processing to continue
+            System.debug(LoggingLevel.ERROR, 'Error granting field edit access: ' + e.getMessage() + '\n' + e.getStackTraceString());
+            // In a production environment, you might want to log this to a custom object or send an email notification
+        }
+    }
+    
+    // Implementation of RetryableOperation for granting field access
+    private class GrantFieldAccessOperation implements RetryableOperation {
+        private String objectApiName;
+        private String fieldApiName;
+        
+        public GrantFieldAccessOperation(String objectApiName, String fieldApiName) {
+            this.objectApiName = objectApiName;
+            this.fieldApiName = fieldApiName;
+        }
+        
+        public Object execute() {
             MetadataService.MetadataPort service = MetadataService.createService();
-            service.timeout_x = 120000; //Set timeout to maximum allowable callout time (2 min)
+            service.timeout_x = 180000; // Increase timeout to 3 minutes (from 2 minutes)
             MetadataService.PermissionSet permissionSet = (MetadataService.PermissionSet) service.readMetadata(
                     'PermissionSet',
                     new List<String>{ FLOWDOMETER_PERMISSION_SET_NAME }
@@ -219,26 +317,65 @@ public inherited sharing class MetaDataUtilityCls {
             if (results != null && !results.isEmpty()) {
                 MetadataService.handleSaveResults(results[0]);
             }
-        } catch (Exception e) {
-            System.debug(LoggingLevel.ERROR, 'An error occurred: ' + e.getMessage());
+            
+            return null; // No return value needed
         }
     }
 
     // Check before creating a new Lookup field
     public static Boolean doesFieldExist(String objName, String fieldName) {
-        Map<String, Schema.SObjectField> fieldMap = Schema.getGlobalDescribe()
-            .get(objName)
-            ?.getDescribe()
-            .fields.getMap();
-        if (fieldMap == null) {
+        try {
+            // Handle null inputs safely
+            if (String.isBlank(objName) || String.isBlank(fieldName)) {
+                System.debug(
+                    LoggingLevel.INFO,
+                    'Object name or field name is empty or null.'
+                );
+                return false;
+            }
+            
+            Map<String, Schema.SObjectField> fieldMap = Schema.getGlobalDescribe()
+                .get(objName)
+                ?.getDescribe()
+                .fields.getMap();
+            
+            if (fieldMap == null) {
+                System.debug(
+                    LoggingLevel.INFO,
+                    objName + ' is not a valid Salesforce Object or is not accessible.'
+                );
+                return false;
+            }
+
+            // Safe string operations for managed package objects
+            if (fieldName != null && fieldName.toLowerCase().startsWith('flowdometer__') && 
+                objName != null && !objName.toLowerCase().startsWith('flowdometer__')) {
+                // Safely extract substring only if the prefix exists
+                fieldName = fieldName.substring(Math.min(fieldName.length(), 'flowdometer__'.length()));
+            }
+            
+            // Handle managed package fields in managed package objects
+            if (objName != null && objName.contains('__')) {
+                List<String> parts = objName.split('__');
+                if (parts.size() > 2 && !objName.startsWith('Flowdometer__')) {
+                    // This is likely a managed package object with a namespace
+                    System.debug(
+                        LoggingLevel.INFO,
+                        objName + ' appears to be a managed package object. Assuming field ' + fieldName + ' does not exist for safety.'
+                    );
+                    return false;
+                }
+            }
+
+            return fieldMap.containsKey(fieldName.toLowerCase());
+        } catch (Exception e) {
             System.debug(
-                LoggingLevel.INFO,
-                objName + ' is not a valid Salesforce Object.'
+                LoggingLevel.ERROR,
+                'Error checking if field exists: ' + e.getMessage() + '\n' + e.getStackTraceString()
             );
+            // Assume field doesn't exist if we encounter an error
             return false;
         }
-
-        return fieldMap.containsKey(fieldName.toLowerCase());
     }
 
     // Sanitize the field name to adhere to Salesforce's naming conventions
@@ -254,177 +391,286 @@ public inherited sharing class MetaDataUtilityCls {
         String sObjectApiName,
         String fieldName
     ) {
-        // General Setup
-        Boolean historyEnabledForObject = false;
-        String flowObjectAPIName = 'Flowdometer__Flow__c';
-
-        // Check if the lookup from the Flow to sObject exists
-        setLookupFieldMaps(flowObjectAPIName);
-        flowAlreadyHasLookupTosObject = relatedLookupMap.containsKey(
-            sObjectApiName
-        );
-
-        // Check if the lookup from the sObject to Flow exists
-        setLookupFieldMaps(sObjectApiName);
-        sObjectAlreadyHasLookupToFlow = relatedLookupMap.containsKey(
-            flowObjectAPIName
-        );
-
-        Boolean objectCanBeLookedUpTo = (KNOWN_STANDARD_OBJECTS.contains(
-            sObjectApiName
-        ) || sObjectApiName.contains('__c'));
-
-        // Make sure the sObject gets history tracking enabled if it is a standard object or a custom object
-        if (objectCanBeLookedUpTo) {
-            if (!Test.isRunningTest()) {
-                historyEnabledForObject = MetadataService.validateHistoryEnabled(
-                    sObjectApiName
-                );
+        try {
+            // Early check for null/empty inputs
+            if (String.isBlank(sObjectApiName) || String.isBlank(fieldName)) {
+                return 'ERROR: Object API name or field name cannot be empty.';
             }
-        } else {
-            historyEnabledForObject = true;
-        }
-
-        // Cleaning fieldLabel
-        String fieldLabel = sObjectApiName.contains('__c')
-            ? sObjectApiName.replace('__c', '')
-            : sObjectApiName;
-        String namespacePrefix = 'Flowdometer__';
-        if (sObjectApiName.startsWith(namespacePrefix)) {
-            fieldLabel = fieldLabel.replace(namespacePrefix, '');
-        }
-
-        // Setting field labels
-        String lookupFieldLabel =
-            Schema.getGlobalDescribe()
+            
+            // Special object type checks - identify problematic objects early
+            Set<String> specialObjectTypes = new Set<String>{
+                'User', 'Group', 'GroupMember', 'Profile', 'PermissionSet', 
+                'LoginHistory', 'NetworkMember', 'CollaborationGroup',
+                'ContentDocument', 'ContentVersion', 'ContentWorkspace'
+            };
+            
+            // External objects have __x suffix
+            Boolean isExternalObject = sObjectApiName.endsWith('__x');
+            // Big objects have __b suffix
+            Boolean isBigObject = sObjectApiName.endsWith('__b');
+            // Platform events have __e suffix
+            Boolean isPlatformEvent = sObjectApiName.endsWith('__e');
+            
+            if (isExternalObject) {
+                return 'WARNING: External objects (' + sObjectApiName + ') do not support history tracking. The Listener will be created, but some functionality may be limited.';
+            }
+            
+            if (isBigObject) {
+                return 'WARNING: Big objects (' + sObjectApiName + ') do not support history tracking. The Listener will be created, but some functionality may be limited.';
+            }
+            
+            if (isPlatformEvent) {
+                return 'WARNING: Platform events (' + sObjectApiName + ') do not support history tracking. The Listener will be created, but some functionality may be limited.';
+            }
+            
+            if (specialObjectTypes.contains(sObjectApiName)) {
+                return 'WARNING: The object ' + sObjectApiName + ' has special behavior in Salesforce. The Listener will be created, but some functionality may be limited.';
+            }
+            
+            // Check early if this is a managed package object (other than our own)
+            if (sObjectApiName.contains('__') && 
+                sObjectApiName.split('__').size() > 2 && 
+                !sObjectApiName.startsWith('Flowdometer__')) {
+                System.debug(LoggingLevel.INFO, 
+                            'Object ' + sObjectApiName + ' appears to be from a managed package. ' +
+                            'Some operations may not be permitted.');
+                // Since this is from a managed package, we'll treat it as if history is already enabled
+                // This ensures we don't attempt operations that might fail
+                return 'WARNING: ' + sObjectApiName + ' is from a managed package. History tracking and lookup creation might be limited by the package settings. The Listener will be created, but full functionality cannot be guaranteed.';
+            }
+            
+            // Verify the object actually exists in the schema
+            if (!Schema.getGlobalDescribe().containsKey(sObjectApiName)) {
+                return 'ERROR: The object ' + sObjectApiName + ' does not exist or is not accessible.';
+            }
+            
+            // Verify the field exists on the object
+            Map<String, Schema.SObjectField> fieldMap = Schema.getGlobalDescribe()
                 .get(sObjectApiName)
                 .getDescribe()
-                .fields.getMap()
-                .get(fieldName)
+                .fields.getMap();
+                
+            if (!fieldMap.containsKey(fieldName.toLowerCase())) {
+                return 'ERROR: The field ' + fieldName + ' does not exist on object ' + sObjectApiName + '.';
+            }
+            
+            // Check if the object type supports history tracking
+            // Some standard objects don't support history tracking
+            Schema.DescribeSObjectResult objectDescribe = Schema.getGlobalDescribe()
+                .get(sObjectApiName)
+                .getDescribe();
+                
+            // Hard-coded list of objects known not to support history tracking
+            Set<String> noHistoryObjects = new Set<String>{
+                'ContentDocument', 'ContentDocumentLink', 'ContentVersion', 
+                'Attachment', 'Note', 'EmailMessage', 'FeedItem', 'ListView'
+            };
+            
+            if (noHistoryObjects.contains(sObjectApiName)) {
+                return 'WARNING: The object ' + sObjectApiName + ' does not support history tracking. The Listener will be created, but functionality will be limited.';
+            }
+            
+            // General Setup from here on is the same as before
+            Boolean historyEnabledForObject = false;
+            String flowObjectAPIName = 'Flowdometer__Flow__c';
+
+            // Check if the lookup from the Flow to sObject exists
+            setLookupFieldMaps(flowObjectAPIName);
+            flowAlreadyHasLookupTosObject = relatedLookupMap.containsKey(
+                sObjectApiName
+            );
+
+            // Check if the lookup from the sObject to Flow exists
+            setLookupFieldMaps(sObjectApiName);
+            sObjectAlreadyHasLookupToFlow = relatedLookupMap.containsKey(
+                flowObjectAPIName
+            );
+
+            Boolean objectCanBeLookedUpTo = (KNOWN_STANDARD_OBJECTS.contains(
+                sObjectApiName
+            ) || sObjectApiName.contains('__c'));
+
+            // Make sure the sObject gets history tracking enabled if it is a standard object or a custom object
+            if (objectCanBeLookedUpTo) {
+                if (!Test.isRunningTest()) {
+                    try {
+                        historyEnabledForObject = MetadataService.validateHistoryEnabled(
+                            sObjectApiName
+                        );
+                    } catch (Exception e) {
+                        System.debug(LoggingLevel.ERROR, 'Error validating history tracking: ' + e.getMessage());
+                        return 'WARNING: Could not verify history tracking for ' + sObjectApiName + '. The Listener will be created, but you may need to enable history tracking manually.';
+                    }
+                }
+            } else {
+                historyEnabledForObject = true;
+            }
+            
+            // Cleaning fieldLabel
+            String fieldLabel = sObjectApiName.contains('__c')
+                ? sObjectApiName.replace('__c', '')
+                : sObjectApiName;
+            String namespacePrefix = 'Flowdometer__';
+            if (sObjectApiName.startsWith(namespacePrefix)) {
+                fieldLabel = fieldLabel.replace(namespacePrefix, '');
+            }
+
+            // Setting field labels
+            String lookupFieldLabel =
+                Schema.getGlobalDescribe()
+                    .get(sObjectApiName)
+                    .getDescribe()
+                    .fields.getMap()
+                    .get(fieldName)
+                    .getDescribe()
+                    .getLabel() + ' Flow';
+            String sObjectLabel = Schema.getGlobalDescribe()
+                .get(sObjectApiName)
                 .getDescribe()
-                .getLabel() + ' Flow';
-        String sObjectLabel = Schema.getGlobalDescribe()
-            .get(sObjectApiName)
-            .getDescribe()
-            .getLabel();
+                .getLabel();
 
-        // Sanitizing the field labels
-        String apiConvertedLabelForLookupToFlow = convertLabeltoAPIName(
-            lookupFieldLabel
-        );
-        String apiConvertedLabelForLookupTosObject = convertLabeltoAPIName(
-            sObjectLabel
-        );
+            // Sanitizing the field labels
+            String apiConvertedLabelForLookupToFlow = convertLabeltoAPIName(
+                lookupFieldLabel
+            );
+            String apiConvertedLabelForLookupTosObject = convertLabeltoAPIName(
+                sObjectLabel
+            );
 
-        // Conditionally create the lookup from Flow to sObject
-        if (!flowAlreadyHasLookupTosObject) {
-            // Check if lookup to the sObject on Flowdometer__Flow__c already exists
-            Boolean isLookupToSObjectAvailable = (doesFieldExist(
-                flowObjectAPIName,
-                apiConvertedLabelForLookupTosObject
-            ) && objectCanBeLookedUpTo); //Check if lookup is possible, and does field exist: object to check, fieldLookingUpToOtherObject to check for
+            // Conditionally create the lookup from Flow to sObject
+            if (!flowAlreadyHasLookupTosObject) {
+                // Check if lookup to the sObject on Flowdometer__Flow__c already exists
+                Boolean isLookupToSObjectAvailable = (doesFieldExist(
+                    flowObjectAPIName,
+                    apiConvertedLabelForLookupTosObject
+                ) && objectCanBeLookedUpTo); //Check if lookup is possible, and does field exist: object to check, fieldLookingUpToOtherObject to check for
 
-            // Create lookup on Flowdometer__Flow__c if it doesn't exist
-            if (!isLookupToSObjectAvailable) {
-                if (!Test.isRunningTest()) {
-                    MetadataService.createLookupField(
-                        sObjectLabel,
-                        flowObjectAPIName,
-                        sObjectApiName,
-                        FLOWDOMETER_FLOW_OBJECT_LABEL
-                    ); //FieldLabelForLookupField, objectAPINameToPutLookupOn, relatedObjectPointedTo, relationshipLabelNameChildren
-                    grantFieldEditAccess(
-                        flowObjectAPIName,
-                        apiConvertedLabelForLookupTosObject
-                    ); // objectAPINameWLookup, LookupFieldAPIName
+                // Create lookup on Flowdometer__Flow__c if it doesn't exist
+                if (!isLookupToSObjectAvailable) {
+                    if (!Test.isRunningTest()) {
+                        try {
+                            MetadataService.createLookupField(
+                                sObjectLabel,
+                                flowObjectAPIName,
+                                sObjectApiName,
+                                FLOWDOMETER_FLOW_OBJECT_LABEL
+                            ); //FieldLabelForLookupField, objectAPINameToPutLookupOn, relatedObjectPointedTo, relationshipLabelNameChildren
+                            grantFieldEditAccess(
+                                flowObjectAPIName,
+                                apiConvertedLabelForLookupTosObject
+                            ); // objectAPINameWLookup, LookupFieldAPIName
+                        } catch (Exception e) {
+                            System.debug(LoggingLevel.ERROR, 'Error creating lookup to sObject: ' + e.getMessage());
+                            return 'WARNING: Could not create lookup field from Flow to ' + sObjectApiName + '. This might limit functionality.';
+                        }
+                    }
+                }
+
+                flowAlreadyHasLookupTosObject = true;
+            }
+
+            // Conditionally create the lookup from sObject to Flow
+            if (!sObjectAlreadyHasLookupToFlow) {
+                // Check if lookup to Flowdometer__Flow__c on the sObject already exists
+                Boolean isLookupToFlowAvailable = doesFieldExist(
+                    sObjectApiName,
+                    apiConvertedLabelForLookupToFlow
+                ); //object to check, fieldLookingUpToOtherObject to check for
+
+                // Create lookup on sObject if it doesn't exist
+                if (!isLookupToFlowAvailable) {
+                    if (!Test.isRunningTest()) {
+                        try {
+                            MetadataService.createLookupField(
+                                lookupFieldLabel,
+                                sObjectApiName,
+                                flowObjectAPIName,
+                                sObjectLabel
+                            ); //FieldLabelForLookupField, objectAPINameToPutLookupOn, relatedObjectPointedTo, relationshipLabelNameChildren
+                            grantFieldEditAccess(
+                                sObjectApiName,
+                                apiConvertedLabelForLookupToFlow
+                            ); //permission set, objectAPINameWLookup, LookupFieldAPIName
+                        } catch (Exception e) {
+                            System.debug(LoggingLevel.ERROR, 'Error creating lookup from sObject to Flow: ' + e.getMessage());
+                            return 'WARNING: Could not create lookup field from ' + sObjectApiName + ' to Flow. This might limit functionality.';
+                        }
+                    }
+                }
+
+                sObjectAlreadyHasLookupToFlow = true;
+            }
+            
+            // Set up history tracking for the sObject field referenced
+            String fieldAPIName = fieldName;
+            List<FieldDefinition> fieldDefinitions = [
+                SELECT QualifiedApiName, IsFieldHistoryTracked
+                FROM FieldDefinition
+                WHERE
+                    EntityDefinition.QualifiedApiName = :sObjectApiName
+                    AND IsFieldHistoryTracked = TRUE
+            ];
+
+            Map<String, FieldDefinition> trackedFieldsByName = new Map<String, FieldDefinition>();
+            for (FieldDefinition field : fieldDefinitions) {
+                if (field.IsFieldHistoryTracked) {
+                    trackedFieldsByName.put(field.QualifiedApiName, field);
                 }
             }
 
-            flowAlreadyHasLookupTosObject = true;
-        }
-
-        // Conditionally create the lookup from sObject to Flow
-        if (!sObjectAlreadyHasLookupToFlow) {
-            // Check if lookup to Flowdometer__Flow__c on the sObject already exists
-            Boolean isLookupToFlowAvailable = doesFieldExist(
-                sObjectApiName,
-                apiConvertedLabelForLookupToFlow
-            ); //object to check, fieldLookingUpToOtherObject to check for
-
-            // Create lookup on sObject if it doesn't exist
-            if (!isLookupToFlowAvailable) {
+            // Get all the fields that have history tracking enabled
+            // Check if we are out of available field history tracking
+            if (
+                trackedFieldsByName.size() == 20 &&
+                !trackedFieldsByName.containsKey(fieldAPIName) &&
+                historyEnabledForObject
+            ) {
+                return HISTORY_ENABLED_HAS_NO_LIMITS;
+            } else if (
+                !trackedFieldsByName.isEmpty() &&
+                trackedFieldsByName.containsKey(fieldAPIName) &&
+                historyEnabledForObject
+            ) {
+                return HISTORY_ENABLED_ALREADY;
+            } else if (
+                trackedFieldsByName.size() < 20 &&
+                historyEnabledForObject &&
+                !trackedFieldsByName.containsKey(fieldAPIName)
+            ) {
                 if (!Test.isRunningTest()) {
-                    MetadataService.createLookupField(
-                        lookupFieldLabel,
-                        sObjectApiName,
-                        flowObjectAPIName,
-                        sObjectLabel
-                    ); //FieldLabelForLookupField, objectAPINameToPutLookupOn, relatedObjectPointedTo, relationshipLabelNameChildren
-                    grantFieldEditAccess(
-                        sObjectApiName,
-                        apiConvertedLabelForLookupToFlow
-                    ); //permission set, objectAPINameWLookup, LookupFieldAPIName
+                    try {
+                        MetadataService.enableFieldHistoryTracking(
+                            sObjectApiName,
+                            fieldAPIName
+                        );
+                    } catch (Exception e) {
+                        System.debug(LoggingLevel.ERROR, 'Error enabling field history tracking: ' + e.getMessage());
+                        return 'WARNING: Could not enable history tracking for ' + fieldAPIName + ' on ' + sObjectApiName + '. The Listener will be created, but functionality will be limited.';
+                    }
                 }
+
+                return HISTORY_ENABLED_HAS_LIMITS;
+            } else if (!historyEnabledForObject) {
+                if (!Test.isRunningTest()) {
+                    try {
+                        MetadataService.enableFieldHistoryTracking(
+                            sObjectApiName,
+                            fieldAPIName
+                        );
+                    } catch (Exception e) {
+                        System.debug(LoggingLevel.ERROR, 'Error enabling field history tracking: ' + e.getMessage());
+                        return 'WARNING: Could not enable history tracking for the object ' + sObjectApiName + '. The Listener will be created, but functionality will be limited.';
+                    }
+                }
+
+                return HISTORY_NOT_ENABLED_EARLIER_BUT_ENABLED_NOW;
             }
 
-            sObjectAlreadyHasLookupToFlow = true;
+            return null;
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Unexpected error in checkFieldHistoryStatus: ' + e.getMessage() + '\n' + e.getStackTraceString());
+            // Return a error message to allow processing to continue
+            return 'ERROR: ' + e.getMessage();
         }
-
-        // Set up history tracking for the sObject field referenced
-        String fieldAPIName = fieldName;
-        List<FieldDefinition> fieldDefinitions = [
-            SELECT QualifiedApiName, IsFieldHistoryTracked
-            FROM FieldDefinition
-            WHERE
-                EntityDefinition.QualifiedApiName = :sObjectApiName
-                AND IsFieldHistoryTracked = TRUE
-        ];
-
-        Map<String, FieldDefinition> trackedFieldsByName = new Map<String, FieldDefinition>();
-        for (FieldDefinition field : fieldDefinitions) {
-            if (field.IsFieldHistoryTracked) {
-                trackedFieldsByName.put(field.QualifiedApiName, field);
-            }
-        }
-
-        // Get all the fields that have history tracking enabled
-        // Check if we are out of available field history tracking
-        if (
-            trackedFieldsByName.size() == 20 &&
-            !trackedFieldsByName.containsKey(fieldAPIName) &&
-            historyEnabledForObject
-        ) {
-            return HISTORY_ENABLED_HAS_NO_LIMITS;
-        } else if (
-            !trackedFieldsByName.isEmpty() &&
-            trackedFieldsByName.containsKey(fieldAPIName) &&
-            historyEnabledForObject
-        ) {
-            return HISTORY_ENABLED_ALREADY;
-        } else if (
-            trackedFieldsByName.size() < 20 &&
-            historyEnabledForObject &&
-            !trackedFieldsByName.containsKey(fieldAPIName)
-        ) {
-            if (!Test.isRunningTest()) {
-                MetadataService.enableFieldHistoryTracking(
-                    sObjectApiName,
-                    fieldAPIName
-                );
-            }
-
-            return HISTORY_ENABLED_HAS_LIMITS;
-        } else if (!historyEnabledForObject) {
-            if (!Test.isRunningTest()) {
-                MetadataService.enableFieldHistoryTracking(
-                    sObjectApiName,
-                    fieldAPIName
-                );
-            }
-
-            return HISTORY_NOT_ENABLED_EARLIER_BUT_ENABLED_NOW;
-        }
-
-        return null;
     }
 }

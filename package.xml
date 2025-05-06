@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>Feature_Flag.RetryMetadataOperations</members>
+        <members>Feature_Flag.AdminNotifications</members>
+        <members>Feature_Flag.EnhancedErrorHandling</members>
+        <name>CustomMetadata</name>
+    </types>
+    <version>58.0</version>
+</Package> 
