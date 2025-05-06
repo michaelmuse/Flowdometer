@@ -1,4 +1,4 @@
-global class ListenerUpdateFlowController {
+global with sharing class ListenerUpdateFlowController {
     //This method is called from the flow to update the flow records with the current object id and name
     @InvocableMethod(
         Label='Update Flow Records'
@@ -11,12 +11,28 @@ global class ListenerUpdateFlowController {
         FlowUpdateResponse response = new FlowUpdateResponse();
         List<Flowdometer__Flow__c> listenerFlowToUpdate = new List<Flowdometer__Flow__c>();
         try {
+            // CRUD permission check
+            if (!Schema.sObjectType.Flowdometer__Flow__c.isUpdateable()) {
+                throw new SecurityException('Insufficient permissions to update Flow records');
+            }
+            
+            // Input validation
+            if (lstFlowToUpdate == null || lstFlowToUpdate.isEmpty() || 
+                lstFlowToUpdate[0].varFlowID == null) {
+                throw new IllegalArgumentException('Missing required input parameters');
+            }
+            
             MetaDataUtilityCls.setLookupFieldMaps('Flowdometer__Flow__c');
             System.debug(
                 'listenerFlowToUpdateLst - ' + lstFlowToUpdate
             );
 
             for (FlowUpdateRequest req : lstFlowToUpdate) {
+                // Input validation for each request
+                if (req.varFlowID == null) {
+                    continue; // Skip invalid records
+                }
+                
                 Flowdometer__Flow__c listenerFlow = new Flowdometer__Flow__c(
                     Id = req.varFlowID
                 );
@@ -31,17 +47,41 @@ global class ListenerUpdateFlowController {
                 System.debug('fieldToUpdate - ' + fieldToUpdate);
 
                 if (fieldToUpdate != null) {
-                    listenerFlow.put(fieldToUpdate, req.varCurrentObjectID);
+                    // Check field-level security before updating
+                    try {
+                        Schema.SObjectField field = Schema.sObjectType.Flowdometer__Flow__c.fields.getMap().get(fieldToUpdate);
+                        if (field != null && field.getDescribe().isUpdateable()) {
+                            listenerFlow.put(fieldToUpdate, req.varCurrentObjectID);
+                        } else {
+                            System.debug(LoggingLevel.WARN, 'Field ' + fieldToUpdate + ' is not updateable');
+                        }
+                    } catch (Exception e) {
+                        System.debug(LoggingLevel.ERROR, 'Error checking field permissions: ' + e.getMessage());
+                    }
                 }
 
-                listenerFlow.Flowdometer__Most_Recent_Step__c = req.currentStepId;
+                // Check field-level security for Most_Recent_Step__c field
+                try {
+                    if (Schema.sObjectType.Flowdometer__Flow__c.fields.Flowdometer__Most_Recent_Step__c.isUpdateable()) {
+                        listenerFlow.Flowdometer__Most_Recent_Step__c = req.currentStepId;
+                    }
+                } catch (Exception e) {
+                    System.debug(LoggingLevel.ERROR, 'Error checking Most_Recent_Step__c permissions: ' + e.getMessage());
+                }
+                
                 System.debug('listenerFlow - ' + listenerFlow);
                 listenerFlowToUpdate.add(listenerFlow);
             }
             response.lstFlowToUpdate = listenerFlowToUpdate;
             response.hasRecords = !listenerFlowToUpdate.isEmpty();
+        } catch (SecurityException se) {
+            response.isCheckSuccess = false;
+            response.errorMessage = 'Security error: ' + se.getMessage();
+            System.debug(LoggingLevel.ERROR, 'Security exception: ' + se.getMessage());
         } catch (Exception ex) {
             response.isCheckSuccess = false;
+            response.errorMessage = 'Error: ' + ex.getMessage();
+            System.debug(LoggingLevel.ERROR, 'Exception: ' + ex.getMessage() + '\n' + ex.getStackTraceString());
         }
 
         System.debug(
@@ -49,12 +89,6 @@ global class ListenerUpdateFlowController {
         );
 
         return new List<FlowUpdateResponse>{ response };
-        // q: Could you write some code that I can add to this method, where if hasRecords and checkSuccess are both True, then we update the flow stored in {!FlowToUpdateLst}, and if either of those are False, then we don't update the flow stored in {!FlowToUpdateLst}?
-        // a: I think you can do this with a decision element in the flow.  You can have the decision element check the values of the two variables and then branch accordingly.  If you want to do it in the apex class, you can do it like this:
-        // if (response.hasRecords && response.isCheckSuccess) {
-        //     update response.lstFlowToUpdate;
-        // }
-        // If I do this, should be able to delete the last 2 elements of the flow called "Listener Creates Trackers": https://museoperations-dev-ed.lightning.force.com/builder_platform_interaction/flowBuilder.app?flowId=3015G0000011bRgQAI
     }
 
     //FlowUpdateRequest params from flow
@@ -77,11 +111,17 @@ global class ListenerUpdateFlowController {
         global Boolean hasRecords;
         @InvocableVariable
         global List<Flowdometer__Flow__c> lstFlowToUpdate;
+        @InvocableVariable
+        global String errorMessage;
 
         global FlowUpdateResponse() {
             this.isCheckSuccess = true;
             this.hasRecords = false;
             this.lstFlowToUpdate = new List<Flowdometer__Flow__c>();
+            this.errorMessage = '';
         }
     }
+    
+    // Custom exception class for security issues
+    public class SecurityException extends Exception {}
 }

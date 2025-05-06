@@ -108,6 +108,12 @@ public inherited sharing class MetaDataUtilityCls {
                     selectedField.isCustom()
                 ) {
                     Schema.SObjectType relatedObjType = selectedField.getReferenceTo()[0];
+                    // General security check - verify user has access to the object
+                    if (!relatedObjType.getDescribe().isAccessible()) {
+                        System.debug(LoggingLevel.ERROR, 'User does not have access to the related object: ' + relatedObjType.getDescribe().getName());
+                        continue; // Skip this field
+                    }
+                    
                     relatedLookupMap.put(
                         relatedObjType.getDescribe().getName(),
                         relatedObjType.getDescribe().getLabel()
@@ -331,6 +337,12 @@ public inherited sharing class MetaDataUtilityCls {
                     LoggingLevel.INFO,
                     'Object name or field name is empty or null.'
                 );
+                return false;
+            }
+            
+            // Check if the object is accessible before proceeding
+            if (!Schema.getGlobalDescribe().get(objName).getDescribe().isAccessible()) {
+                System.debug(LoggingLevel.ERROR, 'User does not have access to the object: ' + objName);
                 return false;
             }
             
@@ -673,4 +685,7 @@ public inherited sharing class MetaDataUtilityCls {
             return 'ERROR: ' + e.getMessage();
         }
     }
+    
+    // Custom exception class for security issues
+    public class CustomException extends Exception {}
 }

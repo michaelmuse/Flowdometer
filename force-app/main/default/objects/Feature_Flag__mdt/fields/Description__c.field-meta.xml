@@ -8,4 +8,4 @@
     <label>Description</label>
     <required>false</required>
     <type>TextArea</type>
-</CustomField> 
+</CustomField>

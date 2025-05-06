@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Handle_Time_Business_Hours__c</fullName>
+    <deprecated>false</deprecated>
     <externalId>false</externalId>
     <inlineHelpText>This field will be blank until you set up Business Hours and Activate the Flow called &quot;Flowdometer - Autocalculate Business Hours&quot;</inlineHelpText>
     <label>Handle Time (Business Hours)</label>

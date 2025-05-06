@@ -8,4 +8,4 @@
     <inlineHelpText>Set to true to enable the feature, false to disable it</inlineHelpText>
     <label>Is Enabled</label>
     <type>Checkbox</type>
-</CustomField> 
+</CustomField>

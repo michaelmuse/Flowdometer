@@ -1,5 +1,5 @@
 //Thanks to ProfessorFlow and UnofficialSF for this Open Source Component!
-global class CalculateBusinessHoursDiff {
+global with sharing class CalculateBusinessHoursDiff {
     global class request {
         @InvocableVariable(Label='Business Hours Id' Required=true)
         global String businessHoursId;
@@ -16,6 +16,8 @@ global class CalculateBusinessHoursDiff {
         global Long diffResultSec;
         @InvocableVariable(Label='Result (in minute)')
         global Long diffResultMin;
+        @InvocableVariable(Label='Error Message')
+        global String errorMessage;
     }
     @InvocableMethod(
         Label='Professor Flow | Calculate Business Hours Difference'
@@ -23,21 +25,61 @@ global class CalculateBusinessHoursDiff {
     )
     global static List<response> getMilliSecondDiff(List<request> inputParams) {
         List<response> finalList = new List<response>();
-        Long diffInMinutes = 0;
-        //use utility method in business hours
-        if (inputParams != null && inputParams.size() > 0) {
+        response resp = new response();
+        
+        try {
+            // Validate input parameters
+            if (inputParams == null || inputParams.isEmpty()) {
+                resp.errorMessage = 'Input parameters cannot be null or empty';
+                finalList.add(resp);
+                return finalList;
+            }
+            
             for (request pf : inputParams) {
-                diffInMinutes = BusinessHours.diff(
-                    pf.businessHoursId,
-                    pf.startDate,
-                    pf.endDate
-                );
-                response resp = new response();
-                resp.diffResult = diffInMinutes;
-                resp.diffResultSec = diffInMinutes / 1000;
-                resp.diffResultMin = diffInMinutes / 60000;
+                resp = new response();
+                
+                // Validate request parameters
+                if (String.isBlank(pf.businessHoursId)) {
+                    resp.errorMessage = 'Business Hours ID cannot be null or empty';
+                    finalList.add(resp);
+                    continue;
+                }
+                
+                if (pf.startDate == null) {
+                    resp.errorMessage = 'Start Date cannot be null';
+                    finalList.add(resp);
+                    continue;
+                }
+                
+                if (pf.endDate == null) {
+                    resp.errorMessage = 'End Date cannot be null';
+                    finalList.add(resp);
+                    continue;
+                }
+                
+                // Check if business hours ID is valid
+                try {
+                    Long diffInMinutes = BusinessHours.diff(
+                        pf.businessHoursId,
+                        pf.startDate,
+                        pf.endDate
+                    );
+                    
+                    resp.diffResult = diffInMinutes;
+                    resp.diffResultSec = diffInMinutes / 1000;
+                    resp.diffResultMin = diffInMinutes / 60000;
+                    resp.errorMessage = '';
+                } catch (Exception ex) {
+                    resp.errorMessage = 'Error calculating business hours difference: ' + ex.getMessage();
+                    System.debug(LoggingLevel.ERROR, 'Business hours calculation error: ' + ex.getMessage());
+                }
+                
                 finalList.add(resp);
             }
+        } catch (Exception ex) {
+            resp.errorMessage = 'Unexpected error: ' + ex.getMessage();
+            System.debug(LoggingLevel.ERROR, 'Unexpected error in getMilliSecondDiff: ' + ex.getMessage() + '\n' + ex.getStackTraceString());
+            finalList.add(resp);
         }
 
         return finalList;

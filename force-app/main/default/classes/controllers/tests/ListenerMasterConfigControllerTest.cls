@@ -50,6 +50,8 @@ private class ListenerMasterConfigControllerTest {
         Flowdometer__Listener__c newRecord = new Flowdometer__Listener__c();
         newRecord.Name = 'Test Listener';
         newRecord.Flowdometer__Last_Execution_On__c = Datetime.now();
+        newRecord.Flowdometer__Object_Name__c = 'Account';
+        newRecord.Flowdometer__Field_To_Track__c = 'Name';
 
         Id result;
         Test.startTest();
