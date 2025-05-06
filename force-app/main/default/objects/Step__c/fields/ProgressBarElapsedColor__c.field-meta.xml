@@ -3,13 +3,11 @@
     <fullName>ProgressBarElapsedColor__c</fullName>
     <deprecated>false</deprecated>
     <externalId>false</externalId>
-    <formula>CASE(
-      ProgressBarColorFlag__c,
-      'Warning', "/resource/Flowdometer__ExpiringRed",
-      'Active', "/resource/Flowdometer__PrimaryBlue",
-      'Completed', "/resource/Flowdometer__CompletedGreen",
-      "/resource/Flowdometer__PrimaryBlue"
-    )</formula>
+    <formula>IF(
+  StepActive__c,
+  "/resource/Flowdometer__PrimaryBlue",
+  "/resource/Flowdometer__CompletedGreen"
+)</formula>
     <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
     <label>Progress Bar Elapsed Color</label>
     <required>false</required>
