@@ -41,11 +41,11 @@
             <name>hasRecords</name>
         </outputParameters>
         <outputParameters>
-            <assignToReference>checkSuccess</assignToReference>
+            <assignToReference>isCheckSuccess</assignToReference>
             <name>isCheckSuccess</name>
         </outputParameters>
         <outputParameters>
-            <assignToReference>FlowToUpdateLst</assignToReference>
+            <assignToReference>lstFlowToUpdate</assignToReference>
             <name>lstFlowToUpdate</name>
         </outputParameters>
         <versionSegment>1</versionSegment>
@@ -475,7 +475,7 @@
                 </rightValue>
             </conditions>
             <conditions>
-                <leftValueReference>checkSuccess</leftValueReference>
+                <leftValueReference>isCheckSuccess</leftValueReference>
                 <operator>EqualTo</operator>
                 <rightValue>
                     <booleanValue>true</booleanValue>
@@ -956,7 +956,7 @@
         <faultConnector>
             <targetReference>Set_Error_Message_Update_Flow</targetReference>
         </faultConnector>
-        <inputReference>FlowToUpdateLst</inputReference>
+        <inputReference>lstFlowToUpdate</inputReference>
     </recordUpdates>
     <recordUpdates>
         <name>Update_Last_Step</name>
