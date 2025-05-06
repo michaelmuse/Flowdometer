@@ -23,17 +23,17 @@ public with sharing class FeatureFlagUtil {
             return featureFlagCache.get(featureName);
         }
         
-        // Query the feature flag
+        // Query the feature flag - updated with namespace
         Boolean isEnabled = false;
         try {
-            List<Feature_Flag__mdt> flags = [
-                SELECT DeveloperName, Is_Enabled__c 
-                FROM Feature_Flag__mdt 
+            List<Flowdometer__Feature_Flag__mdt> flags = [
+                SELECT DeveloperName, Flowdometer__Is_Enabled__c 
+                FROM Flowdometer__Feature_Flag__mdt 
                 WHERE DeveloperName = :featureName
                 LIMIT 1
             ];
             
-            isEnabled = !flags.isEmpty() && flags[0].Is_Enabled__c;
+            isEnabled = !flags.isEmpty() && flags[0].Flowdometer__Is_Enabled__c;
         } catch (Exception e) {
             // If an error occurs (e.g., metadata type not yet deployed), default to false
             System.debug(LoggingLevel.WARN, 'Error checking feature flag ' + featureName + ': ' + e.getMessage());
