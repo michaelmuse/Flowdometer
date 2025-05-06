@@ -30,7 +30,6 @@
             <assignToReference>lstListenerFlow</assignToReference>
             <name>lstListenerFlow</name>
         </outputParameters>
-        <versionSegment>1</versionSegment>
     </actionCalls>
     <apiVersion>55.0</apiVersion>
     <assignments>
