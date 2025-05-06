@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>ProgressBarElapsedColor__c</fullName>
+    <deprecated>false</deprecated>
     <externalId>false</externalId>
     <formula>IF(
   StepActive__c,
-  &quot;/resource/Flowdometer__PrimaryBlue&quot;,
-  &quot;/resource/Flowdometer__CompletedGreen&quot;
+  IF(
+    HandleTimeVsGoal__c > 0.8,
+    "/resource/Flowdometer__ExpiringRed",
+    "/resource/Flowdometer__PrimaryBlue"
+  ),
+  "/resource/Flowdometer__CompletedGreen"
 )</formula>
     <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
     <label>Progress Bar Elapsed Color</label>
