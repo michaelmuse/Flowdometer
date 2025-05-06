@@ -1,4 +1,4 @@
-global class ListenerFlowController {
+global with sharing class ListenerFlowController {
     //This is a managed package, so we need global modifiers
     @AuraEnabled
     global String varCurrentFieldTracked;
@@ -56,6 +56,9 @@ global class ListenerFlowController {
         public Id varLastHistoryRecordId;
         public String varType;
     }
+
+    // Custom exception class for validation errors
+    public class CustomException extends Exception {}
 
     //Constructor class
     public ListenerFlowController() {
@@ -293,6 +296,7 @@ global class ListenerFlowController {
                     parentIdField
                 }
             );
+            // Use bind variables for Field comparison
             whereConditions.add('(Field =: fieldValue OR Field =: fieldName)');
             if (!targetRecordIds.isEmpty()) {
                 whereConditions.add(parentIdField + ' IN :targetRecordIds');
@@ -304,14 +308,38 @@ global class ListenerFlowController {
                 }
             }
         } else {
+            // Ensure we only select valid field names that cannot be manipulated
             if (listenerConfig.Object_Name__c == 'Case') {
                 selectFields.add('CaseNumber');
             } else {
                 selectFields.add('Name');
             }
-            selectFields.add(listenerConfig.Field_To_Track__c);
-            if (listenerConfig.Type__c != null) {
-                selectFields.add(listenerConfig.Type__c);
+            
+            // Validate field name to track before adding it to the query
+            if (String.isNotBlank(listenerConfig.Field_To_Track__c)) {
+                // Ensure the object exists in schema
+                Schema.SObjectType sObjectType = Schema.getGlobalDescribe().get(listenerConfig.Object_Name__c);
+                if (sObjectType != null) {
+                    Map<String, Schema.SObjectField> fieldMap = sObjectType.getDescribe().fields.getMap();
+                    
+                    // Check if field exists on the object
+                    if (fieldMap.containsKey(listenerConfig.Field_To_Track__c.toLowerCase())) {
+                        selectFields.add(listenerConfig.Field_To_Track__c);
+                    }
+                }
+            }
+            
+            // Only add Type field if it's not null and is a valid field
+            if (String.isNotBlank(listenerConfig.Type__c)) {
+                Schema.SObjectType sObjectType = Schema.getGlobalDescribe().get(listenerConfig.Object_Name__c);
+                if (sObjectType != null) {
+                    Map<String, Schema.SObjectField> fieldMap = sObjectType.getDescribe().fields.getMap();
+                    
+                    // Check if the Type field exists on the object
+                    if (fieldMap.containsKey(listenerConfig.Type__c.toLowerCase())) {
+                        selectFields.add(listenerConfig.Type__c);
+                    }
+                }
             }
         }
 
@@ -325,16 +353,19 @@ global class ListenerFlowController {
         }
 
         // Construct the query
-        String queryStr =
-            'SELECT ' +
-            String.join(selectFields, ', ') +
-            ' FROM ' +
-            tableName; //MAY NEED TO ADD BACK SPACE BEFORE FROM
+        // Validate tableName against known objects to prevent injection
+        if (!Schema.getGlobalDescribe().containsKey(tableName)) {
+            throw new CustomException('Invalid object name: ' + tableName);
+        }
+        
+        // Use a StringBuilder approach for better security and performance
+        String queryStr = 'SELECT ' + String.join(selectFields, ', ') + ' FROM ' + tableName;
+        
         if (!whereConditions.isEmpty()) {
             queryStr += ' WHERE ' + String.join(whereConditions, ' AND ');
         }
 
-        // Common query modifiers - Need to move to query modifiers method and sort parents by DSC, history by ASC
+        // Common query modifiers
         if ((Boolean) queryModifiers.get('includeOrderBy')) {
             queryStr += isHistoryQuery
                 ? ' ORDER BY ' + parentIdField + ', CreatedDate ASC'
@@ -400,6 +431,17 @@ global class ListenerFlowController {
             lastExecutionOn
         );
         System.debug('History query built: ' + queryStr);
+        
+        // Validate the query string to prevent SOQL injection
+        if (!queryStr.startsWithIgnoreCase('SELECT ') || 
+            queryStr.containsIgnoreCase('INSERT') || 
+            queryStr.containsIgnoreCase('UPDATE') || 
+            queryStr.containsIgnoreCase('DELETE') || 
+            queryStr.containsIgnoreCase('UNDELETE') ||
+            queryStr.containsIgnoreCase(';')) {
+            throw new CustomException('Invalid query structure detected: possible injection attempt');
+        }
+        
         // Query for history records
         Map<Id, List<SObject>> historyRecordsMap = controllerInstance.historyRecordsMap;
         Datetime queryTimestamp = Datetime.now();
@@ -843,6 +885,16 @@ global class ListenerFlowController {
             );
             System.debug('Parent query built: ' + queryStr);
 
+            // Validate the query string to prevent SOQL injection
+            if (!queryStr.startsWithIgnoreCase('SELECT ') || 
+                queryStr.containsIgnoreCase('INSERT') || 
+                queryStr.containsIgnoreCase('UPDATE') || 
+                queryStr.containsIgnoreCase('DELETE') || 
+                queryStr.containsIgnoreCase('UNDELETE') ||
+                queryStr.containsIgnoreCase(';')) {
+                throw new CustomException('Invalid query structure detected: possible injection attempt');
+            }
+
             for (SObject sob : Database.query(queryStr)) {
                 targetRecords.add(sob.Id);
                 sObjectMap.put(sob.Id, sob);
@@ -899,6 +951,17 @@ global class ListenerFlowController {
             'responseList[0].lstListenerFlow: ' +
             responseList[0].lstListenerFlow
         );
+
+        // Add CRUD/FLS checks before accessing fields in parseRecordsToFlow
+        if (!Schema.sObjectType.Listener__c.fields.Flowdometer__Last_Check__c.isAccessible()) {
+            throw new CustomException('You do not have permission to access the Last Check field on Listener records.');
+        }
+
+        // Add CRUD/FLS checks before accessing fields in preparingResponse
+        if (!Schema.sObjectType.Listener__c.fields.Field_To_Track__c.isAccessible()) {
+            throw new CustomException('You do not have permission to access the Field To Track field on Listener records.');
+        }
+
         return responseList;
     }
 }

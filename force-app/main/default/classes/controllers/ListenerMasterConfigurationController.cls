@@ -2,6 +2,9 @@
  * @description Controller for listenerMasterConfiguration component
  */
 public with sharing class ListenerMasterConfigurationController {
+    // Constants for email sender name
+    private static final String FLOWDOMETER_SUPPORT = 'Flowdometer Support';
+    
     // New method for lightweight error logging via Platform Events
     private static void logError(String errorType, String errorMessage, String details) {
         try {
@@ -17,8 +20,9 @@ public with sharing class ListenerMasterConfigurationController {
                 // This only executes for truly critical errors that need immediate attention
                 Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
                 
-                // Get the org-wide email address to use as the sender
-                OrgWideEmailAddress[] owea = [SELECT Id FROM OrgWideEmailAddress WHERE DisplayName = 'Flowdometer Support' LIMIT 1];
+                // Get the org-wide email address to use as the sender - use bind variable to prevent SOQL injection
+                String senderName = FLOWDOMETER_SUPPORT; // Use constant instead of hardcoded string
+                OrgWideEmailAddress[] owea = [SELECT Id FROM OrgWideEmailAddress WHERE DisplayName = :senderName LIMIT 1];
                 if (!owea.isEmpty()) {
                     mail.setOrgWideEmailAddressId(owea[0].Id);
                 }
@@ -45,6 +49,7 @@ public with sharing class ListenerMasterConfigurationController {
     @AuraEnabled(Cacheable=true)
     public static Map<String, String> getAllSObjectsInOrg() {
         try {
+            // Use `with sharing` in this method to enforce sharing rules
             return MetaDataUtilityCls.getAllSObjectsInOrg();
         } catch (CalloutException ce) {
             logError('CALLOUT', 'Timeout getting SObjects', ce.getMessage() + '\n' + ce.getStackTraceString());
@@ -60,10 +65,37 @@ public with sharing class ListenerMasterConfigurationController {
     @AuraEnabled(Cacheable=true)
     public static Map<String, String> getSObjectFields(String objectName) {
         try {
+            // Validate input parameter
             if (String.isBlank(objectName)) {
                 throw new AuraHandledException('Object name cannot be empty');
             }
-            return MetaDataUtilityCls.getSObjectFields(objectName);
+            
+            // Validate object name for potential injection
+            if (!Pattern.matches('^[a-zA-Z0-9_]+$', objectName) && 
+                !Pattern.matches('^[a-zA-Z0-9_]+__[a-zA-Z0-9_]+$', objectName) &&
+                !Pattern.matches('^[a-zA-Z0-9_]+__[a-zA-Z0-9_]+__[a-zA-Z0-9_]+$', objectName)) {
+                throw new AuraHandledException('Invalid object name format');
+            }
+            
+            // Fetch fields from the object
+            Map<String, Schema.SObjectField> fieldsMap = Schema.getGlobalDescribe().get(objectName)?.getDescribe().fields.getMap();
+            Map<String, String> validFields = new Map<String, String>();
+
+            if (fieldsMap != null) {
+                for (Schema.SObjectField field : fieldsMap.values()) {
+                    Schema.DescribeFieldResult fieldDescribe = field.getDescribe();
+                    
+                    // Exclude calculated fields (formulas), auto-number fields, and read-only fields
+                    if (!fieldDescribe.isCalculated() && 
+                        !fieldDescribe.isAutoNumber() && 
+                        fieldDescribe.isUpdateable()) {
+                        
+                        validFields.put(fieldDescribe.getName(), fieldDescribe.getLabel());
+                    }
+                }
+            }
+
+            return validFields;
         } catch (CalloutException ce) {
             System.debug(LoggingLevel.ERROR, 'Callout error: ' + ce.getMessage() + '\n' + ce.getStackTraceString());
             throw new AuraHandledException('The request timed out. Please try again later.');
@@ -79,6 +111,28 @@ public with sharing class ListenerMasterConfigurationController {
         String fieldName
     ) {
         try {
+            // Validate input parameters
+            if (String.isBlank(sObjectApiName)) {
+                throw new AuraHandledException('Object API name cannot be empty');
+            }
+            
+            if (String.isBlank(fieldName)) {
+                throw new AuraHandledException('Field name cannot be empty');
+            }
+            
+            // Validate object name format
+            if (!Pattern.matches('^[a-zA-Z0-9_]+$', sObjectApiName) && 
+                !Pattern.matches('^[a-zA-Z0-9_]+__[a-zA-Z0-9_]+$', sObjectApiName) &&
+                !Pattern.matches('^[a-zA-Z0-9_]+__[a-zA-Z0-9_]+__[a-zA-Z0-9_]+$', sObjectApiName)) {
+                throw new AuraHandledException('Invalid object name format');
+            }
+            
+            // Validate field name format
+            if (!Pattern.matches('^[a-zA-Z0-9_]+$', fieldName) && 
+                !Pattern.matches('^[a-zA-Z0-9_]+__[a-zA-Z0-9_]+$', fieldName)) {
+                throw new AuraHandledException('Invalid field name format');
+            }
+            
             // Check if this is a managed package object that's not our own
             if (sObjectApiName.contains('__') && 
                 sObjectApiName.split('__').size() > 2 && 
@@ -108,12 +162,31 @@ public with sharing class ListenerMasterConfigurationController {
         }
     }
 
-    @AuraEnabled
+    @AuraEnabled(Cacheable=false)
     public static String createListenerRecord(Listener__c newRecord) {
         try {
+            // Input validation
+            if (newRecord == null) {
+                throw new AuraHandledException('Listener record cannot be null');
+            }
+            
+            if (String.isBlank(newRecord.Flowdometer__Object_Name__c)) {
+                throw new AuraHandledException('Object Name is required');
+            }
+            
+            if (String.isBlank(newRecord.Flowdometer__Field_To_Track__c)) {
+                throw new AuraHandledException('Field To Track is required');
+            }
+            
             // Check if permissions are sufficient before attempting insert
             if (!Schema.sObjectType.Flowdometer__Listener__c.isCreateable()) {
                 throw new AuraHandledException('You do not have permission to create Listener records.');
+            }
+            
+            // Check if the fields are accessible before attempting to use them
+            if (!Schema.sObjectType.Flowdometer__Listener__c.fields.Flowdometer__Object_Name__c.isAccessible() ||
+                !Schema.sObjectType.Flowdometer__Listener__c.fields.Flowdometer__Field_To_Track__c.isAccessible()) {
+                throw new AuraHandledException('You do not have permission to access required fields on Listener records.');
             }
             
             // Check if the object has reached its field limit

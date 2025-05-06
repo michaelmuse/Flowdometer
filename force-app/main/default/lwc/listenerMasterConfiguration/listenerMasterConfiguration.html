@@ -57,15 +57,17 @@
                             </lightning-combobox>
                         </div>
                         <div class="slds-col slds-size_1-of-2">
-                            <lightning-input
-                              type="text"
+                            <lightning-combobox
                               name="type"
-                              label="Type (optional, use the field APIName)"
-                              onblur={handleChanges}
+                              label="Type (optional)"
+                              value={type}
+                              placeholder="Select Type Field"
+                              options={typeFieldOptions}
+                              onchange={handleTypeChange}
                               field-level-help={typeHelpText}
                               variant="label-inline"
                             >
-                            </lightning-input>
+                            </lightning-combobox>
                         </div>
                         <div class="slds-col slds-size_1-of-2 slds-form-element slds-form-element_horizontal">
                             <label class="slds-form-element__label">

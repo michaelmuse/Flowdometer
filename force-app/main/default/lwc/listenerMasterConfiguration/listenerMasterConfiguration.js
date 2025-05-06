@@ -1,6 +1,6 @@
 // noinspection InconsistentSalesforceApiVersion
 
-import { LightningElement, track, wire } from "lwc";
+import { LightningElement, api, track, wire } from "lwc";
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
 import { NavigationMixin } from "lightning/navigation";
 import { CloseActionScreenEvent } from "lightning/actions";
@@ -12,9 +12,11 @@ import createListenerRecord from "@salesforce/apex/ListenerMasterConfigurationCo
 export default class ListenerMasterConfiguration extends NavigationMixin(
     LightningElement
 ) {
-    isLoading = false;
+    @api isLoading = false;
+    @api initialLoading = false;
+    @api recordId;
     keyIndex = 0;
-    selectedSObject;
+    @api selectedSObject;
     @track selectedField;
     @track sObjectOptions = [];
     @track sObjectFieldsOptions = [];
@@ -23,12 +25,13 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
     @track type;
     @track enableHistory;
     fieldHistoryStatus;
-    error;
+    @api error;
     @track itemList = [
         {
             id: 0
         }
     ];
+    @track typeFieldOptions = [];
 
     handleChanges(event) {
         const fieldName = event.target.name;
@@ -54,6 +57,8 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
             for (let key in data) {
                 picklistOptions.push({ value: key, label: data[key] });
             }
+            // Sort by label
+            picklistOptions.sort((a, b) => a.label.localeCompare(b.label));
             console.log(`retrieved ${picklistOptions.length} sobjects`);
             this.sObjectOptions = picklistOptions;
         } else if (error) {
@@ -70,7 +75,10 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
                 for (let key in result) {
                     picklistOptions.push({ value: key, label: result[key] });
                 }
+                // Sort by label
+                picklistOptions.sort((a, b) => a.label.localeCompare(b.label));
                 this.sObjectFieldsOptions = picklistOptions;
+                this.typeFieldOptions = picklistOptions;
                 console.log(JSON.stringify(this.sObjectFieldsOptions));
             })
             .catch((error) => {
@@ -106,6 +114,22 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
         );
     }
 
+    handleTypeChange(event) {
+        this.type = event.target.value;
+        console.log("Type Field - " + JSON.stringify(event.target.value));
+        if (this.type === this.selectedField) {
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: "Error",
+                    message: "Type field cannot be the same as Field to Track.",
+                    variant: "error",
+                    mode: "sticky"
+                })
+            );
+            this.type = undefined;
+        }
+    }
+
     async handleSubmitValidation() {
         this.toggleLoading();
         console.log(
@@ -113,15 +137,16 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
                 this.selectedSObject +
                 " - " +
                 this.selectedField +
+                " - " +
+                this.type +
                 ": Listener"
-        ); // format is using API names, not labels
+        );
         try {
-            // Additional validation before making the server call
-            if (!this.selectedSObject || !this.selectedField) {
-                throw new Error('Please select both an object and a field to track.');
+            if (!this.selectedSObject || !this.selectedField || !this.type) {
+                this.isLoading = false;
+                throw new Error('Please select an object, a field to track, and a type field.');
             }
 
-            // Wait for the checkFieldHistoryStatus to complete
             this.fieldHistoryStatus = await checkFieldHistoryStatus({
                 sObjectApiName: this.selectedSObject,
                 fieldName: this.selectedField
@@ -133,7 +158,6 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
                     JSON.stringify(this.fieldHistoryStatus)
             );
 
-            // If the response starts with WARNING, show it as a warning but proceed
             if (this.fieldHistoryStatus && this.fieldHistoryStatus.startsWith('WARNING:')) {
                 this.dispatchEvent(
                     new ShowToastEvent({
@@ -143,22 +167,18 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
                         mode: "sticky"
                     })
                 );
-                // Continue despite warning
                 await this.createListenerRec();
-            }
-            // If the response starts with ERROR, show it as an error and stop
-            else if (this.fieldHistoryStatus && this.fieldHistoryStatus.startsWith('ERROR:')) {
+            } else if (this.fieldHistoryStatus && this.fieldHistoryStatus.startsWith('ERROR:')) {
                 this.dispatchEvent(
                     new ShowToastEvent({
                         title: "Error",
-                        message: this.fieldHistoryStatus.substring(6), // Remove 'ERROR:' prefix
+                        message: this.fieldHistoryStatus.substring(6),
                         variant: "error",
                         mode: "sticky"
                     })
                 );
-                this.toggleLoading(); // Re-enable the form
-            }
-            else if (this.fieldHistoryStatus === "HISTORY_ENABLED_HAS_NO_LIMITS") {
+                this.isLoading = false;
+            } else if (this.fieldHistoryStatus === "HISTORY_ENABLED_HAS_NO_LIMITS") {
                 console.log(
                     "Inside - " + JSON.stringify(this.fieldHistoryStatus)
                 );
@@ -172,13 +192,13 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
                         variant: "error"
                     })
                 );
+                this.isLoading = false;
             } else if (
                 this.fieldHistoryStatus ===
                     "HISTORY_NOT_ENABLED_EARLIER_BUT_ENABLED_NOW" ||
                 this.fieldHistoryStatus === "HISTORY_ENABLED_ALREADY" ||
                 this.fieldHistoryStatus === "HISTORY_ENABLED_HAS_LIMITS"
             ) {
-                // Wait for the createListenerRec to complete
                 await this.createListenerRec();
             } else {
                 this.dispatchEvent(
@@ -188,15 +208,14 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
                         variant: "error"
                     })
                 );
+                this.isLoading = false;
             }
         } catch (error) {
             this.error = error;
             this.fieldHistoryStatus = undefined;
             
-            // Display a more user-friendly error message based on the error type
             let errorMessage = error.body ? error.body.message : (error.message || 'Unknown error');
             
-            // Handle specific error cases
             if (errorMessage.includes('Read timed out') || errorMessage.includes('CalloutException')) {
                 errorMessage = 'The operation timed out. This might be due to the complexity of the object structure or network issues. Please try again or choose a different object.';
             } else if (errorMessage.includes('bounds')) {
@@ -212,8 +231,25 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
                 })
             );
             
-            // Re-enable the form
-            this.toggleLoading();
+            this.isLoading = false;
+        }
+    }
+
+    // Add this new method to reset all form fields
+    resetForm() {
+        // Reset all the form fields
+        this.selectedSObject = undefined;
+        this.selectedField = undefined;
+        this.type = undefined;
+        this.enableHistory = false;
+        this.sObjectFieldsOptions = [];
+        this.typeFieldOptions = [];
+        this.fieldHistoryStatus = undefined;
+        
+        // Reset any UI elements that need to be refreshed
+        const toggleElement = this.template.querySelector('lightning-input[name="enableHistory"]');
+        if (toggleElement) {
+            toggleElement.checked = false;
         }
     }
 
@@ -226,17 +262,21 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
         listener.Flowdometer__Type__c = this.type;
         listener.Flowdometer__Enable_History__c = this.enableHistory;
 
-        this.isNavigatingAway = false; // Flag to track if navigation is in progress
+        this.isNavigatingAway = false;
 
         createListenerRecord({ newRecord: listener })
             .then((result) => {
                 console.log("Listener created with ID: " + result);
                 
-                // Set flag to prevent duplicate navigation
+                // Always stop the spinner first, regardless of navigation outcome
+                this.isLoading = false;
+                
+                // Reset form fields for a clean slate when the user returns
+                this.resetForm();
+                
                 if (this.isNavigatingAway) return;
                 this.isNavigatingAway = true;
                 
-                // Show success message before navigation
                 this.dispatchEvent(
                     new ShowToastEvent({
                         title: "Success",
@@ -245,9 +285,9 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
                     })
                 );
                 
-                // Add a small delay before navigation to ensure toast is visible
                 setTimeout(() => {
                     try {
+                        // Navigate to the record detail page for the created Listener
                         this[NavigationMixin.Navigate](
                             {
                                 type: "standard__recordPage",
@@ -257,15 +297,14 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
                                     actionName: "view"
                                 }
                             },
-                            // Set replace to false to maintain browser history
                             false
                         );
                         
-                        // Close action only after successful navigation
                         this.closeAction();
                     } catch (navError) {
                         console.error("Navigation error: ", navError);
-                        // If navigation fails, still show the record was created
+                        
+                        // Fallback navigation to the Listener list view if navigation fails
                         this.dispatchEvent(
                             new ShowToastEvent({
                                 title: "Created Successfully",
@@ -275,7 +314,6 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
                             })
                         );
                         
-                        // Safer fallback navigation to the object home
                         this[NavigationMixin.Navigate]({
                             type: "standard__objectPage",
                             attributes: {
@@ -288,14 +326,11 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
                         });
                     }
                 }, 100);
-                
-                this.selectedField = undefined;
             })
             .catch((error) => {
                 console.error("Error creating listener: ", JSON.stringify(error));
                 this.error = error;
                 
-                // Show detailed error to user
                 let errorMessage = error.body?.message || error.message || 'Unknown error';
                 this.dispatchEvent(
                     new ShowToastEvent({
@@ -306,27 +341,35 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
                     })
                 );
                 
-                // Re-enable form
-                this.toggleLoading();
+                // Ensure the spinner is stopped on error
+                this.isLoading = false;
             });
     }
 
-    // handle error from child components
     errorCallback(error, stack) {
         this.error = error;
     }
 
-    // handle errors from self
     handleError(error) {
         this.error = error;
     }
 
     closeAction() {
+        // Ensure spinner is stopped before closing
+        this.isLoading = false;
         this.dispatchEvent(new CloseActionScreenEvent());
     }
 
     handleCancel(event) {
+        // Ensure spinner is stopped before navigating away
+        this.isLoading = false;
+        
+        // Reset form fields for a clean slate
+        this.resetForm();
+        
         this.closeAction();
+        
+        // Navigate to the Listener list view
         this[NavigationMixin.Navigate]({
             type: "standard__objectPage",
             attributes: {
@@ -337,6 +380,19 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
                 filterName: "Recent"
             }
         });
+    }
+
+    // Add this method to reset the form when the component is initialized
+    connectedCallback() {
+        // Reset form fields when component is loaded
+        this.resetForm();
+    }
+
+    // Add this method to ensure proper cleanup when the component is removed from the DOM
+    disconnectedCallback() {
+        // Make sure to clean up any state when the component is destroyed
+        this.isLoading = false;
+        this.isNavigatingAway = false;
     }
 
     get typeHelpText() {
