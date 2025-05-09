@@ -1,3 +1,5 @@
+// Main controller class for Flowdometer's history tracking functionality
+// Handles querying, processing, and batching of history records
 global with sharing class ListenerFlowController {
     //This is a managed package, so we need global modifiers
     @AuraEnabled
