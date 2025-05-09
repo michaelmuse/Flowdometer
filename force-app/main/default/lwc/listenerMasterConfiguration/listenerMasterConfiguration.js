@@ -55,7 +55,8 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
         if (data) {
             let picklistOptions = [];
             for (let key in data) {
-                picklistOptions.push({ value: key, label: data[key] });
+                // Show "Label (API)" to user while keeping API name as the value we send to Apex
+                picklistOptions.push({ value: key, label: `${data[key]} (${key})` });
             }
             // Sort by label
             picklistOptions.sort((a, b) => a.label.localeCompare(b.label));
@@ -73,7 +74,7 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
             .then((result) => {
                 let picklistOptions = [];
                 for (let key in result) {
-                    picklistOptions.push({ value: key, label: result[key] });
+                    picklistOptions.push({ value: key, label: `${result[key]} (${key})` });
                 }
                 // Sort by label
                 picklistOptions.sort((a, b) => a.label.localeCompare(b.label));
