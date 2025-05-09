@@ -27,9 +27,9 @@ global with sharing class ListenerFlowController {
     public List<ListenerFlowController> processedRecords = new List<ListenerFlowController>();
     private static List<Id> historyRecordIdsToExclude;
     
-    // Add retry tracking - static map to track errors and retry attempts
+    // Retry tracking system to prevent infinite loops and handle transient errors
     private static Map<Id, Integer> retryCountMap = new Map<Id, Integer>();
-    private static Integer MAX_RETRY_COUNT = 3; // Maximum retries per listener
+    private static Integer MAX_RETRY_COUNT = 3; // Maximum retries per listener before giving up
     
     // Inner class for ListenerFlowLatestResponse parameter setting on Flow record
     @TestVisible
@@ -47,7 +47,8 @@ global with sharing class ListenerFlowController {
         }
     }
     
-    // Class for sending simplified, serialized JSON to flow without unneccesary fields
+    // Simplified version of ListenerFlowController for JSON serialization
+    // Used to reduce payload size when storing unprocessed records
     public class SimplifiedListenerFlowController {
         public Id varHistoryRecordId;
         public String varCurrentFieldTracked;
@@ -70,7 +71,8 @@ global with sharing class ListenerFlowController {
         this.historyRecordsMap = new Map<Id, List<SObject>>();
         this.sortingDatetimeMap = new Map<Id, List<Datetime>>();
     }
-    // Class for making editable history records
+
+    // Class for making history records editable in test context
     public class EditableHistory {
         public String Id { get; set; }
         public String FieldValue { get; set; }
@@ -78,6 +80,8 @@ global with sharing class ListenerFlowController {
         public String NewValue { get; set; }
         public Datetime CreatedDate { get; set; }
     }
+
+    // Mock class for testing history object functionality
     public class MockHistoryObject {
         public Datetime CreatedDate { get; set; }
         public Id Id { get; set; }
@@ -87,7 +91,9 @@ global with sharing class ListenerFlowController {
             this.Id = Id;
         }
     }
+
     // Wrapper class to hold the result of getLatestHistoryValues
+    // Contains both the history records map and the sorting datetime map
     @TestVisible
     public class HistoryValuesResult {
         public Map<Id, List<SObject>> historyRecordsMap;
@@ -101,7 +107,10 @@ global with sharing class ListenerFlowController {
             this.sortingDatetimeMap = sortingDatetimeMap;
         }
     }
-    // This method sorts the history records in ascending order of CreatedDate and ID, and updates the historyList parameter.
+
+    // Called by: getLatestHistoryValues
+    // Sorts history records by CreatedDate and ID
+    // Used to ensure consistent ordering of history records
     public void sortHistoryList(List<SObject> historyList) {
         List<CustomDatetimeSort> toSort = new List<CustomDatetimeSort>();
         
@@ -116,7 +125,9 @@ global with sharing class ListenerFlowController {
             historyList[i] = toSort[i].record;
         }
     }
-    // This method allows us to call sortHistoryList from a test class
+
+    // Called by: Test classes
+    // Test-specific version of sortHistoryList that works with mock objects
     public void sortHistoryList_Test(List<MockHistoryObject> mockHistoryList) {
         // Convert List<MockHistoryObject> to List<SObject> before sorting
         List<SObject> historyList = new List<SObject>();
@@ -141,7 +152,8 @@ global with sharing class ListenerFlowController {
         }
     }
     
-    // This method returns a string value of the object passed in. If the object is null, it returns an empty string.
+    // Called by: getLatestHistoryValues
+    // Helper method to safely convert objects to strings
     @TestVisible
     private static String getStringNotNull(Object valueObj) {
         if (valueObj != null) {
@@ -152,7 +164,7 @@ global with sharing class ListenerFlowController {
     }
     
     // Called by: getLatestHistoryValues
-    // This method returns a boolean value of whether the object passed in is a custom object or not.
+    // Determines if an object is custom or standard
     public static Boolean isCustomObject(String objectName) {
         SObjectType sObjectType = Schema.getGlobalDescribe().get(objectName);
         if (sObjectType == null) {
@@ -162,7 +174,8 @@ global with sharing class ListenerFlowController {
         return sObjectType.getDescribe().isCustom();
     }
     
-    // Define the object name history variable
+    // Called by: getLatestHistoryValues
+    // Gets the appropriate history object name based on the tracked object
     @TestVisible
     private static String getHistoryObjectName(String objectName) {
         // Special case: Opportunity
@@ -189,6 +202,8 @@ global with sharing class ListenerFlowController {
         }
     }
     
+    // Called by: getLatestHistoryValues
+    // Gets the appropriate name field for different object types
     @TestVisible
     private static String getParentName(String objectName) {
         Map<String, String> objectToNameFieldMap = new Map<String, String>{
@@ -249,7 +264,7 @@ global with sharing class ListenerFlowController {
         }
     }
     
-    // Define ListenerFlowLatestRequest
+    // Request class for the invocable method
     global class ListenerFlowLatestRequest {
         @InvocableVariable
         global Listener__c listenerConfig;
@@ -258,12 +273,12 @@ global with sharing class ListenerFlowController {
         global Datetime lastExecutionOn;
     }
     
-    // Define the listenerConfigList variable
+    // Static variable to hold listener configurations
     public static List<ListenerFlowLatestRequest> listenerConfigList;
     
-    // Section where we build and call the query ------------------------------------------------------
-    // ------------------------------------------------------------------------------------------------
-    // This method returns a list of historical IDs we already have, to exclude from the query.
+    // Called by: getLatestHistoryValues
+    // Gets a list of history record IDs to exclude from queries
+    // Used to prevent duplicate processing of history records
     private static List<Id> getHistoryRecordIdsToExclude() {
         List<Id> idsToExclude = new List<Id>();
         for (Flowdometer__Step__c step : [
@@ -281,7 +296,8 @@ global with sharing class ListenerFlowController {
     }
     
     // Called by: getLatestHistoryValues
-    // This method builds the query string based on the listener configuration and query modifiers.
+    // Builds the SOQL query string based on the listener configuration and query modifiers
+    // Includes security checks and validation to prevent SOQL injection
     @TestVisible
     private static String buildQuery(
         String tableName,
@@ -418,19 +434,9 @@ global with sharing class ListenerFlowController {
         return queryModifiers;
     }
     
-    // /**
-    //  * Fetches the latest history records for given parent records based on listener configuration and query modifiers.
-    //  *
-    //  * This method queries the history table corresponding to the object specified in the listener configuration.
-    //  * It constructs a query based on the given parent record IDs and query modifiers. The method returns two maps:
-    //  * - A map of parent record IDs to their corresponding list of history records.
-    //  * - A map of parent record IDs to a sorted list of Datetimes, which helps in sorting the history records.
-    //  *
-    //  * @param mParent List of parent record IDs to fetch the history for.
-    //  * @param listenerConfig Configuration for the listener, containing object and field names.
-    //  * @param queryModifiers A map containing query modifiers like 'whereClause', 'includeOrderBy', etc.
-    //  * @return HistoryValuesResult A wrapper class containing both maps.
-    //  */
+    // Called by: parseRecordsToFlow
+    // Fetches the latest history records for given parent records based on listener configuration and query modifiers
+    // Handles CPU limits, large object detection, and error handling
     @TestVisible
     private static HistoryValuesResult getLatestHistoryValues(
         List<Id> targetRecordIds,
@@ -634,6 +640,8 @@ global with sharing class ListenerFlowController {
         );
     }
     
+    // Main method for querying and processing history records
+    // Handles batching, error handling, and retry logic
     @InvocableMethod(
         Label='Query & Parse History Records'
         Description='Used to query History Records in Flow'
@@ -858,6 +866,9 @@ global with sharing class ListenerFlowController {
         }
     }
 
+    // Called by: parseRecordsToFlow
+    // Prepares the response for Flow by processing history records
+    // Includes field label translation and history record ID tracking
     @TestVisible
     public void preparingResponse(
         ListenerFlowLatestResponse response,
@@ -925,9 +936,9 @@ global with sharing class ListenerFlowController {
         response.hasRecords = !response.lstListenerFlow.isEmpty();
     }
 
-    // =============================================
-    //  Helper: batch response + persist leftovers
-    // =============================================
+    // Called by: parseRecordsToFlow
+    // Handles batching of records and persistence of unprocessed records
+    // Uses SimplifiedListenerFlowController to reduce payload size
     public void handleBatchAndUnprocessedRecords(
         ListenerFlowLatestResponse response,
         Listener__c listenerConfig,
@@ -990,8 +1001,8 @@ global with sharing class ListenerFlowController {
         response.hasRecords = !response.lstListenerFlow.isEmpty();
     }
 
-    // === Overloaded preparingResponse methods to support Enable History flag and String-keyed maps ===
-
+    // Called by: parseRecordsToFlow
+    // Overloaded version of preparingResponse that supports history tracking flag
     @TestVisible
     public void preparingResponse(
         ListenerFlowLatestResponse response,
@@ -1009,6 +1020,8 @@ global with sharing class ListenerFlowController {
         preparingResponse(response, listenerConfig, sObjectMap, controllerInstance);
     }
 
+    // Called by: parseRecordsToFlow
+    // Overloaded version of preparingResponse that supports String-keyed maps
     @TestVisible
     public void preparingResponse(
         ListenerFlowLatestResponse response,
@@ -1028,6 +1041,8 @@ global with sharing class ListenerFlowController {
         preparingResponse(response, listenerConfig, converted, controllerInstance);
     }
 
+    // Called by: parseRecordsToFlow
+    // Overloaded version of preparingResponse that supports both String-keyed maps and history tracking
     @TestVisible
     public void preparingResponse(
         ListenerFlowLatestResponse response,
