@@ -1,8 +1,8 @@
 {
-  "force-app\\main\\default\\classes\\ListenerFlowController.cls": [
+  "force-app/main/default/classes/controllers/ListenerFlowController.cls": [
     {
       "signature": "public void sortHistoryList(List<SObject> historyList) {",
-      "lines": "84-97",
+      "lines": "105-118",
       "variables_in_scope": [
         "toSort",
         "i"
@@ -15,7 +15,7 @@
     },
     {
       "signature": "public void sortHistoryList_Test(List<MockHistoryObject> mockHistoryList) {",
-      "lines": "99-121",
+      "lines": "120-142",
       "variables_in_scope": [
         "historyList",
         "record",
@@ -29,7 +29,7 @@
     },
     {
       "signature": "private static String getStringNotNull(Object valueObj) {",
-      "lines": "125-129",
+      "lines": "146-152",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "String",
@@ -38,20 +38,20 @@
       "parameters": "Object valueObj"
     },
     {
-      "signature": "public static Boolean isCustomObject(String objectname) {",
-      "lines": "133-136",
+      "signature": "public static Boolean isCustomObject(String objectName) {",
+      "lines": "156-163",
       "variables_in_scope": [
-        "objToken"
+        "sObjectType"
       ],
       "called_methods": {},
       "return_type": "Boolean",
       "return_var": "isCustomObject",
       "return": "Boolean isCustomObject",
-      "parameters": "String objectname"
+      "parameters": "String objectName"
     },
     {
       "signature": "private static String getHistoryObjectName(String objectName) {",
-      "lines": "140-158",
+      "lines": "167-190",
       "variables_in_scope": [
         "isCustom",
         "cleanedObjectName"
@@ -64,7 +64,7 @@
     },
     {
       "signature": "private static String getParentName(String objectName) {",
-      "lines": "161-174",
+      "lines": "193-206",
       "variables_in_scope": [
         "objectToNameFieldMap"
       ],
@@ -76,7 +76,7 @@
     },
     {
       "signature": "public Integer compareTo(Object compareTo) {",
-      "lines": "185-213",
+      "lines": "217-249",
       "variables_in_scope": [
         "compareToRecord",
         "thisDate",
@@ -93,41 +93,70 @@
       "parameters": "Object compareTo"
     },
     {
-      "signature": "private static String buildQuery( String tableName, String parentIdField, List<Id> targetRecordIds, Listener__c listenerConfig, Boolean isHistoryQuery, DateTime lastExecutionOn ) {",
-      "lines": "233-285",
+      "signature": "private static List<Id> getHistoryRecordIdsToExclude() {",
+      "lines": "267-281",
+      "variables_in_scope": [
+        "idsToExclude"
+      ],
+      "called_methods": {},
+      "return_type": "List<Id>",
+      "return_var": "getHistoryRecordIdsToExclude",
+      "return": "List<Id> getHistoryRecordIdsToExclude",
+      "parameters": ""
+    },
+    {
+      "signature": "private static String buildQuery( String tableName, String parentIdField, List<Id> targetRecordIds, Listener__c listenerConfig, Boolean isHistoryQuery, Datetime lastExecutionOn ) {",
+      "lines": "286-402",
       "variables_in_scope": [
         "selectFields",
         "whereConditions",
+        "fieldValue",
+        "fieldName",
         "Field",
+        "sObjectType",
+        "fieldMap",
+        "sObjectType",
+        "fieldMap",
         "queryModifiers",
         "queryStr"
       ],
       "called_methods": {
         "buildQuery": [
-          233
+          286
         ],
         "getQueryModifiers": [
-          265,
-          265
+          370,
+          370
         ]
       },
       "return_type": "String",
       "return_var": "buildQuery",
       "return": "String buildQuery",
-      "parameters": "String tableName, String parentIdField, List<Id> targetRecordIds, Listener__c listenerConfig, Boolean isHistoryQuery, DateTime lastExecutionOn"
+      "parameters": "String tableName, String parentIdField, List<Id> targetRecordIds, Listener__c listenerConfig, Boolean isHistoryQuery, Datetime lastExecutionOn"
     },
     {
-      "signature": "private static HistoryValuesResult getLatestHistoryValues( List<Id> targetRecordIds, Listener__c listenerConfig, DateTime lastExecutionOn, ListenerFlowController controllerInstance, String objHistoryName, String parentIdField ) {",
-      "lines": "316-406",
+      "signature": "private static HistoryValuesResult getLatestHistoryValues( List<Id> targetRecordIds, Listener__c listenerConfig, Datetime lastExecutionOn, ListenerFlowController controllerInstance, String objHistoryName, String parentIdField ) {",
+      "lines": "423-623",
       "variables_in_scope": [
         "fieldValue",
         "fieldName",
         "objectSuffix",
         "isHistoryQuery",
+        "isLargeObject",
+        "maxRecordsToProcess",
+        "countQuery",
+        "historyRecordCount",
+        "maxRecordsToProcess",
         "queryStr",
         "historyRecordsMap",
+        "queryTimestamp",
+        "startCpuTime",
+        "cpuTimeLimit",
+        "recordsProcessed",
         "parentId",
         "createdDate",
+        "historyList",
+        "dateTimeList",
         "specificHistoryList",
         "oneHistoryParentIds",
         "createdHistoryMap",
@@ -136,36 +165,146 @@
         "createdHistoryRecord",
         "parentRecord",
         "currentFieldValue",
-        "editableRecord",
-        "tempList"
+        "tempList",
+        "detailedError",
+        "currentRetryCount"
       ],
       "called_methods": {
         "getLatestHistoryValues": [
-          316
+          423
         ],
         "buildQuery": [
-          329
+          471
         ]
       },
       "return_type": "HistoryValuesResult",
       "return_var": "getLatestHistoryValues",
       "return": "HistoryValuesResult getLatestHistoryValues",
-      "parameters": "List<Id> targetRecordIds, Listener__c listenerConfig, DateTime lastExecutionOn, ListenerFlowController controllerInstance, String objHistoryName, String parentIdField"
+      "parameters": "List<Id> targetRecordIds, Listener__c listenerConfig, Datetime lastExecutionOn, ListenerFlowController controllerInstance, String objHistoryName, String parentIdField"
     },
     {
-      "signature": "public void preparingResponse( ListenerFlowLatestResponse response, Listener__c listenerConfig, Map<String, SObject> sObjectMap, ListenerFlowController controllerInstance ) {",
-      "lines": "413-461",
+      "signature": "public static List<ListenerFlowLatestResponse> parseRecordsToFlow( List<ListenerFlowLatestRequest> listenerConfigList ) {",
+      "lines": "630-847",
       "variables_in_scope": [
-        "count",
-        "trackFlowObj",
-        "listSObj",
-        "SObj",
-        "fieldValue",
-        "parentName"
+        "firstListenerConfig",
+        "objectName",
+        "fieldName",
+        "listenerId",
+        "currentRetryCount",
+        "maxRetriesResponse",
+        "responseList",
+        "errorMessages",
+        "response",
+        "controllerInstance",
+        "listenerConfig",
+        "lastExecutionOn",
+        "errorMsg",
+        "unprocessedRecordsJson",
+        "lstListenerFlow",
+        "batchSize",
+        "processedRecordsMap",
+        "objName",
+        "objHistoryName",
+        "parentIdField",
+        "targetRecordIds",
+        "historyResult",
+        "parentIds",
+        "sObjectMap",
+        "parentNameField",
+        "parentQuery",
+        "sobId",
+        "batchSize",
+        "processedRecordsMap",
+        "errorMsg",
+        "errorResponse",
+        "listenerToUpdate"
+      ],
+      "called_methods": {
+        "parseRecordsToFlow": [
+          630
+        ],
+        "getLatestHistoryValues": [
+          741
+        ],
+        "preparingResponse": [
+          772
+        ]
+      },
+      "return_type": "List<ListenerFlowLatestResponse>",
+      "return_var": "parseRecordsToFlow",
+      "return": "List<ListenerFlowLatestResponse> parseRecordsToFlow",
+      "parameters": "List<ListenerFlowLatestRequest> listenerConfigList"
+    },
+    {
+      "signature": "public void preparingResponse( ListenerFlowLatestResponse response, Listener__c listenerConfig, Map<Id, SObject> sObjectMap, ListenerFlowController controllerInstance ) {",
+      "lines": "850-914",
+      "variables_in_scope": [
+        "historyList",
+        "previousHistoryId",
+        "listenerFlow",
+        "fieldApi",
+        "fieldLabel",
+        "sobType",
+        "fmap",
+        "fld",
+        "currentHistoryId",
+        "previousHistoryId"
       ],
       "called_methods": {
         "preparingResponse": [
-          413
+          850
+        ]
+      },
+      "return_type": "void",
+      "return_var": "preparingResponse",
+      "return": "void preparingResponse",
+      "parameters": "ListenerFlowLatestResponse response, Listener__c listenerConfig, Map<Id, SObject> sObjectMap, ListenerFlowController controllerInstance"
+    },
+    {
+      "signature": "public void handleBatchAndUnprocessedRecords( ListenerFlowLatestResponse response, Listener__c listenerConfig, Integer batchSize, Map<Id, Boolean> processedRecordsMap ) {",
+      "lines": "919-979",
+      "variables_in_scope": [
+        "remainingRecords",
+        "firstBatch",
+        "i",
+        "item",
+        "i",
+        "original",
+        "simplified",
+        "remainingRecordsJson",
+        "fieldLimit"
+      ],
+      "called_methods": {},
+      "return_type": "void",
+      "return_var": "handleBatchAndUnprocessedRecords",
+      "return": "void handleBatchAndUnprocessedRecords",
+      "parameters": "ListenerFlowLatestResponse response, Listener__c listenerConfig, Integer batchSize, Map<Id, Boolean> processedRecordsMap"
+    },
+    {
+      "signature": "public void preparingResponse( ListenerFlowLatestResponse response, Listener__c listenerConfig, Map<Id, SObject> sObjectMap, ListenerFlowController controllerInstance, Boolean enableHistoryTracking ) {",
+      "lines": "984-998",
+      "variables_in_scope": [],
+      "called_methods": {
+        "preparingResponse": [
+          984,
+          997
+        ]
+      },
+      "return_type": "void",
+      "return_var": "preparingResponse",
+      "return": "void preparingResponse",
+      "parameters": "ListenerFlowLatestResponse response, Listener__c listenerConfig, Map<Id, SObject> sObjectMap, ListenerFlowController controllerInstance, Boolean enableHistoryTracking"
+    },
+    {
+      "signature": "public void preparingResponse( ListenerFlowLatestResponse response, Listener__c listenerConfig, Map<String, SObject> sObjectMap, ListenerFlowController controllerInstance ) {",
+      "lines": "1001-1017",
+      "variables_in_scope": [
+        "converted"
+      ],
+      "called_methods": {
+        "preparingResponse": [
+          1001,
+          1016
         ]
       },
       "return_type": "void",
@@ -174,58 +313,27 @@
       "parameters": "ListenerFlowLatestResponse response, Listener__c listenerConfig, Map<String, SObject> sObjectMap, ListenerFlowController controllerInstance"
     },
     {
-      "signature": "public static List<ListenerFlowLatestResponse> parseRecordsToFlow( List<ListenerFlowLatestRequest> listenerConfigList) {",
-      "lines": "469-550",
+      "signature": "public void preparingResponse( ListenerFlowLatestResponse response, Listener__c listenerConfig, Map<String, SObject> sObjectMap, ListenerFlowController controllerInstance, Boolean enableHistoryTracking ) {",
+      "lines": "1020-1039",
       "variables_in_scope": [
-        "controllerInstance",
-        "listenerConfig",
-        "objName",
-        "objHistoryName",
-        "parentName",
-        "parentIdField",
-        "fieldValue",
-        "fieldName",
-        "lastExecutionOn",
-        "responseList",
-        "response",
-        "sObjectMapForParse",
-        "targetRecords",
-        "targetRecordIds",
-        "sObjectMap",
-        "isHistoryQuery",
-        "terminalStageField",
-        "queryStr",
-        "record",
-        "historyResult",
-        "historyRecordsMap",
-        "sortingDateTimeMap",
-        "oneHistoryParentIds",
-        "tempHistoryLst"
+        "converted"
       ],
       "called_methods": {
-        "parseRecordsToFlow": [
-          469
-        ],
-        "buildQuery": [
-          502
-        ],
-        "getLatestHistoryValues": [
-          518
-        ],
         "preparingResponse": [
-          537
+          1020,
+          1038
         ]
       },
-      "return_type": "List<ListenerFlowLatestResponse>",
-      "return_var": "parseRecordsToFlow",
-      "return": "List<ListenerFlowLatestResponse> parseRecordsToFlow",
-      "parameters": "List<ListenerFlowLatestRequest> listenerConfigList"
+      "return_type": "void",
+      "return_var": "preparingResponse",
+      "return": "void preparingResponse",
+      "parameters": "ListenerFlowLatestResponse response, Listener__c listenerConfig, Map<String, SObject> sObjectMap, ListenerFlowController controllerInstance, Boolean enableHistoryTracking"
     }
   ],
-  "force-app\\main\\default\\classes\\ListenerFlowControllerTest.cls": [
+  "force-app/main/default/classes/controllers/tests/ListenerFlowControllerTest.cls": [
     {
       "signature": "public static void initializeHistoryRecordsMap() {",
-      "lines": "104-127",
+      "lines": "112-141",
       "variables_in_scope": [
         "opp",
         "Id",
@@ -241,12 +349,12 @@
       "parameters": ""
     }
   ],
-  "force-app\\main\\default\\classes\\TestDataFactory.cls": [
+  "force-app/main/default/classes/factories/TestDataFactory.cls": [
     {
       "signature": "public static List<Opportunity> createAndUpdateOpportunities( Id parentId, String field, Integer numRecords ) {",
-      "lines": "7-32",
+      "lines": "2-31",
       "variables_in_scope": [
-        "opps",
+        "opportunities",
         "i",
         "opp"
       ],
@@ -258,7 +366,7 @@
     },
     {
       "signature": "public static Case createCase(String subject, String status) {",
-      "lines": "34-41",
+      "lines": "33-38",
       "variables_in_scope": [
         "newCase"
       ],
@@ -269,20 +377,27 @@
       "parameters": "String subject, String status"
     },
     {
-      "signature": "public static Listener__c createlistenerConfig( String objectName, String fieldToTrack, String terminalStage, DateTime lastExecutionOn, Boolean insertRecord ) {",
-      "lines": "43-62",
+      "signature": "public static Flowdometer__Listener__c createListenerConfig( String objectName, String fieldToTrack, Datetime lastExecutionOn, Boolean doInsert ) {",
+      "lines": "40-112",
       "variables_in_scope": [
-        "listenerConfig"
+        "existing",
+        "Flowdometer__Object_Name__c",
+        "Flowdometer__Field_To_Track__c",
+        "unsaved",
+        "toInsert",
+        "dmlOpts",
+        "Flowdometer__Object_Name__c",
+        "Flowdometer__Field_To_Track__c"
       ],
       "called_methods": {},
-      "return_type": "Listener__c",
-      "return_var": "createlistenerConfig",
-      "return": "Listener__c createlistenerConfig",
-      "parameters": "String objectName, String fieldToTrack, String terminalStage, DateTime lastExecutionOn, Boolean insertRecord"
+      "return_type": "Flowdometer__Listener__c",
+      "return_var": "createListenerConfig",
+      "return": "Flowdometer__Listener__c createListenerConfig",
+      "parameters": "String objectName, String fieldToTrack, Datetime lastExecutionOn, Boolean doInsert"
     },
     {
-      "signature": "public static Opportunity createOpportunity(String name, String stageName, Date closeDate) {",
-      "lines": "64-72",
+      "signature": "public static Opportunity createOpportunity( String name, String stageName, Date closeDate ) {",
+      "lines": "114-127",
       "variables_in_scope": [
         "opp"
       ],
@@ -293,8 +408,8 @@
       "parameters": "String name, String stageName, Date closeDate"
     },
     {
-      "signature": "public static List<Opportunity> createOpportunityHistoryRecords(Integer numRecords, String stageName) {",
-      "lines": "74-87",
+      "signature": "public static List<Opportunity> createOpportunityHistoryRecords( Integer numRecords, String stageName ) {",
+      "lines": "129-146",
       "variables_in_scope": [
         "historyRecords",
         "i",
@@ -308,9 +423,9 @@
     },
     {
       "signature": "public static List<Flow__c> createCustomObjects(Integer numRecords) {",
-      "lines": "89-96",
+      "lines": "148-156",
       "variables_in_scope": [
-        "customObjects",
+        "flows",
         "i"
       ],
       "called_methods": {},
@@ -321,7 +436,7 @@
     },
     {
       "signature": "public static Account createAccount(String accountName) {",
-      "lines": "98-104",
+      "lines": "158-163",
       "variables_in_scope": [
         "acc"
       ],
@@ -332,7 +447,7 @@
       "parameters": "String accountName"
     }
   ],
-  "force-app\\main\\default\\classes\\MetadataService.cls": [
+  "force-app/apex-mdapi/classes/MetadataService.cls": [
     {
       "signature": "private static String apiEnabledSessionId(){",
       "lines": "8-15",
@@ -349,8 +464,21 @@
       "parameters": ""
     },
     {
+      "signature": "private static String sanitizeApiName(String label) {",
+      "lines": "17-40",
+      "variables_in_scope": [
+        "result",
+        "result"
+      ],
+      "called_methods": {},
+      "return_type": "String",
+      "return_var": "sanitizeApiName",
+      "return": "String sanitizeApiName",
+      "parameters": "String label"
+    },
+    {
       "signature": "public static void createLookupField(string fldName, string objName, string relatedTo, string relationshipLabel){",
-      "lines": "17-31",
+      "lines": "43-57",
       "variables_in_scope": [
         "service",
         "customField",
@@ -365,7 +493,7 @@
     },
     {
       "signature": "public static void createExternalField(string ExfldName, string objName, string relatedTo){",
-      "lines": "33-45",
+      "lines": "59-71",
       "variables_in_scope": [
         "service",
         "customField",
@@ -378,8 +506,8 @@
       "parameters": "string ExfldName, string objName, string relatedTo"
     },
     {
-      "signature": "public static void enableFieldHistoryTracking(String sObjectAPIName,String fieldAPIName){",
-      "lines": "47-63",
+      "signature": "public static void enableFieldHistoryTracking(String sObjectApiName,String fieldAPIName){",
+      "lines": "73-89",
       "variables_in_scope": [
         "deployList",
         "service",
@@ -390,11 +518,11 @@
       "return_type": "void",
       "return_var": "enableFieldHistoryTracking",
       "return": "void enableFieldHistoryTracking",
-      "parameters": "String sObjectAPIName, String fieldAPIName"
+      "parameters": "String sObjectApiName, String fieldAPIName"
     },
     {
-      "signature": "public static Boolean validateHistoryEnabled(String sObjectAPIName){",
-      "lines": "65-76",
+      "signature": "public static Boolean validateHistoryEnabled(String sObjectApiName){",
+      "lines": "91-102",
       "variables_in_scope": [
         "deployList",
         "service",
@@ -404,11 +532,11 @@
       "return_type": "Boolean",
       "return_var": "validateHistoryEnabled",
       "return": "Boolean validateHistoryEnabled",
-      "parameters": "String sObjectAPIName"
+      "parameters": "String sObjectApiName"
     },
     {
       "signature": "public static void handleSaveResults(MetadataService.SaveResult saveResult) {",
-      "lines": "198-218",
+      "lines": "224-244",
       "variables_in_scope": [
         "messages"
       ],
@@ -420,7 +548,7 @@
     },
     {
       "signature": "public static MetadataService.MetadataPort createService(){",
-      "lines": "6580-6587",
+      "lines": "6606-6613",
       "variables_in_scope": [
         "service"
       ],
@@ -432,7 +560,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8224-8224",
+      "lines": "8250-8250",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -442,7 +570,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8238-8238",
+      "lines": "8264-8264",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -452,7 +580,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8252-8252",
+      "lines": "8278-8278",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -462,7 +590,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8266-8266",
+      "lines": "8292-8292",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -472,7 +600,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8280-8280",
+      "lines": "8306-8306",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -482,7 +610,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8294-8294",
+      "lines": "8320-8320",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -492,7 +620,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8308-8308",
+      "lines": "8334-8334",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -502,7 +630,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8322-8322",
+      "lines": "8348-8348",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -512,7 +640,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8336-8336",
+      "lines": "8362-8362",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -522,7 +650,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8350-8350",
+      "lines": "8376-8376",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -532,7 +660,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8364-8364",
+      "lines": "8390-8390",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -542,7 +670,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8378-8378",
+      "lines": "8404-8404",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -552,7 +680,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8392-8392",
+      "lines": "8418-8418",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -562,7 +690,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8406-8406",
+      "lines": "8432-8432",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -572,7 +700,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8420-8420",
+      "lines": "8446-8446",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -582,7 +710,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8434-8434",
+      "lines": "8460-8460",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -592,7 +720,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8448-8448",
+      "lines": "8474-8474",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -602,7 +730,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8462-8462",
+      "lines": "8488-8488",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -612,7 +740,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8476-8476",
+      "lines": "8502-8502",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -622,7 +750,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8490-8490",
+      "lines": "8516-8516",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -632,7 +760,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8504-8504",
+      "lines": "8530-8530",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -642,7 +770,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8518-8518",
+      "lines": "8544-8544",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -652,7 +780,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8532-8532",
+      "lines": "8558-8558",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -662,7 +790,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8546-8546",
+      "lines": "8572-8572",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -672,7 +800,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8560-8560",
+      "lines": "8586-8586",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -682,7 +810,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8574-8574",
+      "lines": "8600-8600",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -692,7 +820,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8588-8588",
+      "lines": "8614-8614",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -702,7 +830,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8602-8602",
+      "lines": "8628-8628",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -712,7 +840,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8616-8616",
+      "lines": "8642-8642",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -722,7 +850,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8630-8630",
+      "lines": "8656-8656",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -732,7 +860,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8644-8644",
+      "lines": "8670-8670",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -742,7 +870,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8658-8658",
+      "lines": "8684-8684",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -752,7 +880,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8672-8672",
+      "lines": "8698-8698",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -762,7 +890,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8686-8686",
+      "lines": "8712-8712",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -772,7 +900,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8700-8700",
+      "lines": "8726-8726",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -782,7 +910,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8714-8714",
+      "lines": "8740-8740",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -792,7 +920,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8728-8728",
+      "lines": "8754-8754",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -802,7 +930,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8742-8742",
+      "lines": "8768-8768",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -812,7 +940,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8756-8756",
+      "lines": "8782-8782",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -822,7 +950,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8770-8770",
+      "lines": "8796-8796",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -832,7 +960,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8784-8784",
+      "lines": "8810-8810",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -842,7 +970,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8798-8798",
+      "lines": "8824-8824",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -852,7 +980,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8812-8812",
+      "lines": "8838-8838",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -862,7 +990,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8826-8826",
+      "lines": "8852-8852",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -872,7 +1000,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8840-8840",
+      "lines": "8866-8866",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -882,7 +1010,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8854-8854",
+      "lines": "8880-8880",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -892,7 +1020,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8868-8868",
+      "lines": "8894-8894",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -902,7 +1030,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8882-8882",
+      "lines": "8908-8908",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -912,7 +1040,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8896-8896",
+      "lines": "8922-8922",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -922,7 +1050,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8910-8910",
+      "lines": "8936-8936",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -932,7 +1060,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8924-8924",
+      "lines": "8950-8950",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -942,7 +1070,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8938-8938",
+      "lines": "8964-8964",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -952,7 +1080,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8952-8952",
+      "lines": "8978-8978",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -962,7 +1090,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8966-8966",
+      "lines": "8992-8992",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -972,7 +1100,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8980-8980",
+      "lines": "9006-9006",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -982,7 +1110,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "8994-8994",
+      "lines": "9020-9020",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -992,7 +1120,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9008-9008",
+      "lines": "9034-9034",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1002,7 +1130,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9022-9022",
+      "lines": "9048-9048",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1012,7 +1140,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9036-9036",
+      "lines": "9062-9062",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1022,7 +1150,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9050-9050",
+      "lines": "9076-9076",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1032,7 +1160,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9064-9064",
+      "lines": "9090-9090",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1042,7 +1170,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9078-9078",
+      "lines": "9104-9104",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1052,7 +1180,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9092-9092",
+      "lines": "9118-9118",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1062,7 +1190,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9106-9106",
+      "lines": "9132-9132",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1072,7 +1200,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9120-9120",
+      "lines": "9146-9146",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1082,7 +1210,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9134-9134",
+      "lines": "9160-9160",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1092,7 +1220,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9148-9148",
+      "lines": "9174-9174",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1102,7 +1230,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9162-9162",
+      "lines": "9188-9188",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1112,7 +1240,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9176-9176",
+      "lines": "9202-9202",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1122,7 +1250,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9190-9190",
+      "lines": "9216-9216",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1132,7 +1260,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9204-9204",
+      "lines": "9230-9230",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1142,7 +1270,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9218-9218",
+      "lines": "9244-9244",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1152,7 +1280,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9232-9232",
+      "lines": "9258-9258",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1162,7 +1290,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9246-9246",
+      "lines": "9272-9272",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1172,7 +1300,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9260-9260",
+      "lines": "9286-9286",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1182,7 +1310,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9274-9274",
+      "lines": "9300-9300",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1192,7 +1320,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9288-9288",
+      "lines": "9314-9314",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1202,7 +1330,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9302-9302",
+      "lines": "9328-9328",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1212,7 +1340,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9316-9316",
+      "lines": "9342-9342",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1222,7 +1350,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9330-9330",
+      "lines": "9356-9356",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1232,7 +1360,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9344-9344",
+      "lines": "9370-9370",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1242,7 +1370,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9358-9358",
+      "lines": "9384-9384",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1252,7 +1380,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9372-9372",
+      "lines": "9398-9398",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1262,7 +1390,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9386-9386",
+      "lines": "9412-9412",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1272,7 +1400,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9400-9400",
+      "lines": "9426-9426",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1282,7 +1410,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9414-9414",
+      "lines": "9440-9440",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1292,7 +1420,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9428-9428",
+      "lines": "9454-9454",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1302,7 +1430,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9442-9442",
+      "lines": "9468-9468",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1312,7 +1440,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9456-9456",
+      "lines": "9482-9482",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1322,7 +1450,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9470-9470",
+      "lines": "9496-9496",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1332,7 +1460,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9484-9484",
+      "lines": "9510-9510",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1342,7 +1470,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9498-9498",
+      "lines": "9524-9524",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1352,7 +1480,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9512-9512",
+      "lines": "9538-9538",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1362,7 +1490,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9526-9526",
+      "lines": "9552-9552",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1372,7 +1500,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9540-9540",
+      "lines": "9566-9566",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1382,7 +1510,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9554-9554",
+      "lines": "9580-9580",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1392,7 +1520,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9568-9568",
+      "lines": "9594-9594",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1402,7 +1530,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9582-9582",
+      "lines": "9608-9608",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1412,7 +1540,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9596-9596",
+      "lines": "9622-9622",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1422,7 +1550,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9610-9610",
+      "lines": "9636-9636",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1432,7 +1560,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9624-9624",
+      "lines": "9650-9650",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1442,7 +1570,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9638-9638",
+      "lines": "9664-9664",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1452,7 +1580,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9652-9652",
+      "lines": "9678-9678",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1462,7 +1590,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9666-9666",
+      "lines": "9692-9692",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1472,7 +1600,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9680-9680",
+      "lines": "9706-9706",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1482,7 +1610,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9694-9694",
+      "lines": "9720-9720",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1492,7 +1620,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9708-9708",
+      "lines": "9734-9734",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1502,7 +1630,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9722-9722",
+      "lines": "9748-9748",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1512,7 +1640,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9736-9736",
+      "lines": "9762-9762",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1522,7 +1650,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9750-9750",
+      "lines": "9776-9776",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1532,7 +1660,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9764-9764",
+      "lines": "9790-9790",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1542,7 +1670,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9778-9778",
+      "lines": "9804-9804",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1552,7 +1680,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9792-9792",
+      "lines": "9818-9818",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1562,7 +1690,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9806-9806",
+      "lines": "9832-9832",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1572,7 +1700,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9820-9820",
+      "lines": "9846-9846",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1582,7 +1710,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9834-9834",
+      "lines": "9860-9860",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1592,7 +1720,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9848-9848",
+      "lines": "9874-9874",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1602,7 +1730,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9862-9862",
+      "lines": "9888-9888",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1612,7 +1740,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9876-9876",
+      "lines": "9902-9902",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1622,7 +1750,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9890-9890",
+      "lines": "9916-9916",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1632,7 +1760,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9904-9904",
+      "lines": "9930-9930",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1642,7 +1770,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9918-9918",
+      "lines": "9944-9944",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1652,7 +1780,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9932-9932",
+      "lines": "9958-9958",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1662,7 +1790,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9946-9946",
+      "lines": "9972-9972",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1672,7 +1800,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9960-9960",
+      "lines": "9986-9986",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1682,7 +1810,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9974-9974",
+      "lines": "10000-10000",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1692,7 +1820,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "9988-9988",
+      "lines": "10014-10014",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1702,7 +1830,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10002-10002",
+      "lines": "10028-10028",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1712,7 +1840,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10016-10016",
+      "lines": "10042-10042",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1722,7 +1850,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10030-10030",
+      "lines": "10056-10056",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1732,7 +1860,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10044-10044",
+      "lines": "10070-10070",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1742,7 +1870,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10058-10058",
+      "lines": "10084-10084",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1752,7 +1880,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10072-10072",
+      "lines": "10098-10098",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1762,7 +1890,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10086-10086",
+      "lines": "10112-10112",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1772,7 +1900,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10100-10100",
+      "lines": "10126-10126",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1782,7 +1910,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10114-10114",
+      "lines": "10140-10140",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1792,7 +1920,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10128-10128",
+      "lines": "10154-10154",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1802,7 +1930,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10142-10142",
+      "lines": "10168-10168",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1812,7 +1940,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10156-10156",
+      "lines": "10182-10182",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1822,7 +1950,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10170-10170",
+      "lines": "10196-10196",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1832,7 +1960,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10184-10184",
+      "lines": "10210-10210",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1842,7 +1970,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10198-10198",
+      "lines": "10224-10224",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1852,7 +1980,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10212-10212",
+      "lines": "10238-10238",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1862,7 +1990,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10226-10226",
+      "lines": "10252-10252",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1872,7 +2000,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10240-10240",
+      "lines": "10266-10266",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1882,7 +2010,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10254-10254",
+      "lines": "10280-10280",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1892,7 +2020,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10268-10268",
+      "lines": "10294-10294",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1902,7 +2030,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10282-10282",
+      "lines": "10308-10308",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1912,7 +2040,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10296-10296",
+      "lines": "10322-10322",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1922,7 +2050,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10310-10310",
+      "lines": "10336-10336",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1932,7 +2060,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10324-10324",
+      "lines": "10350-10350",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1942,7 +2070,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10338-10338",
+      "lines": "10364-10364",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1952,7 +2080,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10352-10352",
+      "lines": "10378-10378",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1962,7 +2090,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10366-10366",
+      "lines": "10392-10392",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1972,7 +2100,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10380-10380",
+      "lines": "10406-10406",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1982,7 +2110,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10394-10394",
+      "lines": "10420-10420",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -1992,7 +2120,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10408-10408",
+      "lines": "10434-10434",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -2002,7 +2130,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10422-10422",
+      "lines": "10448-10448",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -2012,7 +2140,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10436-10436",
+      "lines": "10462-10462",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -2022,7 +2150,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10450-10450",
+      "lines": "10476-10476",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -2032,7 +2160,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10464-10464",
+      "lines": "10490-10490",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -2042,7 +2170,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10478-10478",
+      "lines": "10504-10504",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -2052,7 +2180,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10492-10492",
+      "lines": "10518-10518",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -2062,7 +2190,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10506-10506",
+      "lines": "10532-10532",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -2072,7 +2200,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10520-10520",
+      "lines": "10546-10546",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -2082,7 +2210,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10534-10534",
+      "lines": "10560-10560",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -2092,7 +2220,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10548-10548",
+      "lines": "10574-10574",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -2102,7 +2230,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10562-10562",
+      "lines": "10588-10588",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -2112,7 +2240,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10576-10576",
+      "lines": "10602-10602",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -2122,7 +2250,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10590-10590",
+      "lines": "10616-10616",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -2132,7 +2260,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10604-10604",
+      "lines": "10630-10630",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -2142,7 +2270,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10618-10618",
+      "lines": "10644-10644",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -2152,7 +2280,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10632-10632",
+      "lines": "10658-10658",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -2162,7 +2290,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10646-10646",
+      "lines": "10672-10672",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -2172,7 +2300,7 @@
     },
     {
       "signature": "public IReadResult getResult() {",
-      "lines": "10660-10660",
+      "lines": "10686-10686",
       "variables_in_scope": [],
       "called_methods": {},
       "return_type": "IReadResult",
@@ -2182,7 +2310,7 @@
     },
     {
       "signature": "public MetadataService.SaveResult renameMetadata(String type_x,String oldFullName,String newFullName) {",
-      "lines": "13319-13341",
+      "lines": "13345-13367",
       "variables_in_scope": [
         "request_x",
         "response_map_x"
@@ -2195,7 +2323,7 @@
     },
     {
       "signature": "public MetadataService.DescribeMetadataResult describeMetadata(Double asOfVersion) {",
-      "lines": "13363-13383",
+      "lines": "13389-13409",
       "variables_in_scope": [
         "request_x",
         "response_map_x"
@@ -2208,7 +2336,7 @@
     },
     {
       "signature": "public MetadataService.DeployResult checkDeployStatus(String asyncProcessId,Boolean includeDetails) {",
-      "lines": "13384-13405",
+      "lines": "13410-13431",
       "variables_in_scope": [
         "request_x",
         "response_map_x"
@@ -2221,7 +2349,7 @@
     },
     {
       "signature": "public MetadataService.RetrieveResult checkRetrieveStatus(String asyncProcessId,Boolean includeZip) {",
-      "lines": "13406-13427",
+      "lines": "13432-13453",
       "variables_in_scope": [
         "request_x",
         "response_map_x"
@@ -2234,7 +2362,7 @@
     },
     {
       "signature": "public MetadataService.AsyncResult retrieve(MetadataService.RetrieveRequest retrieveRequest) {",
-      "lines": "13428-13448",
+      "lines": "13454-13474",
       "variables_in_scope": [
         "request_x",
         "response_map_x"
@@ -2247,7 +2375,7 @@
     },
     {
       "signature": "public MetadataService.CancelDeployResult cancelDeploy(String String_x) {",
-      "lines": "13449-13469",
+      "lines": "13475-13495",
       "variables_in_scope": [
         "request_x",
         "response_map_x"
@@ -2260,7 +2388,7 @@
     },
     {
       "signature": "public String deployRecentValidation(String validationId) {",
-      "lines": "13470-13490",
+      "lines": "13496-13516",
       "variables_in_scope": [
         "request_x",
         "response_map_x"
@@ -2273,7 +2401,7 @@
     },
     {
       "signature": "public MetadataService.DescribeValueTypeResult describeValueType(String type_x) {",
-      "lines": "13491-13511",
+      "lines": "13517-13537",
       "variables_in_scope": [
         "request_x",
         "response_map_x"
@@ -2286,7 +2414,7 @@
     },
     {
       "signature": "public MetadataService.AsyncResult deploy(String ZipFile,MetadataService.DeployOptions DeployOptions) {",
-      "lines": "13533-13554",
+      "lines": "13559-13580",
       "variables_in_scope": [
         "request_x",
         "response_map_x"
@@ -2299,7 +2427,7 @@
     },
     {
       "signature": "public MetadataService.IReadResult readMetadata(String type_x,String[] fullNames) {",
-      "lines": "13555-13576",
+      "lines": "13581-13602",
       "variables_in_scope": [
         "request_x",
         "response_map_x"

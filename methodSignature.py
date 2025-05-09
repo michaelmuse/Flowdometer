@@ -85,9 +85,9 @@ methods_to_search = ['preparingResponse', 'parseRecordsToFlow', 'getQueryModifie
 # List of Apex test class paths
 apex_test_class_paths = [
     os.path.join("force-app", "main", "default", "classes", "controllers", "ListenerFlowController.cls"),
-    os.path.join("force-app", "main", "default", "classes", "controllers", "ListenerFlowControllerTest.cls"),
-    os.path.join("force-app", "main", "default", "classes", "controllers", "TestDataFactory.cls"),
-    os.path.join("force-app", "main", "default", "classes", "controllers", "MetadataService.cls")
+    os.path.join("force-app", "main", "default", "classes", "controllers", "tests", "ListenerFlowControllerTest.cls"),
+    os.path.join("force-app", "main", "default", "classes", "factories", "TestDataFactory.cls"),
+    os.path.join("force-app", "apex-mdapi", "classes", "MetadataService.cls")
 ]
 
 final_output = {}
