@@ -142,9 +142,10 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
                 ": Listener"
         );
         try {
-            if (!this.selectedSObject || !this.selectedField || !this.type) {
+            // Require only Object and Field to Track; Type is optional
+            if (!this.selectedSObject || !this.selectedField) {
                 this.isLoading = false;
-                throw new Error('Please select an object, a field to track, and a type field.');
+                throw new Error('Please select an object and a field to track.');
             }
 
             this.fieldHistoryStatus = await checkFieldHistoryStatus({
