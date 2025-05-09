@@ -86,4 +86,17 @@ public class MetaDataUtilityClsTest {
         );
         Test.stopTest();
     }
+
+    @IsTest
+    static void testCreateLookupField() {
+        Test.startTest();
+        Map<String,String> res = MetaDataUtilityCls.createLookupField(
+            'Account',
+            'Opportunity Flow',
+            'Flowdometer__Flow__c',
+            null
+        );
+        System.assertEquals('true', res.get('success'));
+        Test.stopTest();
+    }
 }

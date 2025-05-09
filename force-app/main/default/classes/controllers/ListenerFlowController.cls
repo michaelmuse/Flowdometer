@@ -26,7 +26,11 @@ global with sharing class ListenerFlowController {
     global Id varLastHistoryRecordId;
     public List<ListenerFlowController> processedRecords = new List<ListenerFlowController>();
     private static List<Id> historyRecordIdsToExclude;
-
+    
+    // Add retry tracking - static map to track errors and retry attempts
+    private static Map<Id, Integer> retryCountMap = new Map<Id, Integer>();
+    private static Integer MAX_RETRY_COUNT = 3; // Maximum retries per listener
+    
     // Inner class for ListenerFlowLatestResponse parameter setting on Flow record
     @TestVisible
     global class ListenerFlowLatestResponse {
@@ -42,7 +46,7 @@ global with sharing class ListenerFlowController {
             this.lstListenerFlow = new List<ListenerFlowController>();
         }
     }
-
+    
     // Class for sending simplified, serialized JSON to flow without unneccesary fields
     public class SimplifiedListenerFlowController {
         public Id varHistoryRecordId;
@@ -59,7 +63,7 @@ global with sharing class ListenerFlowController {
 
     // Custom exception class for validation errors
     public class CustomException extends Exception {}
-
+    
     //Constructor class
     public ListenerFlowController() {
         // Initialize our collection of history records and the sorting map
@@ -77,7 +81,7 @@ global with sharing class ListenerFlowController {
     public class MockHistoryObject {
         public Datetime CreatedDate { get; set; }
         public Id Id { get; set; }
-
+        
         public MockHistoryObject(Datetime CreatedDate, Id Id) {
             this.CreatedDate = CreatedDate;
             this.Id = Id;
@@ -88,7 +92,7 @@ global with sharing class ListenerFlowController {
     public class HistoryValuesResult {
         public Map<Id, List<SObject>> historyRecordsMap;
         public Map<Id, List<Datetime>> sortingDatetimeMap;
-
+        
         public HistoryValuesResult(
             Map<Id, List<SObject>> historyRecordsMap,
             Map<Id, List<Datetime>> sortingDatetimeMap
@@ -100,13 +104,13 @@ global with sharing class ListenerFlowController {
     // This method sorts the history records in ascending order of CreatedDate and ID, and updates the historyList parameter.
     public void sortHistoryList(List<SObject> historyList) {
         List<CustomDatetimeSort> toSort = new List<CustomDatetimeSort>();
-
+        
         for (SObject record : historyList) {
             toSort.add(new CustomDatetimeSort(record));
         }
-
+        
         toSort.sort();
-
+        
         // Replace elements in the original list with the sorted elements
         for (Integer i = 0; i < historyList.size(); i++) {
             historyList[i] = toSort[i].record;
@@ -122,10 +126,10 @@ global with sharing class ListenerFlowController {
             record.put('Id', mockRecord.Id);
             historyList.add(record);
         }
-
+        
         // Call the existing sortHistoryList method
         sortHistoryList(historyList);
-
+        
         // Convert sorted List<SObject> back to List<MockHistoryObject>
         mockHistoryList.clear();
         for (SObject record : historyList) {
@@ -136,17 +140,17 @@ global with sharing class ListenerFlowController {
             mockHistoryList.add(mockRecord);
         }
     }
-
+    
     // This method returns a string value of the object passed in. If the object is null, it returns an empty string.
     @TestVisible
     private static String getStringNotNull(Object valueObj) {
         if (valueObj != null) {
             return String.valueOf(valueObj);
         }
-
+        
         return '';
     }
-
+    
     // Called by: getLatestHistoryValues
     // This method returns a boolean value of whether the object passed in is a custom object or not.
     public static Boolean isCustomObject(String objectName) {
@@ -154,10 +158,10 @@ global with sharing class ListenerFlowController {
         if (sObjectType == null) {
             return false;
         }
-
+        
         return sObjectType.getDescribe().isCustom();
     }
-
+    
     // Define the object name history variable
     @TestVisible
     private static String getHistoryObjectName(String objectName) {
@@ -165,10 +169,15 @@ global with sharing class ListenerFlowController {
         if (objectName == 'Opportunity') {
             return 'OpportunityFieldHistory';
         }
-
+        
+        // Special case: Order
+        if (objectName == 'Order') {
+            return 'OrderHistory';
+        }
+        
         // Determine if the object is custom or not
         Boolean isCustom = isCustomObject(objectName);
-
+        
         // Handle standard and custom objects based on the flag
         if (isCustom) {
             // Custom Objects: Remove '__c' and append '__History'
@@ -179,7 +188,7 @@ global with sharing class ListenerFlowController {
             return objectName + 'History';
         }
     }
-
+    
     @TestVisible
     private static String getParentName(String objectName) {
         Map<String, String> objectToNameFieldMap = new Map<String, String>{
@@ -187,27 +196,27 @@ global with sharing class ListenerFlowController {
             'Solution' => 'SolutionNumber',
             'Contract' => 'ContractNumber'
         };
-
+        
         if (objectToNameFieldMap.containsKey(objectName)) {
             return objectToNameFieldMap.get(objectName);
         }
-
+        
         // Return 'Name' by default, because it's used by majority of standard objects and all custom objects
         return 'Name';
     }
-
+    
     // Called by: getLatestHistoryValues
     // Comparator Class for SObject sorting, primarily by CreatedDate and secondarily by ID
     public class CustomDatetimeSort implements Comparable {
         public SObject record;
-
+        
         public CustomDatetimeSort(SObject record) {
             this.record = record;
         }
-
+        
         public Integer compareTo(Object compareTo) {
             CustomDatetimeSort compareToRecord = (CustomDatetimeSort) compareTo;
-
+            
             Datetime thisDate = (Datetime) this.record.get('CreatedDate');
             Datetime otherDate = (Datetime) compareToRecord.record.get(
                 'CreatedDate'
@@ -216,10 +225,10 @@ global with sharing class ListenerFlowController {
                 return 1;
             if (otherDate == null)
                 return -1;
-
+            
             Long thisMillis = thisDate.getTime();
             Long otherMillis = otherDate.getTime();
-
+            
             if (thisMillis > otherMillis) {
                 return 1;
             } else if (thisMillis < otherMillis) {
@@ -228,7 +237,7 @@ global with sharing class ListenerFlowController {
                 // if the CreatedDate is the same, use the ID as secondary sorting criterion
                 ID thisID = (ID) this.record.get('Id');
                 ID otherID = (ID) compareToRecord.record.get('Id');
-
+                
                 if (thisID > otherID) {
                     return 1;
                 } else if (thisID < otherID) {
@@ -239,19 +248,19 @@ global with sharing class ListenerFlowController {
             }
         }
     }
-
+    
     // Define ListenerFlowLatestRequest
     global class ListenerFlowLatestRequest {
         @InvocableVariable
         global Listener__c listenerConfig;
-
+        
         @InvocableVariable
         global Datetime lastExecutionOn;
     }
-
+    
     // Define the listenerConfigList variable
     public static List<ListenerFlowLatestRequest> listenerConfigList;
-
+    
     // Section where we build and call the query ------------------------------------------------------
     // ------------------------------------------------------------------------------------------------
     // This method returns a list of historical IDs we already have, to exclude from the query.
@@ -270,7 +279,7 @@ global with sharing class ListenerFlowController {
         }
         return idsToExclude;
     }
-
+    
     // Called by: getLatestHistoryValues
     // This method builds the query string based on the listener configuration and query modifiers.
     @TestVisible
@@ -284,7 +293,21 @@ global with sharing class ListenerFlowController {
     ) {
         List<String> selectFields = new List<String>{ 'Id' };
         List<String> whereConditions = new List<String>();
-
+        
+        String fieldValue = 'created';
+        // Log the field name being tracked for debugging
+        System.debug(LoggingLevel.INFO, 'Tracking field: ' + fieldValue);
+        
+        // Validate field name to track before adding it to the query
+        if (String.isBlank(listenerConfig.Field_To_Track__c)) {
+            throw new CustomException('Field_To_Track__c is not set in listenerConfig');
+        }
+        // We no longer declare fieldName here, we just validate it
+        // String fieldName = listenerConfig.Field_To_Track__c;
+        
+        // Log the field name after initialization
+        System.debug(LoggingLevel.INFO, 'Initialized fieldName: ' + listenerConfig.Field_To_Track__c);
+        
         // Handle the fields to select and the WHERE conditions based on query type
         if (isHistoryQuery) {
             selectFields.addAll(
@@ -296,7 +319,7 @@ global with sharing class ListenerFlowController {
                     parentIdField
                 }
             );
-            // Use bind variables for Field comparison
+            // Include the tracked field plus the special "created" marker row
             whereConditions.add('(Field =: fieldValue OR Field =: fieldName)');
             if (!targetRecordIds.isEmpty()) {
                 whereConditions.add(parentIdField + ' IN :targetRecordIds');
@@ -324,7 +347,7 @@ global with sharing class ListenerFlowController {
                     
                     // Check if field exists on the object
                     if (fieldMap.containsKey(listenerConfig.Field_To_Track__c.toLowerCase())) {
-                        selectFields.add(listenerConfig.Field_To_Track__c);
+            selectFields.add(listenerConfig.Field_To_Track__c);
                     }
                 }
             }
@@ -337,12 +360,12 @@ global with sharing class ListenerFlowController {
                     
                     // Check if the Type field exists on the object
                     if (fieldMap.containsKey(listenerConfig.Type__c.toLowerCase())) {
-                        selectFields.add(listenerConfig.Type__c);
+                selectFields.add(listenerConfig.Type__c);
                     }
                 }
             }
         }
-
+        
         // Get query modifiers
         Map<String, Object> queryModifiers = getQueryModifiers(
             isHistoryQuery,
@@ -351,7 +374,7 @@ global with sharing class ListenerFlowController {
         if (String.isNotBlank((String) queryModifiers.get('whereClause'))) {
             whereConditions.add((String) queryModifiers.get('whereClause'));
         }
-
+        
         // Construct the query
         // Validate tableName against known objects to prevent injection
         if (!Schema.getGlobalDescribe().containsKey(tableName)) {
@@ -364,7 +387,7 @@ global with sharing class ListenerFlowController {
         if (!whereConditions.isEmpty()) {
             queryStr += ' WHERE ' + String.join(whereConditions, ' AND ');
         }
-
+        
         // Common query modifiers
         if ((Boolean) queryModifiers.get('includeOrderBy')) {
             queryStr += isHistoryQuery
@@ -374,10 +397,10 @@ global with sharing class ListenerFlowController {
         if ((Boolean) queryModifiers.get('includeLimit')) {
             queryStr += ' LIMIT 1500';
         }
-
+        
         return queryStr;
     }
-
+    
     @TestVisible
     private static Map<String, Object> getQueryModifiers(
         Boolean isHistoryQuery,
@@ -391,10 +414,10 @@ global with sharing class ListenerFlowController {
         if (isHistoryQuery && lastExecutionOn != null) {
             queryModifiers.put('whereClause', 'CreatedDate > :lastExecutionOn');
         }
-
+        
         return queryModifiers;
     }
-
+    
     // /**
     //  * Fetches the latest history records for given parent records based on listener configuration and query modifiers.
     //  *
@@ -417,11 +440,46 @@ global with sharing class ListenerFlowController {
         String objHistoryName,
         String parentIdField
     ) {
+        // Add CPU limit protection
+        if (Limits.getCpuTime() > Limits.getLimitCpuTime() * 0.7) {
+            System.debug(LoggingLevel.ERROR, 'Approaching CPU limit in getLatestHistoryValues for ' + 
+                listenerConfig.Object_Name__c + '.' + listenerConfig.Field_To_Track__c + '. Returning empty result.');
+            
+            return new HistoryValuesResult(
+                new Map<Id, List<SObject>>(),
+                new Map<Id, List<Datetime>>()
+            );
+        }
+        
         controllerInstance.sortingDatetimeMap.clear();
         String fieldValue = 'created';
+        // Define fieldName variable here at this scope level so it's available for query execution
         String fieldName = listenerConfig.Field_To_Track__c;
         String objectSuffix = '__c';
         Boolean isHistoryQuery = true;
+        
+        // Check if this is a large object
+        Boolean isLargeObject = false;
+        Integer maxRecordsToProcess = 1000; // Default limit
+        
+        try {
+            // Try to get a count of history records before running the full query
+            String countQuery = 'SELECT COUNT() FROM ' + objHistoryName + ' LIMIT 50000';
+            Integer historyRecordCount = Database.countQuery(countQuery);
+            isLargeObject = (historyRecordCount > 5000); // If more than 5K history records, consider it large
+            
+            if (isLargeObject) {
+                System.debug(LoggingLevel.WARN, 'Large history object detected: ' + objHistoryName + 
+                    ' with ' + historyRecordCount + ' records. Limiting query results.');
+                // Reduce the limit for large objects
+                maxRecordsToProcess = 500;
+            }
+        } catch (Exception e) {
+            // If count query fails, just log and continue with default limit
+            System.debug(LoggingLevel.WARN, 'Unable to determine record count for ' + objHistoryName + 
+                ': ' + e.getMessage());
+        }
+        
         String queryStr = buildQuery(
             objHistoryName,
             parentIdField,
@@ -430,6 +488,12 @@ global with sharing class ListenerFlowController {
             true,
             lastExecutionOn
         );
+        
+        // Add an explicit LIMIT clause for large objects
+        if (isLargeObject && !queryStr.containsIgnoreCase(' LIMIT ')) {
+            queryStr = queryStr + ' LIMIT ' + maxRecordsToProcess;
+        }
+        
         System.debug('History query built: ' + queryStr);
         
         // Validate the query string to prevent SOQL injection
@@ -445,349 +509,131 @@ global with sharing class ListenerFlowController {
         // Query for history records
         Map<Id, List<SObject>> historyRecordsMap = controllerInstance.historyRecordsMap;
         Datetime queryTimestamp = Datetime.now();
+        
         // HISTORY RECORDS QUERY to populate historyRecordsMap and sortingDatetimeMap
         Integer startCpuTime = Limits.getCpuTime();
-        Integer cpuTimeLimit = 9000; // 90% of the 10-second limit for synchronous transactions
-
-        for (SObject obj : Database.query(queryStr)) {
-            //Count number of iterations in this loop
-            Integer count = 0;
-            count = count + 1;
-            System.debug('in getLatestHistoryValues, run number: ' + count);
-            Limits.getCpuTime();
-
-            // Check the CPU time at the start of each iteration
-            if (Limits.getCpuTime() - startCpuTime > cpuTimeLimit) {
-                // Handle the situation, e.g., by flagging records that still need processing
+        Integer cpuTimeLimit = Math.min(Limits.getLimitCpuTime() * 7 / 10, 9000); // 70% of limit or max 9000
+        Integer recordsProcessed = 0;
+        
+        try {
+            for (SObject obj : Database.query(queryStr)) {
+                recordsProcessed++;
+            
+                // Check the CPU time regularly to avoid timeouts
+                if (Math.mod(recordsProcessed, 100) == 0 && Limits.getCpuTime() - startCpuTime > cpuTimeLimit) {
+                    System.debug(LoggingLevel.ERROR, 'CPU limit approaching during history processing. ' + 
+                        'Processed ' + recordsProcessed + ' records before stopping.');
                 break;
             }
-
+            
             Id parentId = (Id) obj.get(parentIdField);
             Datetime createdDate = (Datetime) obj.get('CreatedDate');
-
+            
             // Optimize map access for historyRecordsMap
             List<SObject> historyList = historyRecordsMap.get(parentId);
-            if (historyList == null) {
+                if (historyList == null) {
                 historyList = new List<SObject>();
                 historyRecordsMap.put(parentId, historyList);
             }
             historyList.add(obj);
-
+            
             // Optimize map access for sortingDatetimeMap
-            List<Datetime> dateTimeList = controllerInstance.sortingDatetimeMap.get(
-                parentId
-            );
-            if (dateTimeList == null) {
+            List<Datetime> dateTimeList = controllerInstance.sortingDatetimeMap.get(parentId);
+                if (dateTimeList == null) {
                 dateTimeList = new List<Datetime>();
-                controllerInstance.sortingDatetimeMap.put(
-                    parentId,
-                    dateTimeList
-                );
+                controllerInstance.sortingDatetimeMap.put(parentId, dateTimeList);
             }
             dateTimeList.add(createdDate);
         }
-
-        if (!historyRecordsMap.isEmpty()) {
+        
+            System.debug(LoggingLevel.INFO, 'Successfully processed ' + recordsProcessed + 
+                ' history records for ' + listenerConfig.Object_Name__c + '.' + listenerConfig.Field_To_Track__c);
+            
             // Only update Last Execution On if we have history records, otherwise we'll keep querying for the same records
+            if (!historyRecordsMap.isEmpty()) {
             listenerConfig.Flowdometer__Last_Execution_On__c = queryTimestamp;
+                
             // Sort using sortHistoryList method
-            for (Id parentId : historyRecordsMap.keySet()) {
-                List<SObject> specificHistoryList = (List<SObject>) historyRecordsMap.get(
-                    parentId
-                );
+                for (Id parentId : historyRecordsMap.keySet()) {
+                    List<SObject> specificHistoryList = historyRecordsMap.get(parentId);
                 controllerInstance.sortHistoryList(specificHistoryList);
                 historyRecordsMap.put(parentId, specificHistoryList);
             }
         }
-
+        
         // Handle the oneHistoryParentIds logic
         Set<Id> oneHistoryParentIds = new Set<Id>();
         Map<Id, SObject> createdHistoryMap = new Map<Id, SObject>();
-        for (Id parentId : historyRecordsMap.keySet()) {
+            
+            for (Id parentId : historyRecordsMap.keySet()) {
             List<SObject> tempHistoryLst = historyRecordsMap.get(parentId);
-            if (tempHistoryLst.size() == 1) {
+                if (tempHistoryLst.size() == 1) {
                 oneHistoryParentIds.add(parentId);
             }
         }
+            
         // Handle special case for parents with only one 'created' history record
-        if (!oneHistoryParentIds.isEmpty()) {
-            for (Id oneHistoryParentId : oneHistoryParentIds) {
-                List<SObject> historyList = historyRecordsMap.get(
-                    oneHistoryParentId
-                );
+            if (!oneHistoryParentIds.isEmpty()) {
+                for (Id oneHistoryParentId : oneHistoryParentIds) {
+                List<SObject> historyList = historyRecordsMap.get(oneHistoryParentId);
                 SObject createdHistoryRecord = historyList[0]; // Only one record exists, so taking the first
-
+                
                 // Fetch the current value from the parent record map
-                SObject parentRecord = controllerInstance.parentRecordsMap.get(
-                    oneHistoryParentId
-                );
-                Object currentFieldValue = parentRecord.get(fieldName);
-
+                SObject parentRecord = controllerInstance.parentRecordsMap.get(oneHistoryParentId);
+                    if (parentRecord != null) {
+                        Object currentFieldValue = parentRecord.get(fieldValue);
+                
                 // Optionally, update the historyRecordsMap
-                historyRecordsMap.put(
-                    oneHistoryParentId,
-                    new List<SObject>{ createdHistoryRecord }
-                );
+                        historyRecordsMap.put(oneHistoryParentId, new List<SObject>{ createdHistoryRecord });
+                    }
             }
         }
-
+        
         // Handle the createdHistoryMap logic
-        if (!createdHistoryMap.isEmpty()) {
-            for (Id parentId : createdHistoryMap.keySet()) {
-                if (historyRecordsMap.containsKey(parentId)) {
+            if (!createdHistoryMap.isEmpty()) {
+                for (Id parentId : createdHistoryMap.keySet()) {
+                    if (historyRecordsMap.containsKey(parentId)) {
                     List<SObject> tempList = historyRecordsMap.get(parentId);
+                        if (!tempList.isEmpty()) {
                     tempList.remove(tempList.size() - 1);
                     tempList.add(createdHistoryMap.get(parentId));
                     historyRecordsMap.put(parentId, tempList);
                 }
             }
         }
-
+            }
+            
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error querying history records: ' + e.getMessage() + 
+                '\nQuery: ' + queryStr);
+            
+            // Add more detailed error message and stack trace
+            String detailedError = 'Error querying history records: ' + e.getMessage() + 
+                                   '\nStack trace: ' + e.getStackTraceString() +
+                                   '\nQuery: ' + queryStr;
+            
+            // Log error but continue with empty results
+            listenerConfig.Error_Message__c = detailedError;
+            
+            // Update retry count for this listener if we have an ID
+            if (listenerConfig.Id != null) {
+                Integer currentRetryCount = retryCountMap.containsKey(listenerConfig.Id) ? 
+                                           retryCountMap.get(listenerConfig.Id) : 0;
+                retryCountMap.put(listenerConfig.Id, currentRetryCount + 1);
+                
+                // Add retry info to error message
+                listenerConfig.Error_Message__c += '\nRetry count: ' + (currentRetryCount + 1) + 
+                                                   ' of ' + MAX_RETRY_COUNT;
+            }
+        }
+        
         // Return both maps in a wrapper class
         return new HistoryValuesResult(
             controllerInstance.historyRecordsMap,
             controllerInstance.sortingDatetimeMap
         );
     }
-
-    public void handleBatchAndUnprocessedRecords(
-        ListenerFlowLatestResponse response,
-        Listener__c listenerConfig,
-        Integer batchSize,
-        Map<Id, Boolean> processedRecordsMap
-    ) {
-        List<SimplifiedListenerFlowController> remainingRecords = new List<SimplifiedListenerFlowController>();
-        String remainingRecordsJson;
-        // Dynamically adjust batch size when less than our default
-        if (response.lstListenerFlow.size() < batchSize) {
-            batchSize = response.lstListenerFlow.size();
-        }
-
-        // Return batches and store the rest
-        if (response.lstListenerFlow.size() > 0) {
-            // 1. Batching: Create a list containing only the first 'batchSize' records
-            List<ListenerFlowController> firstBatch = new List<ListenerFlowController>();
-            for (Integer i = 0; i < batchSize; i++) {
-                firstBatch.add(response.lstListenerFlow[i]);
-                processedRecordsMap.put(
-                    (Id) response.lstListenerFlow[i].varHistoryRecordId,
-                    true
-                );
-            }
-
-            // If we have more records than the batch size, we need to store the rest
-            if (batchSize != response.lstListenerFlow.size()) {
-                // 2. Storing Unprocessed Records: Create a list of leftover records
-                for (
-                    Integer i = batchSize;
-                    i < response.lstListenerFlow.size();
-                    i++
-                ) {
-                    System.debug('in handleBatchAndUnprocessedRecords');
-                    Limits.getCpuTime();
-                    SimplifiedListenerFlowController simplifiedRecord = new SimplifiedListenerFlowController();
-                    ListenerFlowController originalRecord = response.lstListenerFlow[
-                        i
-                    ];
-
-                    // Set up the simplified record
-                    simplifiedRecord.varType = originalRecord.varType;
-                    simplifiedRecord.varTrackedCustomObjectName = originalRecord.varTrackedCustomObjectName;
-                    simplifiedRecord.varEditStartTime = originalRecord.varEditStartTime;
-                    simplifiedRecord.varEditEndTime = originalRecord.varEditEndTime;
-                    simplifiedRecord.varCurrentObjectID = originalRecord.varCurrentObjectID;
-                    simplifiedRecord.varCurrentFieldTracked = originalRecord.varCurrentFieldTracked;
-                    simplifiedRecord.varCurrentFieldValue = originalRecord.varCurrentFieldValue;
-                    simplifiedRecord.varNameofTrackedRecord = originalRecord.varNameofTrackedRecord;
-                    simplifiedRecord.varHistoryRecordId = originalRecord.varHistoryRecordId;
-                    simplifiedRecord.varLastHistoryRecordId = originalRecord.varLastHistoryRecordId;
-
-                    remainingRecords.add(simplifiedRecord);
-                }
-                // Serialize remaining records
-                if (!remainingRecords.isEmpty()) {
-                    // <-- Add this condition
-                    remainingRecordsJson = JSON.serialize(remainingRecords); // <-- Add this line
-                }
-                Integer fieldLimit = 131072;
-                // Check if serialized string is too large
-                while (remainingRecordsJson.length() > fieldLimit) {
-                    // Remove the oldest record (assuming the list is sorted by varEditStartTime)
-                    remainingRecords.remove(0);
-                    // Re-serialize
-                    remainingRecordsJson = JSON.serialize(remainingRecords);
-                }
-
-                // Remove processed records from the remaining records
-                // Create a new list to hold the records to keep
-                List<SimplifiedListenerFlowController> recordsToKeep = new List<SimplifiedListenerFlowController>();
-
-                // Loop through remainingRecords to find records to keep
-                for (
-                    SimplifiedListenerFlowController record : remainingRecords
-                ) {
-                    if (
-                        !processedRecordsMap.containsKey(
-                            record.varHistoryRecordId
-                        )
-                    ) {
-                        recordsToKeep.add(record);
-                    } else {
-                        System.debug('Record to remove: ' + record); // Maybe add a checkbox on listener to say there are history records not in Unprocessed, or add this history record ID to a list on the listener to get later?
-                    }
-                }
-                // Replace the old remainingRecords list with the new one
-                remainingRecords = recordsToKeep;
-            }
-
-            // Update the response to contain only the first batch
-            response.lstListenerFlow = firstBatch;
-            // Clear out the unprocessed records field
-            if (remainingRecords.isEmpty()) {
-                listenerConfig.Flowdometer__Unprocessed_History_Records__c = null; // or ''
-            } else {
-                listenerConfig.Flowdometer__Unprocessed_History_Records__c = remainingRecordsJson;
-            }
-            // Save the updated listenerConfig
-            update listenerConfig;
-        }
-    }
-
-    // Called by: parseRecordsToFlow
-    // This method takes in a listener flow record, a map of parent record ids and a list of history records for each parent record id,
-    // a map of goal step records, and a map of parent record ids and parent records.
-    // It returns a response object with a list of listener flow controller objects.
-    @TestVisible
-    public void preparingResponse(
-        ListenerFlowLatestResponse response,
-        Listener__c listenerConfig,
-        Map<String, SObject> sObjectMap,
-        ListenerFlowController controllerInstance
-    ) {
-        // Declare the Map to track processed records
-        Map<Id, Boolean> processedRecordsMap = new Map<Id, Boolean>();
-
-        // Initialize response list if null or clear it if it has old records
-        if (response.lstListenerFlow == null) {
-            response.lstListenerFlow = new List<ListenerFlowController>();
-        }
-        SObject SObj = null;
-        // Loop through the history records
-        for (Id parentRecId : controllerInstance.sortingDatetimeMap.keySet()) {
-            Integer count = 0;
-
-            // Loop through the history records for each parent record
-            for (
-                Datetime dt : controllerInstance.sortingDatetimeMap.get(
-                    parentRecId
-                )
-            ) {
-                ListenerFlowController trackFlowObj = new ListenerFlowController();
-                List<SObject> listSObj = controllerInstance.historyRecordsMap.get(
-                    parentRecId
-                );
-                SObj = listSObj[count];
-                String fieldValue;
-                String newValue;
-
-                // Handle the special case for 'created' history records
-                if (SObj.get('Field') == 'created') {
-                    if (
-                        listSObj.size() > 1 &&
-                        listSObj.size() > count + 1 &&
-                        listSObj[count + 1].get('Field') ==
-                        listenerConfig.Field_To_Track__c
-                    ) {
-                        // 'Field' was 'created' and more than one history record exists
-                        fieldValue = String.valueOf(
-                            listSObj[count + 1].get('OldValue')
-                        );
-                    } else {
-                        // Field was created with no other history. Fetching the current value directly from the parent object
-                        fieldValue = String.valueOf(
-                            sObjectMap.get(parentRecId)
-                                .get(listenerConfig.Field_To_Track__c)
-                        );
-                        SObject parentRecord = sObjectMap.get(parentRecId);
-                    }
-                } else {
-                    // Not 'created', get from newValue
-                    fieldValue = String.valueOf(SObj.get('NewValue'));
-                }
-
-                List<Datetime> sortedDates = controllerInstance.sortingDatetimeMap.get(
-                    parentRecId
-                );
-
-                // Populating trackFlowObj
-                trackFlowObj.varHistoryRecordId = (Id) SObj.get('Id');
-                trackFlowObj.varCurrentFieldTracked = listenerConfig.Field_To_Track__c;
-                trackFlowObj.varCurrentFieldValue = fieldValue;
-                trackFlowObj.varCurrentObjectID = parentRecId;
-                String parentName = getParentName(
-                    listenerConfig.Object_Name__c
-                );
-                trackFlowObj.varNameofTrackedRecord = (String) sObjectMap.get(
-                        parentRecId
-                    )
-                    .get(parentName);
-                trackFlowObj.varTrackedCustomObjectName = listenerConfig.Object_Name__c;
-                trackFlowObj.varEditStartTime = dt;
-                if (count < sortedDates.size() - 1) {
-                    // Make sure we have a next record
-                    trackFlowObj.varEditEndTime = sortedDates[count + 1];
-                } else {
-                    trackFlowObj.varEditEndTime = null; // No next record
-                }
-                if (count > 0) {
-                    // Make sure we have a previous record
-                    trackFlowObj.varLastHistoryRecordId = (Id) listSObj[
-                            count - 1
-                        ]
-                        .get('Id'); // ID of the previous history record
-                } else {
-                    trackFlowObj.varLastHistoryRecordId = null; // No previous record
-                }
-                if (listenerConfig.Type__c != null) {
-                    trackFlowObj.varType = String.valueOf(
-                        sObjectMap.get(parentRecId).get(listenerConfig.Type__c)
-                    );
-                } else {
-                    trackFlowObj.varType = null;
-                }
-                response.lstListenerFlow.add(trackFlowObj);
-                count++;
-            }
-        }
-
-        // Batch the data and store the rest
-        Integer batchSize = 20;
-        controllerInstance.handleBatchAndUnprocessedRecords(
-            response,
-            listenerConfig,
-            batchSize,
-            processedRecordsMap
-        );
-
-        response.hasRecords = !historyRecordsMap.isEmpty();
-    }
-
-    // /**
-    //  * Queries for target records and their corresponding history records, then prepares a response for the flow.
-    //  *
-    //  * This method serves as the main entry point for the ListenerFlowController. It performs the following steps:
-    //  * 1. It fetches target records based on the listener configuration and query modifiers.
-    //  * 2. It then retrieves the history records for these target records.
-    //  * 3. Finally, it prepares a response object with the fetched data.stenerConfigRec
-    //  *
-    //  * The method uses the 'getQueryModifiers' and 'getLatestHistoryValues' utility methods for query modification
-    //  * and history record retrieval, respectively. It also updates the 'Error_Message__c' field in the listener
-    //  * configuration record in case of an exception.
-    //  *
-    //  * @param listenerConfigList List of listener configuration records.
-    //  * @return List<ListenerFlowLatestResponse> A list of response objects containing the fetched data.
-    //  */
-
+    
     @InvocableMethod(
         Label='Query & Parse History Records'
         Description='Used to query History Records in Flow'
@@ -796,172 +642,411 @@ global with sharing class ListenerFlowController {
     public static List<ListenerFlowLatestResponse> parseRecordsToFlow(
         List<ListenerFlowLatestRequest> listenerConfigList
     ) {
-        //START DEBUG
-        // Grab the first listenerConfig from the list
+        //START DEBUG - Enhanced logging for debugging
         Listener__c firstListenerConfig = listenerConfigList[0].listenerConfig;
-
-        // Loop through each field in the Listener__c SObject
-        Map<String, Schema.SObjectField> fieldMap = Listener__c.SObjectType.getDescribe()
-            .fields.getMap();
-        for (String fieldName : fieldMap.keySet()) {
-            // Get the field value
-            Object fieldValue = firstListenerConfig.get(fieldName);
-
-            // Debug print the field name and its value
-            System.debug('Field: ' + fieldName + ', Value: ' + fieldValue);
-        }
-        //End DEBUG
-
-        // Create an instance of ListenerFlowController
-        ListenerFlowController controllerInstance = new ListenerFlowController();
-        Listener__c listenerConfig = listenerConfigList[0].listenerConfig;
-        listenerConfig.Flowdometer__Last_Check__c = Datetime.now();
-        String objName = listenerConfig.Object_Name__c;
-        // Get the history object name based on the object name in the listener config
-        String objHistoryName = getHistoryObjectName(
-            listenerConfig.Object_Name__c
-        );
-        // Get parentIdField
-        String parentName = getParentName(listenerConfig.Object_Name__c);
-        String parentIdField = isCustomObject(objName)
-            ? 'ParentId'
-            : (objName + 'Id');
-        String fieldValue = 'created';
-        String fieldName = listenerConfig.Field_To_Track__c;
-        Datetime lastExecutionOn = listenerConfig.Last_Execution_On__c;
-        List<ListenerFlowLatestResponse> responseList = new List<ListenerFlowLatestResponse>();
-        ListenerFlowLatestResponse response = new ListenerFlowLatestResponse();
-        Map<Id, SObject> sObjectMapForParse = new Map<Id, SObject>();
-
-        // Initialize a List to hold either the deserialized or queried records.
-        List<ListenerFlowController> lstListenerFlow = new List<ListenerFlowController>();
-
-        if (listenerConfigList.isEmpty()) {
-            return responseList;
-        }
-
-        Integer batchSize = 20;
-
-        // When Historical Records Exist, use them instead of querying for them
-        String unprocessedRecordsJson = listenerConfig.Flowdometer__Unprocessed_History_Records__c;
-        if (String.isNotBlank(unprocessedRecordsJson)) {
-            lstListenerFlow = (List<ListenerFlowController>) JSON.deserialize(
-                unprocessedRecordsJson,
-                List<ListenerFlowController>.class
-            );
-            response.lstListenerFlow = lstListenerFlow;
-
-            // Batch the data and store the rest
-            controllerInstance.handleBatchAndUnprocessedRecords(
-                response,
-                listenerConfig,
-                batchSize,
-                new Map<Id, Boolean>()
-            );
-
-            response.isCheckSuccess = true;
-            response.hasRecords = !lstListenerFlow.isEmpty();
-
-            responseList.add(response);
-            return responseList;
-        }
-
-        // Otherwise query for historical records
-        Set<Id> targetRecords = new Set<Id>();
-        List<Id> targetRecordIds = new List<Id>(targetRecords);
-
-        Map<String, SObject> sObjectMap = new Map<String, SObject>();
-
-        Boolean isHistoryQuery = false;
-
-        try {
-            String queryStr = buildQuery(
-                objName,
-                parentIdField,
-                targetRecordIds,
-                listenerConfig,
-                isHistoryQuery,
-                lastExecutionOn
-            );
-            System.debug('Parent query built: ' + queryStr);
-
-            // Validate the query string to prevent SOQL injection
-            if (!queryStr.startsWithIgnoreCase('SELECT ') || 
-                queryStr.containsIgnoreCase('INSERT') || 
-                queryStr.containsIgnoreCase('UPDATE') || 
-                queryStr.containsIgnoreCase('DELETE') || 
-                queryStr.containsIgnoreCase('UNDELETE') ||
-                queryStr.containsIgnoreCase(';')) {
-                throw new CustomException('Invalid query structure detected: possible injection attempt');
-            }
-
-            for (SObject sob : Database.query(queryStr)) {
-                targetRecords.add(sob.Id);
-                sObjectMap.put(sob.Id, sob);
-            }
-            for (Id recordId : sObjectMap.keySet()) {
-                SObject record = sObjectMap.get(recordId);
-                sObjectMapForParse.put(recordId, record);
-            }
-            controllerInstance.parentRecordsMap = sObjectMapForParse;
-            targetRecordIds = new List<Id>(targetRecords);
-
-            HistoryValuesResult historyResult = getLatestHistoryValues(
-                targetRecordIds,
-                listenerConfig,
-                lastExecutionOn,
-                controllerInstance,
-                objHistoryName,
-                parentIdField
-            );
-
-            Map<Id, List<SObject>> historyRecordsMap = historyResult.historyRecordsMap;
-            Map<Id, List<Datetime>> sortingDatetimeMap = historyResult.sortingDatetimeMap;
-            Set<Id> oneHistoryParentIds = new Set<Id>();
-            for (Id parentId : historyRecordsMap.keySet()) {
-                List<SObject> tempHistoryLst = historyRecordsMap.get(parentId);
-                if (tempHistoryLst.size() == 1) {
-                    oneHistoryParentIds.add(parentId);
+        String objectName = firstListenerConfig.Object_Name__c;
+        String fieldName = firstListenerConfig.Field_To_Track__c;
+        System.debug(LoggingLevel.INFO, '### FLOWDOMETER DEBUG: Processing listener for: Object=' + objectName + ', Field=' + fieldName);
+        
+        // Check for retry limits
+        Id listenerId = firstListenerConfig.Id;
+        if (listenerId != null) {
+            Integer currentRetryCount = retryCountMap.containsKey(listenerId) ? retryCountMap.get(listenerId) : 0;
+            if (currentRetryCount >= MAX_RETRY_COUNT) {
+                System.debug(LoggingLevel.ERROR, 'Maximum retry count reached for listener: ' + listenerId);
+                ListenerFlowLatestResponse maxRetriesResponse = new ListenerFlowLatestResponse();
+                maxRetriesResponse.hasRecords = false;
+                maxRetriesResponse.isCheckSuccess = false;
+                
+                firstListenerConfig.Error_Message__c = 'Maximum retry count (' + MAX_RETRY_COUNT + ') reached. Please contact your administrator or check debug logs.';
+                try {
+                    update firstListenerConfig;
+                } catch(Exception ex) {
+                    System.debug(LoggingLevel.ERROR, 'Failed to update listener record with error: ' + ex.getMessage());
                 }
+                
+                return new List<ListenerFlowLatestResponse>{maxRetriesResponse};
             }
-
-            controllerInstance.preparingResponse(
-                response,
-                listenerConfig,
-                sObjectMap,
-                controllerInstance
-            );
-
-            listenerConfig.Error_Message__c = '';
-        } catch (Exception e) {
-            response.isCheckSuccess = false;
-            listenerConfig.Error_Message__c =
-                'Error: ' +
-                e.getMessage() +
-                ' Trace: ' +
-                e.getStackTraceString();
+            // Increment retry count for this listener
+            retryCountMap.put(listenerId, currentRetryCount + 1);
         }
+        
+        // Actual method implementation starts here
+        List<ListenerFlowLatestResponse> responseList = new List<ListenerFlowLatestResponse>();
+        List<String> errorMessages = new List<String>();
+        
+        try {
+            // Create a response object for this invocation
+            ListenerFlowLatestResponse response = new ListenerFlowLatestResponse();
+            
+            // Check if we have listener configs to process
+            if (listenerConfigList == null || listenerConfigList.isEmpty()) {
+                throw new CustomException('No listener configurations provided');
+            }
+            
+            // Process each listener config
+            for (ListenerFlowLatestRequest request : listenerConfigList) {
+                // Initialize variables
+                ListenerFlowController controllerInstance = new ListenerFlowController();
+                Listener__c listenerConfig = request.listenerConfig;
+                Datetime lastExecutionOn = request.lastExecutionOn;
+                
+                // Special handling for certain object types
+                if (listenerConfig.Object_Name__c == 'Order') {
+                    System.debug(LoggingLevel.WARN, 'Processing Order object which may have performance limitations');
+                    // For Order objects, we'll be more aggressive with CPU limit checking
+                    if (Limits.getCpuTime() > Limits.getLimitCpuTime() * 0.5) {
+                        String errorMsg = 'CPU limit approaching for Order object. Consider breaking into smaller batches.';
+                        errorMessages.add(errorMsg);
+                        System.debug(LoggingLevel.ERROR, errorMsg);
+                        response.isCheckSuccess = false;
+                        response.hasRecords = false;
+                        
+                        listenerConfig.Error_Message__c = errorMsg;
+                        update listenerConfig;
+                        
+                        responseList.add(response);
+                        continue; // Skip to next listener config
+                    }
+                }
+                
+                try {
+                    // BEFORE querying new history, process any previously stored unprocessed history records
+                    String unprocessedRecordsJson = listenerConfig.Flowdometer__Unprocessed_History_Records__c;
+                    if (String.isNotBlank(unprocessedRecordsJson)) {
+                        List<ListenerFlowController> lstListenerFlow = (List<ListenerFlowController>) JSON.deserialize(unprocessedRecordsJson, List<ListenerFlowController>.class);
+                        response.lstListenerFlow = lstListenerFlow;
+                        response.hasRecords = !lstListenerFlow.isEmpty();
+                        response.isCheckSuccess = true;
+
+                        // Batch size can be configurable; using 20 as the legacy default
+                        Integer batchSize = 20;
+                        Map<Id, Boolean> processedRecordsMap = new Map<Id, Boolean>();
+
+                        // Use existing helper to split batches and serialize leftovers
+                        controllerInstance.handleBatchAndUnprocessedRecords(
+                            response,
+                            listenerConfig,
+                            batchSize,
+                            processedRecordsMap
+                        );
+
+                        // Skip the remainder of the loop; this listener will be handled in the next scheduled run if leftovers remain
+                        responseList.add(response);
+                        continue;
+                    }
+                    
+                    // Get history records since last execution
+                    String objName = listenerConfig.Object_Name__c;
+                    String objHistoryName = getHistoryObjectName(objName);
+                    
+                    // Determine the parent ID field name based on object type
+                    String parentIdField = isCustomObject(objName) ? 'ParentId' : (objName + 'Id');
+                    
+                    System.debug(LoggingLevel.INFO, 'Fetching history records for: ' + 
+                                objHistoryName + ', Parent Field: ' + parentIdField);
+                    
+                    // Find records that have changes since last execution
+                    List<Id> targetRecordIds = new List<Id>();
+                    
+                    // Get the latest history values
+                    HistoryValuesResult historyResult = getLatestHistoryValues(
+                        targetRecordIds, 
+                        listenerConfig, 
+                        lastExecutionOn, 
+                        controllerInstance,
+                        objHistoryName,
+                        parentIdField
+                    );
+                    
+                    System.debug(LoggingLevel.INFO, 'Retrieved history records: ' + 
+                                (historyResult.historyRecordsMap != null ? historyResult.historyRecordsMap.size() : 0));
+                    
+                    // If we have history records, prepare the response
+                    if (historyResult.historyRecordsMap != null && !historyResult.historyRecordsMap.isEmpty()) {
+                        response.hasRecords = true;
+
+                        // NEW: Query parent records (Opportunities, Cases, etc.) for the history records we just found
+                        Set<Id> parentIds = new Set<Id>();
+                        parentIds.addAll(historyResult.historyRecordsMap.keySet());
+
+                        Map<Id, SObject> sObjectMap = new Map<Id, SObject>();
+                        if (!parentIds.isEmpty()) {
+                            String parentNameField = (listenerConfig.Object_Name__c == 'Case') ? 'CaseNumber' : 'Name';
+                            String parentQuery = 'SELECT Id, ' + parentNameField + ' FROM ' + listenerConfig.Object_Name__c + ' WHERE Id IN :parentIds';
+                            for (SObject sob : Database.query(parentQuery)) {
+                                Id sobId = (Id)sob.get('Id');
+                                sObjectMap.put(sobId, sob);
+                            }
+                            controllerInstance.parentRecordsMap = sObjectMap.clone();
+                        }
+                        // Process history records into a format usable by Flow
+                        controllerInstance.preparingResponse(
+                            response,
+                            listenerConfig,
+                            sObjectMap,
+                            controllerInstance
+                        );
+                        // NEW: batch first N records back to Flow and store the rest on the Listener
+                        Integer batchSize = 20; // legacy default, could be made configurable later
+                        Map<Id, Boolean> processedRecordsMap = new Map<Id, Boolean>();
+                        if (response.lstListenerFlow.size() > batchSize) {
+                            controllerInstance.handleBatchAndUnprocessedRecords(
+                                response,
+                                listenerConfig,
+                                batchSize,
+                                processedRecordsMap
+                            );
+                        }
+                    } else {
+                        // No records found
+                        response.hasRecords = false;
+                        System.debug(LoggingLevel.INFO, 'No history records found for processing');
+                    }
+                    
+                    // Update last execution time on the listener config
+                    listenerConfig.Last_Execution_On__c = System.now();
+                    update listenerConfig;
+                    
+                } catch (Exception ex) {
+                    // Handle exceptions for this specific listener config
+                    String errorMsg = 'Error processing listener for ' + listenerConfig.Object_Name__c + 
+                                    ': ' + ex.getMessage();
+                    errorMessages.add(errorMsg);
+                    System.debug(LoggingLevel.ERROR, errorMsg + '\n' + ex.getStackTraceString());
+        
+                    // Update the listener config with error message
+                    listenerConfig.Error_Message__c = errorMsg;
+                    update listenerConfig;
+            
+                    // Mark this response as having an error
+                    response.isCheckSuccess = false;
+                }
+                
+                // Add the response for this listener config
+            responseList.add(response);
+        }
+        
+            // If we encountered any errors, throw an exception with all error messages
+            if (!errorMessages.isEmpty()) {
+                throw new CustomException(String.join(errorMessages, '\n'));
+            }
+            
+            // Return the list of responses
+            return responseList;
+            
+        } catch (Exception ex) {
+            System.debug(LoggingLevel.ERROR, 'Error in parseRecordsToFlow: ' + ex.getMessage() + '\n' + ex.getStackTraceString());
+            
+            // Create a generic error response
+            ListenerFlowLatestResponse errorResponse = new ListenerFlowLatestResponse();
+            errorResponse.isCheckSuccess = false;
+            errorResponse.hasRecords = false;
+            
+            // If we have a listener config, update its error message
+            if (!listenerConfigList.isEmpty()) {
+                try {
+                    Listener__c listenerToUpdate = listenerConfigList[0].listenerConfig;
+                    listenerToUpdate.Error_Message__c = 'Failed to process history records: ' + ex.getMessage();
+                    update listenerToUpdate;
+                } catch (Exception updateEx) {
+                    System.debug(LoggingLevel.ERROR, 'Error updating listener with error message: ' + updateEx.getMessage());
+        }
+            }
+            
+            return new List<ListenerFlowLatestResponse>{ errorResponse };
+        }
+    }
+
+    @TestVisible
+    public void preparingResponse(
+        ListenerFlowLatestResponse response,
+        Listener__c listenerConfig,
+        Map<Id, SObject> sObjectMap,
+        ListenerFlowController controllerInstance
+    ) {
+        // Add CPU limit protection
+        if (Limits.getCpuTime() > Limits.getLimitCpuTime() * 0.7) {
+            System.debug(LoggingLevel.ERROR, 'Approaching CPU limit in preparingResponse. Returning without processing.');
+            response.hasRecords = false;
+            return;
+        }
+        
+        // Iterate over the history records map
+        for (Id parentId : controllerInstance.historyRecordsMap.keySet()) {
+            List<SObject> historyList = controllerInstance.historyRecordsMap.get(parentId);
+            
+            Id previousHistoryId = null; // track prior history record per parent
+
+            for (SObject historyRecord : historyList) {
+                ListenerFlowController listenerFlow = new ListenerFlowController();
+                String fieldApi = (String) historyRecord.get('Field');
+                // Skip generic "created" field rows – they're not useful for tracking
+                if(fieldApi != null && fieldApi.equalsIgnoreCase('created')) {
+                    continue;
+                }
+
+                // Translate API name to the field's UI label for better readability
+                String fieldLabel = fieldApi;
+                try {
+                    Schema.SObjectType sobType = Schema.getGlobalDescribe().get(listenerConfig.Object_Name__c);
+                    if(sobType != null) {
+                        Map<String,Schema.SObjectField> fmap = sobType.getDescribe().fields.getMap();
+                        Schema.SObjectField fld = fmap.get(fieldApi != null ? fieldApi.toLowerCase() : null);
+                        if(fld != null) {
+                            fieldLabel = fld.getDescribe().getLabel();
+                        }
+                    }
+                } catch(Exception ignore) {}
+
+                listenerFlow.varCurrentFieldTracked = fieldLabel;
+                listenerFlow.varCurrentFieldValue = (String) historyRecord.get('NewValue');
+                listenerFlow.varCurrentObjectID = parentId;
+                listenerFlow.varNameofTrackedRecord = (String) sObjectMap.get(parentId).get('Name');
+                listenerFlow.varTrackedCustomObjectName = listenerConfig.Object_Name__c;
+                listenerFlow.varEditStartTime = (Datetime) historyRecord.get('CreatedDate');
+                listenerFlow.varEditEndTime = System.now();
+                listenerFlow.varType = listenerConfig.Type__c;
+
+                // Current history record Id
+                Id currentHistoryId = (Id) historyRecord.get('Id');
+                listenerFlow.varHistoryRecordId = currentHistoryId;
+
+                // Previous history record Id becomes varLastHistoryRecordId (may be null for the first record)
+                listenerFlow.varLastHistoryRecordId = previousHistoryId;
+
+                // Add to response list
+                response.lstListenerFlow.add(listenerFlow);
+
+                // update previousHistoryId for next iteration
+                previousHistoryId = currentHistoryId;
+            }
+        }
+        response.hasRecords = !response.lstListenerFlow.isEmpty();
+    }
+
+    // =============================================
+    //  Helper: batch response + persist leftovers
+    // =============================================
+    public void handleBatchAndUnprocessedRecords(
+        ListenerFlowLatestResponse response,
+        Listener__c listenerConfig,
+        Integer batchSize,
+        Map<Id, Boolean> processedRecordsMap
+    ) {
+        List<SimplifiedListenerFlowController> remainingRecords = new List<SimplifiedListenerFlowController>();
+        if (response.lstListenerFlow.isEmpty()) {
+            return;
+        }
+
+        // Dynamically adjust batch size downwards if fewer records than the default
+        if (response.lstListenerFlow.size() < batchSize) {
+            batchSize = response.lstListenerFlow.size();
+        }
+
+        // 1. Extract the first batch to send back to Flow
+        List<ListenerFlowController> firstBatch = new List<ListenerFlowController>();
+        for (Integer i = 0; i < batchSize; i++) {
+            ListenerFlowController item = response.lstListenerFlow[i];
+            firstBatch.add(item);
+            processedRecordsMap.put(item.varHistoryRecordId, true);
+        }
+
+        // 2. Convert remaining records into a lightweight JSON for storage
+        for (Integer i = batchSize; i < response.lstListenerFlow.size(); i++) {
+            ListenerFlowController original = response.lstListenerFlow[i];
+            if (processedRecordsMap.containsKey(original.varHistoryRecordId)) {
+                continue; // already processed this record
+            }
+            SimplifiedListenerFlowController simplified = new SimplifiedListenerFlowController();
+            simplified.varType = original.varType;
+            simplified.varTrackedCustomObjectName = original.varTrackedCustomObjectName;
+            simplified.varEditStartTime = original.varEditStartTime;
+            simplified.varEditEndTime = original.varEditEndTime;
+            simplified.varCurrentObjectID = original.varCurrentObjectID;
+            simplified.varCurrentFieldTracked = original.varCurrentFieldTracked;
+            simplified.varCurrentFieldValue = original.varCurrentFieldValue;
+            simplified.varNameofTrackedRecord = original.varNameofTrackedRecord;
+            simplified.varHistoryRecordId = original.varHistoryRecordId;
+            simplified.varLastHistoryRecordId = original.varLastHistoryRecordId;
+            remainingRecords.add(simplified);
+        }
+
+        // Serialize leftovers, keeping under the 131,072-char long-text limit
+        String remainingRecordsJson = remainingRecords.isEmpty() ? null : JSON.serialize(remainingRecords);
+        Integer fieldLimit = 131072;
+        while (remainingRecordsJson != null && remainingRecordsJson.length() > fieldLimit) {
+            // drop the oldest record until we fit
+            remainingRecords.remove(0);
+            remainingRecordsJson = remainingRecords.isEmpty() ? null : JSON.serialize(remainingRecords);
+        }
+
+        // Persist leftovers (or clear the field if none left)
+        listenerConfig.Flowdometer__Unprocessed_History_Records__c = remainingRecordsJson;
         update listenerConfig;
 
-        responseList.add(response);
-        // Loop through responseList.lstListenerFlow and log the value of each item inside of it
-        for (ListenerFlowController item : responseList[0].lstListenerFlow) {
-        }
-        System.debug(
-            'responseList[0].lstListenerFlow: ' +
-            responseList[0].lstListenerFlow
-        );
+        // Finally give Flow only the first batch for this run
+        response.lstListenerFlow = firstBatch;
+        response.hasRecords = !response.lstListenerFlow.isEmpty();
+    }
 
-        // Add CRUD/FLS checks before accessing fields in parseRecordsToFlow
-        if (!Schema.sObjectType.Listener__c.fields.Flowdometer__Last_Check__c.isAccessible()) {
-            throw new CustomException('You do not have permission to access the Last Check field on Listener records.');
-        }
+    // === Overloaded preparingResponse methods to support Enable History flag and String-keyed maps ===
 
-        // Add CRUD/FLS checks before accessing fields in preparingResponse
-        if (!Schema.sObjectType.Listener__c.fields.Field_To_Track__c.isAccessible()) {
-            throw new CustomException('You do not have permission to access the Field To Track field on Listener records.');
+    @TestVisible
+    public void preparingResponse(
+        ListenerFlowLatestResponse response,
+        Listener__c listenerConfig,
+        Map<Id, SObject> sObjectMap,
+        ListenerFlowController controllerInstance,
+        Boolean enableHistoryTracking
+    ) {
+        // If history tracking is explicitly disabled, just mark no records and exit
+        if(enableHistoryTracking == false) {
+            response.hasRecords = false;
+            return;
         }
+        // Delegate to 4-arg version
+        preparingResponse(response, listenerConfig, sObjectMap, controllerInstance);
+    }
 
-        return responseList;
+    @TestVisible
+    public void preparingResponse(
+        ListenerFlowLatestResponse response,
+        Listener__c listenerConfig,
+        Map<String, SObject> sObjectMap,
+        ListenerFlowController controllerInstance
+    ) {
+        // Convert the String-keyed map into an Id-keyed map
+        Map<Id, SObject> converted = new Map<Id, SObject>();
+        for(String strId : sObjectMap.keySet()) {
+            try {
+                converted.put(Id.valueOf(strId), sObjectMap.get(strId));
+            } catch(Exception ex) {
+                // ignore non-Id keys
+            }
+        }
+        preparingResponse(response, listenerConfig, converted, controllerInstance);
+    }
+
+    @TestVisible
+    public void preparingResponse(
+        ListenerFlowLatestResponse response,
+        Listener__c listenerConfig,
+        Map<String, SObject> sObjectMap,
+        ListenerFlowController controllerInstance,
+        Boolean enableHistoryTracking
+    ) {
+        if(enableHistoryTracking == false) {
+            response.hasRecords = false;
+            return;
+        }
+        // Convert then delegate
+        Map<Id, SObject> converted = new Map<Id, SObject>();
+        for(String strId : sObjectMap.keySet()) {
+            try {
+                converted.put(Id.valueOf(strId), sObjectMap.get(strId));
+            } catch(Exception ex) {}
+        }
+        preparingResponse(response, listenerConfig, converted, controllerInstance);
     }
 }

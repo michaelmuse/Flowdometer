@@ -60,14 +60,14 @@ global with sharing class CalculateBusinessHoursDiff {
                 // Check if business hours ID is valid
                 try {
                     Long diffInMinutes = BusinessHours.diff(
-                        pf.businessHoursId,
-                        pf.startDate,
-                        pf.endDate
-                    );
+                    pf.businessHoursId,
+                    pf.startDate,
+                    pf.endDate
+                );
                     
-                    resp.diffResult = diffInMinutes;
-                    resp.diffResultSec = diffInMinutes / 1000;
-                    resp.diffResultMin = diffInMinutes / 60000;
+                resp.diffResult = diffInMinutes;
+                resp.diffResultSec = diffInMinutes / 1000;
+                resp.diffResultMin = diffInMinutes / 60000;
                     resp.errorMessage = '';
                 } catch (Exception ex) {
                     resp.errorMessage = 'Error calculating business hours difference: ' + ex.getMessage();

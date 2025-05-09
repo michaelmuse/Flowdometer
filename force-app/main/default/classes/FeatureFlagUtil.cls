@@ -6,6 +6,7 @@ public with sharing class FeatureFlagUtil {
     public static final String FEATURE_RETRY_METADATA_OPERATIONS = 'RetryMetadataOperations';
     public static final String FEATURE_ENHANCED_ERROR_HANDLING = 'EnhancedErrorHandling';
     public static final String FEATURE_ADMIN_NOTIFICATIONS = 'AdminNotifications';
+    public static final String FEATURE_UNINSTALL_HELPER = 'UninstallHelper';
     
     // Initialize the cache
     static {

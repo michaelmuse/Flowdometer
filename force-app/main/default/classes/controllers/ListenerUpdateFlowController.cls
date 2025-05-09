@@ -51,7 +51,7 @@ global with sharing class ListenerUpdateFlowController {
                     try {
                         Schema.SObjectField field = Schema.sObjectType.Flowdometer__Flow__c.fields.getMap().get(fieldToUpdate);
                         if (field != null && field.getDescribe().isUpdateable()) {
-                            listenerFlow.put(fieldToUpdate, req.varCurrentObjectID);
+                    listenerFlow.put(fieldToUpdate, req.varCurrentObjectID);
                         } else {
                             System.debug(LoggingLevel.WARN, 'Field ' + fieldToUpdate + ' is not updateable');
                         }
@@ -63,7 +63,7 @@ global with sharing class ListenerUpdateFlowController {
                 // Check field-level security for Most_Recent_Step__c field
                 try {
                     if (Schema.sObjectType.Flowdometer__Flow__c.fields.Flowdometer__Most_Recent_Step__c.isUpdateable()) {
-                        listenerFlow.Flowdometer__Most_Recent_Step__c = req.currentStepId;
+                listenerFlow.Flowdometer__Most_Recent_Step__c = req.currentStepId;
                     }
                 } catch (Exception e) {
                     System.debug(LoggingLevel.ERROR, 'Error checking Most_Recent_Step__c permissions: ' + e.getMessage());

@@ -162,7 +162,7 @@ public with sharing class ListenerMasterConfigurationController {
         }
     }
 
-    @AuraEnabled(Cacheable=false)
+    @AuraEnabled
     public static String createListenerRecord(Listener__c newRecord) {
         try {
             // Input validation
@@ -178,6 +178,16 @@ public with sharing class ListenerMasterConfigurationController {
                 throw new AuraHandledException('Field To Track is required');
             }
             
+            // ENHANCED DEBUGGING: Log the object and field being tracked
+            System.debug(LoggingLevel.INFO, '### FLOWDOMETER: Creating listener for Object=' + 
+                        newRecord.Flowdometer__Object_Name__c + ', Field=' + 
+                        newRecord.Flowdometer__Field_To_Track__c);
+            
+            // Check if this is an Order object (which has caused issues)
+            if (newRecord.Flowdometer__Object_Name__c == 'Order') {
+                System.debug(LoggingLevel.WARN, '### FLOWDOMETER: Creating listener for Order object, which may have performance limitations');
+            }
+            
             // Check if permissions are sufficient before attempting insert
             if (!Schema.sObjectType.Flowdometer__Listener__c.isCreateable()) {
                 throw new AuraHandledException('You do not have permission to create Listener records.');
@@ -189,35 +199,123 @@ public with sharing class ListenerMasterConfigurationController {
                 throw new AuraHandledException('You do not have permission to access required fields on Listener records.');
             }
             
-            // Check if the object has reached its field limit
-            String objectName = newRecord.Flowdometer__Object_Name__c;
-            if (String.isNotBlank(objectName)) {
-                try {
-                    Map<String, Schema.SObjectField> fieldMap = Schema.getGlobalDescribe()
-                        .get(objectName)
-                        ?.getDescribe()
-                        .fields.getMap();
-                    
-                    if (fieldMap != null && fieldMap.size() >= 495) { // Buffer for the 500 field limit
-                        throw new AuraHandledException('The object ' + objectName + ' is approaching the field limit of 500 custom fields. This might prevent lookup field creation.');
-                    }
-                } catch (Exception fex) {
-                    // Log but don't block - this is just a warning check
-                    System.debug(LoggingLevel.WARN, 'Could not check field limits: ' + fex.getMessage());
-                }
+            // ENHANCED DEBUGGING: Verify CPU limits before proceeding with insert
+            if (Limits.getCpuTime() > Limits.getLimitCpuTime() * 0.7) {
+                String cpuLimitMsg = 'Warning: Approaching CPU limits when creating listener. Current usage: ' + 
+                                  Limits.getCpuTime() + '/' + Limits.getLimitCpuTime();
+                System.debug(LoggingLevel.WARN, cpuLimitMsg);
+                // Store warning in the error message field
+                newRecord.Flowdometer__Error_Message__c = cpuLimitMsg;
+            }
+            
+            // Check and log the history tracking status before record creation
+            String historyStatus = MetaDataUtilityCls.checkFieldHistoryStatus(
+                newRecord.Flowdometer__Object_Name__c,
+                newRecord.Flowdometer__Field_To_Track__c
+            );
+            
+            System.debug(LoggingLevel.INFO, '### FLOWDOMETER: History tracking status before insert: ' + historyStatus);
+            
+            // Log warning/error in error message field if applicable
+            if (historyStatus != null && (historyStatus.startsWith('ERROR:') || historyStatus.startsWith('WARNING:'))) {
+                newRecord.Flowdometer__Error_Message__c = historyStatus;
             }
             
             // Perform the insert operation
-            Database.SaveResult result = Database.insert(newRecord, false); // Using false to get errors instead of exceptions
-            if (result.isSuccess()) {
-                return newRecord.Id;
-            } else {
-                String errorMsg = 'Failed to create Listener record: ';
-                for (Database.Error err : result.getErrors()) {
-                    errorMsg += err.getMessage() + ' ';
+            insert newRecord;
+            
+            // After insertion, verify history tracking is enabled
+            Boolean isHistoryEnabled = false;
+            try {
+                isHistoryEnabled = MetaDataUtilityCls.checkIfHistoryIsEnabled(
+                    newRecord.Flowdometer__Object_Name__c,
+                    newRecord.Flowdometer__Field_To_Track__c
+                );
+                
+                System.debug(LoggingLevel.INFO, '### FLOWDOMETER DIAGNOSTIC: After Listener creation, history tracking enabled for ' + 
+                    newRecord.Flowdometer__Object_Name__c + '.' + newRecord.Flowdometer__Field_To_Track__c + ': ' + isHistoryEnabled);
+                
+                if (!isHistoryEnabled) {
+                    // History tracking failed, update the error message field
+                    String historyErrorMsg = 'Warning: History tracking could not be verified for ' + 
+                                          newRecord.Flowdometer__Object_Name__c + '.' + 
+                                          newRecord.Flowdometer__Field_To_Track__c;
+                    Listener__c listenerToUpdate = new Listener__c(
+                        Id = newRecord.Id,
+                        Flowdometer__Error_Message__c = historyErrorMsg
+                    );
+                    update listenerToUpdate;
+                    System.debug(LoggingLevel.WARN, historyErrorMsg);
                 }
-                throw new AuraHandledException(errorMsg);
+            } catch (Exception histEx) {
+                // Don't fail the overall operation if just the verification fails
+                String historyErrorMsg = 'Error verifying history tracking: ' + histEx.getMessage();
+                System.debug(LoggingLevel.ERROR, historyErrorMsg);
+                
+                // Update the listener record with the error message
+                Listener__c listenerToUpdate = new Listener__c(
+                    Id = newRecord.Id,
+                    Flowdometer__Error_Message__c = historyErrorMsg
+                );
+                update listenerToUpdate;
             }
+            
+            // --- Build friendly labels for lookup fields ----------------------
+            Schema.SObjectType trackedObjType = Schema.getGlobalDescribe().get(newRecord.Flowdometer__Object_Name__c);
+            String trackedObjectLabel = (trackedObjType != null) ? trackedObjType.getDescribe().getLabel() : newRecord.Flowdometer__Object_Name__c;
+
+            // Fetch the UI label of the tracked field (fallback to API name)
+            String trackedFieldLabel;
+            if(trackedObjType != null) {
+                Map<String,Schema.SObjectField> fldMap = trackedObjType.getDescribe().fields.getMap();
+                Schema.SObjectField fld = fldMap.get(newRecord.Flowdometer__Field_To_Track__c.toLowerCase());
+                trackedFieldLabel = (fld != null) ? fld.getDescribe().getLabel() : newRecord.Flowdometer__Field_To_Track__c;
+            } else {
+                trackedFieldLabel = newRecord.Flowdometer__Field_To_Track__c;
+            }
+
+            // Friendly labels for the two lookup fields
+            String fieldLabelForLookupToFlow   = trackedFieldLabel  + ' Flow';
+            String fieldLabelForLookupFromFlow = trackedObjectLabel + ' Record';
+
+            String apiConvertedLabel = MetaDataUtilityCls.convertLabeltoAPIName(fieldLabelForLookupToFlow);
+            
+            // Check if the field already exists
+            Boolean lookupExists = MetaDataUtilityCls.doesFieldExist(newRecord.Flowdometer__Object_Name__c, apiConvertedLabel);
+            
+            if (!lookupExists) {
+                // Enqueue asynchronous lookup creation to avoid mixed DML / callout issue
+                System.enqueueJob(
+                    new LookupFieldCreator(
+                        newRecord.Flowdometer__Object_Name__c,
+                        fieldLabelForLookupToFlow,
+                        'Flowdometer__Flow__c',
+                        newRecord.Id));
+            } else {
+                System.debug(LoggingLevel.INFO, '### FLOWDOMETER DIAGNOSTIC: Lookup field already exists: ' + 
+                           apiConvertedLabel + ' on ' + newRecord.Flowdometer__Object_Name__c);
+            }
+            
+            // Now try to create the lookup from Flow to the tracked object (always allow this)
+            String apiLabelFromFlow = MetaDataUtilityCls.convertLabeltoAPIName(fieldLabelForLookupFromFlow);
+            
+            // Check if this field already exists
+            Boolean flowLookupExists = MetaDataUtilityCls.doesFieldExist('Flowdometer__Flow__c', apiLabelFromFlow);
+            
+            if (!flowLookupExists) {
+                // Enqueue the reverse lookup creation
+                System.enqueueJob(
+                    new LookupFieldCreator(
+                        'Flowdometer__Flow__c',
+                        fieldLabelForLookupFromFlow,
+                        newRecord.Flowdometer__Object_Name__c,
+                        newRecord.Id));
+            }
+            
+            // Schedule a check for tracker creation (runs async)
+            checkTrackersAfterDelay(newRecord.Id);
+            
+            return newRecord.Id;
         } catch (DmlException dmlEx) {
             System.debug(LoggingLevel.ERROR, 'DML error creating Listener: ' + dmlEx.getMessage() + '\n' + dmlEx.getStackTraceString());
             
@@ -236,7 +334,94 @@ public with sharing class ListenerMasterConfigurationController {
             throw aex;
         } catch (Exception e) {
             System.debug(LoggingLevel.ERROR, 'Error creating Listener: ' + e.getMessage() + '\n' + e.getStackTraceString());
-            throw new AuraHandledException('Unexpected error: ' + e.getMessage());
+            throw new AuraHandledException('Failed to create Listener record: ' + e.getMessage());
+        }
+    }
+
+    // Helper method to check trackers after a delay (to give flow time to execute)
+    @future
+    private static void checkTrackersAfterDelay(Id listenerId) {
+        try {
+            System.debug(LoggingLevel.INFO, 'Checking tracker creation for Listener ID: ' + listenerId);
+            
+            // Query for the Listener record
+            Listener__c listener = [
+                SELECT Id, Flowdometer__Object_Name__c, Flowdometer__Field_To_Track__c, Flowdometer__Error_Message__c
+                FROM Flowdometer__Listener__c 
+                WHERE Id = :listenerId
+                LIMIT 1
+            ];
+            
+            // Query for Flow records related to this Listener's target object
+            List<Flowdometer__Flow__c> flows = [
+                SELECT Id, Name, Flowdometer__Tracked_Object__c 
+                FROM Flowdometer__Flow__c 
+                WHERE Flowdometer__Tracked_Object__c = :listener.Flowdometer__Object_Name__c
+                ORDER BY CreatedDate DESC
+                LIMIT 10
+            ];
+            
+            System.debug(LoggingLevel.INFO, 'Found ' + flows.size() + ' flow tracker records for object: ' + 
+                        listener.Flowdometer__Object_Name__c);
+            
+            // Check if any Flow records were created
+            if (flows.isEmpty()) {
+                // No trackers were created
+                String noTrackersMsg = 'Warning: No Flow tracker records were created for this Listener. ' +
+                                   'This may indicate an issue with the Flow trigger process.';
+                System.debug(LoggingLevel.WARN, noTrackersMsg);
+                
+                // Update the Listener record with the error message
+                listener.Flowdometer__Error_Message__c = noTrackersMsg;
+                update listener;
+            } else {
+                // Trackers were created successfully
+                System.debug(LoggingLevel.INFO, 'Flow tracker records were created successfully');
+            }
+            
+            // Query for history fields to verify they're being tracked
+            try {
+                // Check if history tracking is enabled for the field
+                Boolean isHistoryTracked = MetaDataUtilityCls.checkIfHistoryIsEnabled(
+                    listener.Flowdometer__Object_Name__c,
+                    listener.Flowdometer__Field_To_Track__c
+                );
+                
+                if (!isHistoryTracked) {
+                    String historyWarning = 'Warning: History tracking is not enabled for field ' + 
+                                         listener.Flowdometer__Field_To_Track__c + ' on object ' + 
+                                         listener.Flowdometer__Object_Name__c;
+                    System.debug(LoggingLevel.WARN, historyWarning);
+                    
+                    // Only update if we don't already have a more important error message
+                    if (String.isBlank(listener.Flowdometer__Error_Message__c)) {
+                        listener.Flowdometer__Error_Message__c = historyWarning;
+                        update listener;
+                    }
+                }
+            } catch (Exception ex) {
+                System.debug(LoggingLevel.ERROR, 'Error checking history tracking status: ' + ex.getMessage());
+            }
+            
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error in checkTrackersAfterDelay: ' + e.getMessage() + '\n' + e.getStackTraceString());
+        }
+    }
+
+    // Queueable to perform Metadata callout after DML is committed
+    public class LookupFieldCreator implements Queueable, Database.AllowsCallouts {
+        String targetObject;
+        String fieldLabel;
+        String referenceTo;
+        Id listenerId;
+        public LookupFieldCreator(String tgt, String lbl, String ref, Id lst) {
+            targetObject = tgt;
+            fieldLabel = lbl;
+            referenceTo = ref;
+            listenerId = lst;
+        }
+        public void execute(QueueableContext qc) {
+            MetaDataUtilityCls.createLookupField(targetObject, fieldLabel, referenceTo, listenerId);
         }
     }
 }

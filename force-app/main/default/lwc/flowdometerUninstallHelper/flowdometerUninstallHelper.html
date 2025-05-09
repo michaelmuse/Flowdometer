@@ -1,0 +1,40 @@
+<template>
+    <lightning-card title="Flowdometer Uninstall Helper" icon-name="utility:flow">
+        <div class="slds-p-around_medium">
+            <div class="slds-text-body_regular slds-m-bottom_medium">
+                Before uninstalling the Flowdometer package, you need to deactivate all active flows to avoid 
+                "Flow is still active" errors. Click the button below to automatically deactivate all Flowdometer flows.
+            </div>
+            
+            <lightning-button 
+                label="Deactivate All Flowdometer Flows" 
+                variant="brand" 
+                onclick={handleDeactivateFlows}
+                disabled={buttonDisabled}
+                class="slds-m-bottom_medium">
+            </lightning-button>
+            
+            <div if:true={isLoading} class="slds-is-relative slds-m-top_medium">
+                <lightning-spinner alternative-text="Deactivating flows..." size="small"></lightning-spinner>
+            </div>
+            
+            <div if:true={deactivationStatus.showMessage} class="slds-m-top_medium">
+                <lightning-formatted-text 
+                    value={deactivationStatus.message} 
+                    class={statusVariant}>
+                </lightning-formatted-text>
+                
+                <template if:true={deactivationStatus.success}>
+                    <div class="slds-text-body_regular slds-m-top_medium">
+                        <p>You can now proceed with uninstalling the package from:</p>
+                        <p class="slds-m-top_x-small">
+                            <a href="/lightning/setup/ImportedPackage/home" target="_blank">
+                                Setup > Installed Packages
+                            </a>
+                        </p>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </lightning-card>
+</template> 

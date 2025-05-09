@@ -267,7 +267,7 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
         createListenerRecord({ newRecord: listener })
             .then((result) => {
                 console.log("Listener created with ID: " + result);
-                
+
                 // Always stop the spinner first, regardless of navigation outcome
                 this.isLoading = false;
                 
@@ -288,19 +288,19 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
                 setTimeout(() => {
                     try {
                         // Navigate to the record detail page for the created Listener
-                        this[NavigationMixin.Navigate](
-                            {
-                                type: "standard__recordPage",
-                                attributes: {
-                                    recordId: result,
-                                    objectApiName: "Flowdometer__Listener__c",
-                                    actionName: "view"
-                                }
-                            },
+                this[NavigationMixin.Navigate](
+                    {
+                        type: "standard__recordPage",
+                        attributes: {
+                            recordId: result,
+                            objectApiName: "Flowdometer__Listener__c",
+                            actionName: "view"
+                        }
+                    },
                             false
-                        );
-                        
-                        this.closeAction();
+                );
+
+                this.closeAction();
                     } catch (navError) {
                         console.error("Navigation error: ", navError);
                         
