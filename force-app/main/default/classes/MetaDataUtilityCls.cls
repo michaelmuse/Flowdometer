@@ -333,7 +333,14 @@ public inherited sharing class MetaDataUtilityCls {
                 }
             }
 
-            return fieldMap.containsKey(normalizedFieldName.toLowerCase());
+            // Perform a case-insensitive comparison so we don't miss matches that differ only by letter-case
+            String needle = normalizedFieldName.toLowerCase();
+            for(String existingName : fieldMap.keySet()) {
+                if(existingName != null && existingName.toLowerCase() == needle) {
+                    return true;
+                }
+            }
+            return false;
         } catch (Exception e) {
             System.debug(
                 LoggingLevel.ERROR,
