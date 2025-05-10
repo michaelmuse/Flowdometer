@@ -915,7 +915,8 @@ global with sharing class ListenerFlowController {
                 listenerFlow.varCurrentFieldTracked = fieldLabel;
                 listenerFlow.varCurrentFieldValue = (String) historyRecord.get('NewValue');
                 listenerFlow.varCurrentObjectID = parentId;
-                listenerFlow.varNameofTrackedRecord = (String) sObjectMap.get(parentId).get('Name');
+                String nameField = (listenerConfig.Object_Name__c == 'Case') ? 'CaseNumber' : 'Name';
+                listenerFlow.varNameofTrackedRecord = (String) sObjectMap.get(parentId).get(nameField);
                 listenerFlow.varTrackedCustomObjectName = listenerConfig.Object_Name__c;
                 listenerFlow.varEditStartTime = (Datetime) historyRecord.get('CreatedDate');
                 listenerFlow.varEditEndTime = System.now();

@@ -27,6 +27,13 @@ public with sharing class FeatureFlagUtil {
         // Query the feature flag - updated with namespace
         Boolean isEnabled = false;
         try {
+            // Check if user has access to the Feature Flag metadata type
+            Schema.DescribeSObjectResult describeResult = Flowdometer__Feature_Flag__mdt.SObjectType.getDescribe();
+            if (!describeResult.isAccessible()) {
+                System.debug(LoggingLevel.WARN, 'User does not have access to Feature Flag metadata');
+                return false;
+            }
+            
             List<Flowdometer__Feature_Flag__mdt> flags = [
                 SELECT DeveloperName, Flowdometer__Is_Enabled__c 
                 FROM Flowdometer__Feature_Flag__mdt 

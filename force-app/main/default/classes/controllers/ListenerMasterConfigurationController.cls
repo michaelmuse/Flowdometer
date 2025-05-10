@@ -193,10 +193,13 @@ public with sharing class ListenerMasterConfigurationController {
                 throw new AuraHandledException('You do not have permission to create Listener records.');
             }
             
-            // Check if the fields are accessible before attempting to use them
+            // Check if the fields are accessible and createable before attempting to use them
             if (!Schema.sObjectType.Flowdometer__Listener__c.fields.Flowdometer__Object_Name__c.isAccessible() ||
-                !Schema.sObjectType.Flowdometer__Listener__c.fields.Flowdometer__Field_To_Track__c.isAccessible()) {
-                throw new AuraHandledException('You do not have permission to access required fields on Listener records.');
+                !Schema.sObjectType.Flowdometer__Listener__c.fields.Flowdometer__Field_To_Track__c.isAccessible() ||
+                !Schema.sObjectType.Flowdometer__Listener__c.fields.Flowdometer__Object_Name__c.isCreateable() ||
+                !Schema.sObjectType.Flowdometer__Listener__c.fields.Flowdometer__Field_To_Track__c.isCreateable() ||
+                !Schema.sObjectType.Flowdometer__Listener__c.fields.Flowdometer__Error_Message__c.isCreateable()) {
+                throw new AuraHandledException('You do not have permission to access or modify required fields on Listener records.');
             }
             
             // ENHANCED DEBUGGING: Verify CPU limits before proceeding with insert
@@ -240,11 +243,15 @@ public with sharing class ListenerMasterConfigurationController {
                     String historyErrorMsg = 'Warning: History tracking could not be verified for ' + 
                                           newRecord.Flowdometer__Object_Name__c + '.' + 
                                           newRecord.Flowdometer__Field_To_Track__c;
-                    Listener__c listenerToUpdate = new Listener__c(
-                        Id = newRecord.Id,
-                        Flowdometer__Error_Message__c = historyErrorMsg
-                    );
-                    update listenerToUpdate;
+                    
+                    // Check if we have permission to update the error message field
+                    if (Schema.sObjectType.Flowdometer__Listener__c.fields.Flowdometer__Error_Message__c.isUpdateable()) {
+                        Listener__c listenerToUpdate = new Listener__c(
+                            Id = newRecord.Id,
+                            Flowdometer__Error_Message__c = historyErrorMsg
+                        );
+                        update listenerToUpdate;
+                    }
                     System.debug(LoggingLevel.WARN, historyErrorMsg);
                 }
             } catch (Exception histEx) {
@@ -252,12 +259,15 @@ public with sharing class ListenerMasterConfigurationController {
                 String historyErrorMsg = 'Error verifying history tracking: ' + histEx.getMessage();
                 System.debug(LoggingLevel.ERROR, historyErrorMsg);
                 
-                // Update the listener record with the error message
-                Listener__c listenerToUpdate = new Listener__c(
-                    Id = newRecord.Id,
-                    Flowdometer__Error_Message__c = historyErrorMsg
-                );
-                update listenerToUpdate;
+                // Check if we have permission to update the error message field
+                if (Schema.sObjectType.Flowdometer__Listener__c.fields.Flowdometer__Error_Message__c.isUpdateable()) {
+                    // Update the listener record with the error message
+                    Listener__c listenerToUpdate = new Listener__c(
+                        Id = newRecord.Id,
+                        Flowdometer__Error_Message__c = historyErrorMsg
+                    );
+                    update listenerToUpdate;
+                }
             }
             
             // --- Build friendly labels for lookup fields ----------------------
@@ -421,6 +431,15 @@ public with sharing class ListenerMasterConfigurationController {
             listenerId = lst;
         }
         public void execute(QueueableContext qc) {
+            // Check if field already exists
+            String fieldAPIName = MetaDataUtilityCls.convertLabeltoAPIName(fieldLabel);
+            if (MetaDataUtilityCls.doesFieldExist(targetObject, fieldAPIName)) {
+                // If field exists, just log it and return
+                System.debug(LoggingLevel.INFO, 'Field ' + fieldAPIName + ' already exists on ' + targetObject + ', skipping creation');
+                return;
+            }
+            
+            // Only call createLookupField if the field doesn't exist
             MetaDataUtilityCls.createLookupField(targetObject, fieldLabel, referenceTo, listenerId);
         }
     }

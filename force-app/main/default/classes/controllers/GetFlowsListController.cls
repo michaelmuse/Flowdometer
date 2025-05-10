@@ -1,4 +1,4 @@
-public class GetFlowsListController {
+public with sharing class GetFlowsListController {
     public GetFlowsListController(ApexPages.StandardController stdController) {
         String currentId = ApexPages.CurrentPage().getparameters().get('id');
         List<Flowdometer__Flow__c> flowList = [

@@ -558,16 +558,23 @@ public inherited sharing class MetaDataUtilityCls {
             if (!fieldMap.containsKey(fieldName.toLowerCase())) {
                 System.debug(LoggingLevel.ERROR, 'The field ' + fieldName + ' does not exist on object ' + sObjectApiName + '.');
                 return false;
-        }
+            }
+
+            // Check if user has access to the FieldDefinition object
+            Schema.DescribeSObjectResult describeResult = FieldDefinition.SObjectType.getDescribe();
+            if (!describeResult.isAccessible()) {
+                System.debug(LoggingLevel.ERROR, 'User does not have access to FieldDefinition object');
+                return false;
+            }
 
             // Check field history tracking status
-        List<FieldDefinition> fieldDefinitions = [
-            SELECT QualifiedApiName, IsFieldHistoryTracked
-            FROM FieldDefinition
-            WHERE
-                EntityDefinition.QualifiedApiName = :sObjectApiName
-                    AND QualifiedApiName = :fieldName
-        ];
+            List<FieldDefinition> fieldDefinitions = [
+                SELECT QualifiedApiName, IsFieldHistoryTracked
+                FROM FieldDefinition
+                WHERE
+                    EntityDefinition.QualifiedApiName = :sObjectApiName
+                        AND QualifiedApiName = :fieldName
+            ];
 
             if (fieldDefinitions.isEmpty()) {
                 System.debug(LoggingLevel.ERROR, 'Field ' + fieldName + ' not found in FieldDefinition for ' + sObjectApiName);
@@ -591,6 +598,10 @@ public inherited sharing class MetaDataUtilityCls {
             'fieldName' => ''
         };
         
+        // Declare fieldAPIName outside try block so it's available in catch block
+        String fieldAPIName = convertLabeltoAPIName(fieldLabel);
+        result.put('fieldName', fieldAPIName);
+        
         try {
             // Check if we have permission to create fields on this object
             if (LOOKUP_FIELD_CREATION_LIMITATIONS.contains(targetObject)) {
@@ -608,15 +619,21 @@ public inherited sharing class MetaDataUtilityCls {
                 return result;
             }
             
-            // Sanitize field name
-            String fieldAPIName = convertLabeltoAPIName(fieldLabel);
-            result.put('fieldName', fieldAPIName);
-            
             // Check if field already exists
             if (doesFieldExist(targetObject, fieldAPIName)) {
                 result.put('success', 'true');
                 result.put('message', 'Lookup field ' + fieldAPIName + ' already exists on ' + targetObject);
                 System.debug(LoggingLevel.INFO, result.get('message'));
+                return result;
+            }
+            
+            // Check for similar field names to avoid conflicts
+            String similarFieldMessage = checkForSimilarFieldNames(targetObject, fieldAPIName);
+            if (similarFieldMessage != null) {
+                // If we find a similar field, treat it as a success case
+                result.put('success', 'true');
+                result.put('message', similarFieldMessage);
+                System.debug(LoggingLevel.INFO, similarFieldMessage);
                 return result;
             }
             
@@ -639,24 +656,59 @@ public inherited sharing class MetaDataUtilityCls {
             result.put('message', 'Successfully created lookup field ' + fieldAPIName + ' on ' + targetObject);
             System.debug(LoggingLevel.INFO, result.get('message'));
         } catch (Exception e) {
-            result.put('message', 'Unexpected error: ' + e.getMessage());
-            System.debug(LoggingLevel.ERROR, 'Unexpected error in createLookupField: ' + e.getMessage() + 
+            String errorMessage = e.getMessage();
+            // Handle specific error cases
+            if (errorMessage.contains('DUPLICATE_DEVELOPER_NAME')) {
+                // If it's a duplicate field error, treat it as a success case
+                result.put('success', 'true');
+                result.put('message', 'Field ' + fieldAPIName + ' already exists on ' + targetObject);
+                System.debug(LoggingLevel.INFO, result.get('message'));
+                return result;
+            }
+            
+            // For other errors, log them but don't update the Listener record
+            System.debug(LoggingLevel.ERROR, 'Error in createLookupField: ' + errorMessage + 
                         '\n' + e.getStackTraceString());
             
-            // Update the Listener record with the error
-            if (listenerId != null) {
-                try {
-                    Flowdometer__Listener__c listener = new Flowdometer__Listener__c(
-                        Id = listenerId,
-                        Flowdometer__Error_Message__c = 'Error creating lookup field: ' + e.getMessage()
-                    );
-                    update listener;
-                } catch (Exception updateEx) {
-                    System.debug(LoggingLevel.ERROR, 'Error updating Listener record: ' + updateEx.getMessage());
-                }
-            }
+            result.put('message', 'Error creating lookup field: ' + errorMessage);
         }
 
         return result;
+    }
+    
+    // Helper method to check for similar field names
+    private static String checkForSimilarFieldNames(String targetObject, String fieldAPIName) {
+        try {
+            // Get all fields for the object
+            Map<String, Schema.SObjectField> fieldMap = Schema.getGlobalDescribe()
+                .get(targetObject)
+                .getDescribe()
+                .fields.getMap();
+            
+            // Check for exact match
+            if (fieldMap.containsKey(fieldAPIName.toLowerCase())) {
+                return 'A field named ' + fieldAPIName + ' already exists on ' + targetObject;
+            }
+            
+            // Check for similar names (without __c suffix)
+            String baseName = fieldAPIName.endsWith('__c') ? 
+                fieldAPIName.substring(0, fieldAPIName.length() - 3) : 
+                fieldAPIName;
+                
+            for (String existingField : fieldMap.keySet()) {
+                String existingBaseName = existingField.endsWith('__c') ? 
+                    existingField.substring(0, existingField.length() - 3) : 
+                    existingField;
+                    
+                if (existingBaseName.equalsIgnoreCase(baseName)) {
+                    return 'A field with a similar name (' + existingField + ') already exists on ' + targetObject;
+                }
+            }
+            
+            return null;
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error checking for similar field names: ' + e.getMessage());
+            return null;
+        }
     }
 }
