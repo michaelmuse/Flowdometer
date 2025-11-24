@@ -103,13 +103,26 @@ public class MetadataService {
 				if(!cusObj.enableHistory){
 						cusObj.enableHistory=true;
 				}
+				Boolean fieldFound = false;
+				// Try to match field by fullName (which may include object prefix) or just the field name
+				String expectedFullName = sObjectApiName + '.' + fieldAPIName;
 				for(MetadataService.CustomField cf :cusObj.fields){
-						if(cf.fullName == fieldAPIName){
-								cf.trackHistory=true ;
+						// Match by full name (e.g., "Account.Name" or "CustomObject__c.CustomField__c")
+						// or by just the field name (e.g., "Name" or "CustomField__c")
+						if(cf.fullName == fieldAPIName || cf.fullName == expectedFullName || 
+						   cf.fullName.endsWith('.' + fieldAPIName)){
+								cf.trackHistory=true;
+								fieldFound = true;
+								break;
 						}
+				}
+				if (!fieldFound) {
+					throw new LookupFieldExamplesException('Field ' + fieldAPIName + ' not found in object ' + sObjectApiName + 
+						'. Cannot enable history tracking.');
 				}
 				deployList.add(cusObj);
 				List<MetadataService.SaveResult> results=service.updateMetadata(new List<MetadataService.CustomObject>{cusObj});
+				handleSaveResults(results[0]);
 		}
 	// Method for checking field tracking=true
 	public static Boolean validateHistoryEnabled(String sObjectApiName){

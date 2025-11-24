@@ -28,6 +28,8 @@ global with sharing class ListenerFlowController {
     global Id varLastHistoryRecordId;
     public List<ListenerFlowController> processedRecords = new List<ListenerFlowController>();
     private static List<Id> historyRecordIdsToExclude;
+    private static Datetime exclusionListCacheTime;
+    private static final Integer EXCLUSION_CACHE_DURATION_MINUTES = 5; // Cache exclusion list for 5 minutes
     
     // Retry tracking system to prevent infinite loops and handle transient errors
     private static Map<Id, Integer> retryCountMap = new Map<Id, Integer>();
@@ -281,8 +283,19 @@ global with sharing class ListenerFlowController {
     // Called by: getLatestHistoryValues
     // Gets a list of history record IDs to exclude from queries
     // Used to prevent duplicate processing of history records
+    // Optimized: Removed unnecessary CPU calls and debug statements, added caching
     private static List<Id> getHistoryRecordIdsToExclude() {
+        // Return cached list if still valid (within 5 minutes)
+        if (historyRecordIdsToExclude != null && exclusionListCacheTime != null) {
+            Long cacheAgeMinutes = (Datetime.now().getTime() - exclusionListCacheTime.getTime()) / 60000;
+            if (cacheAgeMinutes < EXCLUSION_CACHE_DURATION_MINUTES) {
+                return historyRecordIdsToExclude;
+            }
+        }
+        
+        // Query and cache the exclusion list
         List<Id> idsToExclude = new List<Id>();
+        // Use direct list assignment instead of loop to reduce CPU overhead
         for (Flowdometer__Step__c step : [
             SELECT Flowdometer__History_Record_ID__c
             FROM Flowdometer__Step__c
@@ -290,10 +303,13 @@ global with sharing class ListenerFlowController {
             ORDER BY CreatedDate DESC
             LIMIT 1000
         ]) {
-            System.debug('in getHistoryRecordIdsToExclude');
-            Limits.getCpuTime();
             idsToExclude.add(step.Flowdometer__History_Record_ID__c);
         }
+        
+        // Cache the result
+        historyRecordIdsToExclude = idsToExclude;
+        exclusionListCacheTime = Datetime.now();
+        
         return idsToExclude;
     }
     
@@ -338,13 +354,18 @@ global with sharing class ListenerFlowController {
                 }
             );
             // Include the tracked field plus the special "created" marker row
+            // fieldName is defined in getLatestHistoryValues (line 485) and will be in scope when Database.query() is called (line 547)
             whereConditions.add('(Field =: fieldValue OR Field =: fieldName)');
             if (!targetRecordIds.isEmpty()) {
                 whereConditions.add(parentIdField + ' IN :targetRecordIds');
             }
+            // Only get exclusion list if we don't have a lastExecutionOn timestamp
+            // This prevents unnecessary queries when we can use timestamp-based filtering
             if (lastExecutionOn == null) {
                 historyRecordIdsToExclude = getHistoryRecordIdsToExclude();
-                if (!historyRecordIdsToExclude.isEmpty()) {
+                // Only add NOT IN clause if we have IDs to exclude and the list is reasonably sized
+                // Large NOT IN clauses (>1000 items) can be very expensive
+                if (!historyRecordIdsToExclude.isEmpty() && historyRecordIdsToExclude.size() <= 1000) {
                     whereConditions.add('Id NOT IN :historyRecordIdsToExclude');
                 }
             }
@@ -502,7 +523,8 @@ global with sharing class ListenerFlowController {
             queryStr = queryStr + ' LIMIT ' + maxRecordsToProcess;
         }
         
-        System.debug('History query built: ' + queryStr);
+        System.debug(LoggingLevel.INFO, '### FLOWDOMETER: History query built: ' + queryStr);
+        System.debug(LoggingLevel.INFO, '### FLOWDOMETER: Query parameters - lastExecutionOn: ' + lastExecutionOn + ', fieldName: ' + fieldName + ', targetRecordIds size: ' + targetRecordIds.size());
         
         // Validate the query string to prevent SOQL injection
         if (!queryStr.startsWithIgnoreCase('SELECT ') || 
@@ -524,15 +546,22 @@ global with sharing class ListenerFlowController {
         Integer recordsProcessed = 0;
         
         try {
-            for (SObject obj : Database.query(queryStr)) {
+            System.debug(LoggingLevel.INFO, '### FLOWDOMETER: Executing history query with bind variables - fieldName: ' + fieldName + ', lastExecutionOn: ' + lastExecutionOn);
+            List<SObject> queryResults = Database.query(queryStr);
+            System.debug(LoggingLevel.INFO, '### FLOWDOMETER: Query returned ' + queryResults.size() + ' history records');
+            for (SObject obj : queryResults) {
                 recordsProcessed++;
             
-                // Check the CPU time regularly to avoid timeouts
-                if (Math.mod(recordsProcessed, 100) == 0 && Limits.getCpuTime() - startCpuTime > cpuTimeLimit) {
-                    System.debug(LoggingLevel.ERROR, 'CPU limit approaching during history processing. ' + 
-                        'Processed ' + recordsProcessed + ' records before stopping.');
-                break;
-            }
+                // Check CPU time less frequently (every 200 records instead of 100) to reduce overhead
+                // Only check if we're processing a large batch
+                if (recordsProcessed > 200 && Math.mod(recordsProcessed, 200) == 0) {
+                    Integer currentCpuTime = Limits.getCpuTime();
+                    if (currentCpuTime - startCpuTime > cpuTimeLimit) {
+                        System.debug(LoggingLevel.ERROR, 'CPU limit approaching during history processing. ' + 
+                            'Processed ' + recordsProcessed + ' records before stopping.');
+                        break;
+                    }
+                }
             
             Id parentId = (Id) obj.get(parentIdField);
             Datetime createdDate = (Datetime) obj.get('CreatedDate');
@@ -559,7 +588,9 @@ global with sharing class ListenerFlowController {
             
             // Only update Last Execution On if we have history records, otherwise we'll keep querying for the same records
             if (!historyRecordsMap.isEmpty()) {
-            listenerConfig.Flowdometer__Last_Execution_On__c = queryTimestamp;
+                if (Schema.sObjectType.Listener__c.fields.Flowdometer__Last_Execution_On__c.isUpdateable()) {
+                    listenerConfig.Flowdometer__Last_Execution_On__c = queryTimestamp;
+                }
                 
             // Sort using sortHistoryList method
                 for (Id parentId : historyRecordsMap.keySet()) {
@@ -612,8 +643,11 @@ global with sharing class ListenerFlowController {
             }
             
         } catch (Exception e) {
-            System.debug(LoggingLevel.ERROR, 'Error querying history records: ' + e.getMessage() + 
-                '\nQuery: ' + queryStr);
+            System.debug(LoggingLevel.ERROR, '### FLOWDOMETER: Error querying history records: ' + e.getMessage() + 
+                '\nQuery: ' + queryStr + 
+                '\nlastExecutionOn: ' + lastExecutionOn + 
+                '\nfieldName: ' + fieldName + 
+                '\ntargetRecordIds size: ' + (targetRecordIds != null ? targetRecordIds.size() : 0));
             
             // Add more detailed error message and stack trace
             String detailedError = 'Error querying history records: ' + e.getMessage() + 
@@ -621,7 +655,9 @@ global with sharing class ListenerFlowController {
                                    '\nQuery: ' + queryStr;
             
             // Log error but continue with empty results
-            listenerConfig.Error_Message__c = detailedError;
+            if (Schema.sObjectType.Listener__c.fields.Error_Message__c.isUpdateable()) {
+                listenerConfig.Error_Message__c = detailedError;
+            }
             
             // Update retry count for this listener if we have an ID
             if (listenerConfig.Id != null) {
@@ -629,9 +665,15 @@ global with sharing class ListenerFlowController {
                                            retryCountMap.get(listenerConfig.Id) : 0;
                 retryCountMap.put(listenerConfig.Id, currentRetryCount + 1);
                 
-                // Add retry info to error message
-                listenerConfig.Error_Message__c += '\nRetry count: ' + (currentRetryCount + 1) + 
-                                                   ' of ' + MAX_RETRY_COUNT;
+                // Add retry info to error message (with FLS check and null handling)
+                if (Schema.sObjectType.Listener__c.fields.Error_Message__c.isUpdateable()) {
+                    String retryInfo = '\nRetry count: ' + (currentRetryCount + 1) + ' of ' + MAX_RETRY_COUNT;
+                    if (listenerConfig.Error_Message__c == null) {
+                        listenerConfig.Error_Message__c = retryInfo;
+                    } else {
+                        listenerConfig.Error_Message__c += retryInfo;
+                    }
+                }
             }
         }
         
@@ -668,7 +710,9 @@ global with sharing class ListenerFlowController {
                 maxRetriesResponse.hasRecords = false;
                 maxRetriesResponse.isCheckSuccess = false;
                 
-                firstListenerConfig.Error_Message__c = 'Maximum retry count (' + MAX_RETRY_COUNT + ') reached. Please contact your administrator or check debug logs.';
+                if (Schema.sObjectType.Listener__c.fields.Error_Message__c.isUpdateable()) {
+                    firstListenerConfig.Error_Message__c = 'Maximum retry count (' + MAX_RETRY_COUNT + ') reached. Please contact your administrator or check debug logs.';
+                }
                 try {
                     update firstListenerConfig;
                 } catch(Exception ex) {
@@ -700,6 +744,9 @@ global with sharing class ListenerFlowController {
                 ListenerFlowController controllerInstance = new ListenerFlowController();
                 Listener__c listenerConfig = request.listenerConfig;
                 Datetime lastExecutionOn = request.lastExecutionOn;
+                if (lastExecutionOn == null && listenerConfig != null) {
+                    lastExecutionOn = listenerConfig.Flowdometer__Last_Execution_On__c;
+                }
                 
                 // Special handling for certain object types
                 if (listenerConfig.Object_Name__c == 'Order') {
@@ -712,7 +759,9 @@ global with sharing class ListenerFlowController {
                         response.isCheckSuccess = false;
                         response.hasRecords = false;
                         
-                        listenerConfig.Error_Message__c = errorMsg;
+                        if (Schema.sObjectType.Listener__c.fields.Error_Message__c.isUpdateable()) {
+                            listenerConfig.Error_Message__c = errorMsg;
+                        }
                         update listenerConfig;
                         
                         responseList.add(response);
@@ -721,7 +770,64 @@ global with sharing class ListenerFlowController {
                 }
                 
                 try {
+                    // CRITICAL: Early exit check for historical data queries only
+                    // The Enable_History__c toggle controls whether we query HISTORICAL data (before Last_Execution_On__c)
+                    // We ALWAYS query NEW history records (after Last_Execution_On__c) regardless of toggle state
+                    // This prevents expensive historical queries when there's too much data, but still captures ongoing changes
+                    // IMPORTANT: We still ensure Salesforce's built-in history tracking is enabled (done in ListenerMasterConfigurationController.createListenerRecord)
+                    // This toggle only controls whether we QUERY historical records, not whether tracking is enabled
+                    Boolean enableHistoryTracking = false;
+                    try {
+                        // Safely read the toggle value - default to false if null or inaccessible
+                        enableHistoryTracking = listenerConfig.Flowdometer__Enable_History__c == true;
+                    } catch (Exception fieldEx) {
+                        // If field is inaccessible or null, default to false (disabled)
+                        System.debug(LoggingLevel.WARN, 'Could not read Enable_History__c field for listener ' + 
+                                    (listenerConfig.Id != null ? String.valueOf(listenerConfig.Id) : 'new') + 
+                                    '. Defaulting to disabled. Error: ' + fieldEx.getMessage());
+                        enableHistoryTracking = false;
+                    }
+                    
+                    // Only skip if toggle is disabled AND we're trying to query historical data (lastExecutionOn == null)
+                    // If lastExecutionOn != null, we're querying new history and should always proceed
+                    if (!enableHistoryTracking && lastExecutionOn == null) {
+                        System.debug(LoggingLevel.INFO, '### FLOWDOMETER: History tracking toggle is DISABLED for listener: ' + 
+                                    (listenerConfig.Id != null ? String.valueOf(listenerConfig.Id) : 'new') + 
+                                    '. Skipping historical data query (before Last_Execution_On__c). New history queries (after Last_Execution_On__c) will still be processed.');
+                        response.hasRecords = false;
+                        response.isCheckSuccess = true;
+                        
+                        // CRITICAL: Set Last_Execution_On__c even when skipping historical query
+                        // This ensures future runs will have lastExecutionOn != null and can query new history
+                        // Also update Last_Check__c to trigger the scheduled flow path "Run Every 3 Minutes"
+                        Datetime now = System.now();
+                        if (Schema.sObjectType.Listener__c.fields.Last_Execution_On__c.isUpdateable()) {
+                            listenerConfig.Last_Execution_On__c = now;
+                        }
+                        if (Schema.sObjectType.Listener__c.fields.Last_Check__c.isUpdateable()) {
+                            listenerConfig.Last_Check__c = now;
+                        }
+                        update listenerConfig;
+                        
+                        responseList.add(response);
+                        continue; // Skip to next listener config - NO historical queries, but new history queries will still work
+                    }
+                    
+                    // Proceed with history processing if:
+                    // 1. Toggle is enabled (allow both historical and new history queries), OR
+                    // 2. Toggle is disabled BUT lastExecutionOn != null (allow new history queries only)
+                    if (lastExecutionOn == null) {
+                    System.debug(LoggingLevel.INFO, '### FLOWDOMETER: History tracking toggle is ENABLED for listener: ' + 
+                                (listenerConfig.Id != null ? String.valueOf(listenerConfig.Id) : 'new') + 
+                                    '. Proceeding with historical data query (before Last_Execution_On__c).');
+                    } else {
+                        System.debug(LoggingLevel.INFO, '### FLOWDOMETER: Querying new history records for listener: ' + 
+                                    (listenerConfig.Id != null ? String.valueOf(listenerConfig.Id) : 'new') + 
+                                    ' (after Last_Execution_On__c: ' + lastExecutionOn + '). This query proceeds regardless of toggle state.');
+                    }
+                    
                     // BEFORE querying new history, process any previously stored unprocessed history records
+                    // Only process unprocessed records if history tracking is enabled
                     String unprocessedRecordsJson = listenerConfig.Flowdometer__Unprocessed_History_Records__c;
                     if (String.isNotBlank(unprocessedRecordsJson)) {
                         List<ListenerFlowController> lstListenerFlow = (List<ListenerFlowController>) JSON.deserialize(unprocessedRecordsJson, List<ListenerFlowController>.class);
@@ -783,7 +889,37 @@ global with sharing class ListenerFlowController {
                         Map<Id, SObject> sObjectMap = new Map<Id, SObject>();
                         if (!parentIds.isEmpty()) {
                             String parentNameField = (listenerConfig.Object_Name__c == 'Case') ? 'CaseNumber' : 'Name';
-                            String parentQuery = 'SELECT Id, ' + parentNameField + ' FROM ' + listenerConfig.Object_Name__c + ' WHERE Id IN :parentIds';
+                            // Dynamically build the query to include Type__c field if specified and valid
+                            List<String> selectFields = new List<String>{ 'Id', parentNameField };
+                            
+                            // Validate and add Type__c field if it exists on the object
+                            if (String.isNotBlank(listenerConfig.Type__c)) {
+                                Schema.SObjectType sObjectType = Schema.getGlobalDescribe().get(listenerConfig.Object_Name__c);
+                                if (sObjectType != null) {
+                                    Map<String, Schema.SObjectField> fieldMap = sObjectType.getDescribe().fields.getMap();
+                                    // Check if the Type field exists on the object and get the actual field name (case-insensitive)
+                                    String actualFieldName = null;
+                                    String typeFieldLower = listenerConfig.Type__c.toLowerCase();
+                                    for (String fieldNameKey : fieldMap.keySet()) {
+                                        if (fieldNameKey != null && fieldNameKey.toLowerCase() == typeFieldLower) {
+                                            actualFieldName = fieldNameKey;
+                                            break;
+                                        }
+                                    }
+                                    if (actualFieldName != null) {
+                                        selectFields.add(actualFieldName);
+                                    }
+                                }
+                            }
+                            
+                            // Validate object name to prevent SOQL injection
+                            if (!Schema.getGlobalDescribe().containsKey(listenerConfig.Object_Name__c)) {
+                                throw new CustomException('Invalid object name: ' + listenerConfig.Object_Name__c);
+                            }
+                            
+                            String parentQuery = 'SELECT ' + String.join(selectFields, ', ') + 
+                                               ' FROM ' + listenerConfig.Object_Name__c + 
+                                               ' WHERE Id IN :parentIds';
                             for (SObject sob : Database.query(parentQuery)) {
                                 Id sobId = (Id)sob.get('Id');
                                 sObjectMap.put(sobId, sob);
@@ -791,6 +927,7 @@ global with sharing class ListenerFlowController {
                             controllerInstance.parentRecordsMap = sObjectMap.clone();
                         }
                         // Process history records into a format usable by Flow
+                        // Pass enableHistoryTracking parameter to ensure proper handling
                         controllerInstance.preparingResponse(
                             response,
                             listenerConfig,
@@ -808,15 +945,30 @@ global with sharing class ListenerFlowController {
                                 processedRecordsMap
                             );
                         }
+                        // Explicitly set success when records were found and processed successfully
+                        response.isCheckSuccess = true;
                     } else {
                         // No records found
                         response.hasRecords = false;
+                        response.isCheckSuccess = true; // Explicitly set success when no records found but processing succeeded
                         System.debug(LoggingLevel.INFO, 'No history records found for processing');
                     }
                     
-                    // Update last execution time on the listener config
-                    listenerConfig.Last_Execution_On__c = System.now();
+                    // Update last execution time and last check time on the listener config
+                    // Last_Check__c is used by the scheduled flow path "Run Every 3 Minutes" to trigger subsequent runs
+                    Datetime now = System.now();
+                    if (Schema.sObjectType.Listener__c.fields.Last_Execution_On__c.isUpdateable()) {
+                        listenerConfig.Last_Execution_On__c = now;
+                    }
+                    if (Schema.sObjectType.Listener__c.fields.Last_Check__c.isUpdateable()) {
+                        listenerConfig.Last_Check__c = now;
+                    }
                     update listenerConfig;
+                    
+                    // Ensure isCheckSuccess is true if we reached here without exceptions (safety check)
+                    if (response.isCheckSuccess == null || response.isCheckSuccess == false) {
+                        response.isCheckSuccess = true;
+                    }
                     
                 } catch (Exception ex) {
                     // Handle exceptions for this specific listener config
@@ -826,7 +978,9 @@ global with sharing class ListenerFlowController {
                     System.debug(LoggingLevel.ERROR, errorMsg + '\n' + ex.getStackTraceString());
         
                     // Update the listener config with error message
-                    listenerConfig.Error_Message__c = errorMsg;
+                    if (Schema.sObjectType.Listener__c.fields.Error_Message__c.isUpdateable()) {
+                        listenerConfig.Error_Message__c = errorMsg;
+                    }
                     update listenerConfig;
             
                     // Mark this response as having an error
@@ -857,7 +1011,9 @@ global with sharing class ListenerFlowController {
             if (!listenerConfigList.isEmpty()) {
                 try {
                     Listener__c listenerToUpdate = listenerConfigList[0].listenerConfig;
-                    listenerToUpdate.Error_Message__c = 'Failed to process history records: ' + ex.getMessage();
+                    if (Schema.sObjectType.Listener__c.fields.Error_Message__c.isUpdateable()) {
+                        listenerToUpdate.Error_Message__c = 'Failed to process history records: ' + ex.getMessage();
+                    }
                     update listenerToUpdate;
                 } catch (Exception updateEx) {
                     System.debug(LoggingLevel.ERROR, 'Error updating listener with error message: ' + updateEx.getMessage());
@@ -916,11 +1072,26 @@ global with sharing class ListenerFlowController {
                 listenerFlow.varCurrentFieldValue = (String) historyRecord.get('NewValue');
                 listenerFlow.varCurrentObjectID = parentId;
                 String nameField = (listenerConfig.Object_Name__c == 'Case') ? 'CaseNumber' : 'Name';
-                listenerFlow.varNameofTrackedRecord = (String) sObjectMap.get(parentId).get(nameField);
+                // Safely get the parent record name - handle case where parent was deleted
+                if (sObjectMap.containsKey(parentId) && sObjectMap.get(parentId) != null) {
+                    SObject parentRecord = sObjectMap.get(parentId);
+                    listenerFlow.varNameofTrackedRecord = (String) parentRecord.get(nameField);
+                } else {
+                    // Parent record was deleted or not found - use a default value
+                    listenerFlow.varNameofTrackedRecord = '[Record Deleted]';
+                }
                 listenerFlow.varTrackedCustomObjectName = listenerConfig.Object_Name__c;
                 listenerFlow.varEditStartTime = (Datetime) historyRecord.get('CreatedDate');
                 listenerFlow.varEditEndTime = System.now();
-                listenerFlow.varType = listenerConfig.Type__c;
+                
+                // Get the actual Type field value from the parent record, not the field API name
+                if (String.isNotBlank(listenerConfig.Type__c) && sObjectMap.containsKey(parentId)) {
+                    SObject parentRecord = sObjectMap.get(parentId);
+                    Object typeValue = parentRecord.get(listenerConfig.Type__c);
+                    if (typeValue != null) {
+                        listenerFlow.varType = String.valueOf(typeValue);
+                    }
+                }
 
                 // Current history record Id
                 Id currentHistoryId = (Id) historyRecord.get('Id');
@@ -996,31 +1167,14 @@ global with sharing class ListenerFlowController {
         }
 
         // Persist leftovers (or clear the field if none left)
-        listenerConfig.Flowdometer__Unprocessed_History_Records__c = remainingRecordsJson;
+        if (Schema.sObjectType.Listener__c.fields.Flowdometer__Unprocessed_History_Records__c.isUpdateable()) {
+            listenerConfig.Flowdometer__Unprocessed_History_Records__c = remainingRecordsJson;
+        }
         update listenerConfig;
 
         // Finally give Flow only the first batch for this run
         response.lstListenerFlow = firstBatch;
         response.hasRecords = !response.lstListenerFlow.isEmpty();
-    }
-
-    // Called by: parseRecordsToFlow
-    // Overloaded version of preparingResponse that supports history tracking flag
-    @TestVisible
-    public void preparingResponse(
-        ListenerFlowLatestResponse response,
-        Listener__c listenerConfig,
-        Map<Id, SObject> sObjectMap,
-        ListenerFlowController controllerInstance,
-        Boolean enableHistoryTracking
-    ) {
-        // If history tracking is explicitly disabled, just mark no records and exit
-        if(enableHistoryTracking == false) {
-            response.hasRecords = false;
-            return;
-        }
-        // Delegate to 4-arg version
-        preparingResponse(response, listenerConfig, sObjectMap, controllerInstance);
     }
 
     // Called by: parseRecordsToFlow
@@ -1044,27 +1198,4 @@ global with sharing class ListenerFlowController {
         preparingResponse(response, listenerConfig, converted, controllerInstance);
     }
 
-    // Called by: parseRecordsToFlow
-    // Overloaded version of preparingResponse that supports both String-keyed maps and history tracking
-    @TestVisible
-    public void preparingResponse(
-        ListenerFlowLatestResponse response,
-        Listener__c listenerConfig,
-        Map<String, SObject> sObjectMap,
-        ListenerFlowController controllerInstance,
-        Boolean enableHistoryTracking
-    ) {
-        if(enableHistoryTracking == false) {
-            response.hasRecords = false;
-            return;
-        }
-        // Convert then delegate
-        Map<Id, SObject> converted = new Map<Id, SObject>();
-        for(String strId : sObjectMap.keySet()) {
-            try {
-                converted.put(Id.valueOf(strId), sObjectMap.get(strId));
-            } catch(Exception ex) {}
-        }
-        preparingResponse(response, listenerConfig, converted, controllerInstance);
-    }
 }

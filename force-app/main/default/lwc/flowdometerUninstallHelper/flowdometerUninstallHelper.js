@@ -67,4 +67,11 @@ export default class FlowdometerUninstallHelper extends LightningElement {
     get buttonDisabled() {
         return this.isLoading || (this.deactivationStatus.success && this.deactivationStatus.deactivatedCount > 0);
     }
-} 
+    
+    // Handle click on the Open Flows button
+    handleOpenFlows() {
+        // Navigate to the Flows page
+        const url = '/lightning/setup/Flows/home';
+        window.open(url, '_blank');
+    }
+}
