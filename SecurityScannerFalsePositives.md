@@ -98,6 +98,21 @@ Salesforce Graph Engine threw a `ClassCastException` while analysing complex gen
 
 ---
 
+## 9. Sharing Model Warning on `MetaDataUtilityCls`
+*Scanner rule:* *Apex Sharing Violations / Checkmarx Query 1031*  
+*File:* `MetaDataUtilityCls.cls`  
+*Scans:* 1008519 (Nov 14) & 1009115 (Nov 23)
+
+**Why it is a false positive**
+1. The class is declared `public inherited sharing`, so it automatically honours the caller's sharing context.
+2. Methods inside the class only perform metadata describe/read operations plus Metadata/Tooling API callouts; they never query or mutate subscriber business data.
+3. Entry points (`ListenerMasterConfigurationController`, `FlowdometerUninstallHelper`, etc.) are already `with sharing`, so user-level record visibility is preserved before `MetaDataUtilityCls` runs.
+4. Salesforce's managed-package security guidance recommends `inherited sharing` for cross-cutting utility classes like this one.
+
+Documenting this rationale satisfies Checkmarx review requirements (for both scans listed above) without weakening the required sharing behaviour.
+
+---
+
 ### Summary Table
 | Scanner Finding | Severity | Status | Section |
 |-----------------|----------|---------|---------|
@@ -109,5 +124,6 @@ Salesforce Graph Engine threw a `ClassCastException` while analysing complex gen
 | Performance – Mass Schema Lookup | 1 | False Positive | 6 |
 | Null Pointer Potential | 2 | False Positive | 7 |
 | InternalExecutionError | 3 | Tool Bug | 8 |
+| Sharing warning (`MetaDataUtilityCls`) | 2 | False Positive | 9 |
 
 All scanner findings are either false positives or tool errors; no code changes are required. 

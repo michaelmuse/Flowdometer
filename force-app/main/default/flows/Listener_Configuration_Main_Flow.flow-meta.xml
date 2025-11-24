@@ -45,6 +45,7 @@
             </value>
         </assignmentItems>
         <connector>
+            <isGoTo>true</isGoTo>
             <targetReference>Update_FlowdoConfig_0</targetReference>
         </connector>
     </assignments>
@@ -101,7 +102,6 @@
             </value>
         </assignmentItems>
         <connector>
-            <isGoTo>true</isGoTo>
             <targetReference>Update_FlowdoConfig_0</targetReference>
         </connector>
     </assignments>
@@ -203,13 +203,6 @@
             <conditionLogic>and</conditionLogic>
             <conditions>
                 <leftValueReference>varFlowDoConfig.isActive__c</leftValueReference>
-                <operator>EqualTo</operator>
-                <rightValue>
-                    <booleanValue>true</booleanValue>
-                </rightValue>
-            </conditions>
-            <conditions>
-                <leftValueReference>varFlowDoConfig.Enable_History__c</leftValueReference>
                 <operator>EqualTo</operator>
                 <rightValue>
                     <booleanValue>true</booleanValue>
@@ -536,8 +529,8 @@
     <recordUpdates>
         <name>Update_FlowdoConfig_0</name>
         <label>Update FlowdoConfig</label>
-        <locationX>442</locationX>
-        <locationY>2282</locationY>
+        <locationX>706</locationX>
+        <locationY>674</locationY>
         <inputReference>updateFlowdoConfig</inputReference>
     </recordUpdates>
     <start>
@@ -547,7 +540,7 @@
             <targetReference>Check_FlowdoConfig</targetReference>
         </connector>
     </start>
-    <status>Draft</status>
+    <status>Active</status>
     <subflows>
         <name>Create_Listener_Records_Using_Parsed_History_Records</name>
         <label>Create Tracker Records Using Parsed History Records</label>

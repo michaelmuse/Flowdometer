@@ -60,4 +60,4 @@ public with sharing class FeatureFlagUtil {
     public static void clearCache() {
         featureFlagCache.clear();
     }
-} 
+}

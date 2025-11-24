@@ -305,36 +305,19 @@ public inherited sharing class MetaDataUtilityCls {
             
             Map<String, Schema.SObjectField> fieldMap = sObjectType.getDescribe().fields.getMap();
             
-        if (fieldMap == null) {
-            System.debug(
-                LoggingLevel.INFO,
+            if (fieldMap == null) {
+                System.debug(
+                    LoggingLevel.INFO,
                     objName + ' is not a valid Salesforce Object or is not accessible.'
-            );
+                );
                 return false;
             }
 
-            // Safe string operations for managed package objects
-            String normalizedFieldName = fieldName;
-            if (fieldName != null && fieldName.toLowerCase().startsWith('flowdometer__') && 
-                objName != null && !objName.toLowerCase().startsWith('flowdometer__')) {
-                // Safely extract substring only if the prefix exists
-                normalizedFieldName = fieldName.substring(Math.min(fieldName.length(), 'flowdometer__'.length()));
-            }
-            
-            // Handle managed package fields in managed package objects
-            if (objName != null && objName.contains('__')) {
-                List<String> parts = objName.split('__');
-                if (parts.size() > 2 && !objName.startsWith('Flowdometer__')) {
-                    // This is likely a managed package object with a namespace
-                    System.debug(
-                        LoggingLevel.INFO,
-                        objName + ' appears to be a managed package object. Checking field ' + normalizedFieldName
-                    );
-                }
-            }
-
+            // In managed packages, fields created via Metadata API automatically get the namespace prefix (e.g., Flowdometer__Name_Flow__c)
+            // The fieldMap contains field names exactly as they exist in the schema, including namespace prefixes
+            // We should check for the field name as-is (with namespace prefix if it's a Flowdometer field)
             // Perform a case-insensitive comparison so we don't miss matches that differ only by letter-case
-            String needle = normalizedFieldName.toLowerCase();
+            String needle = fieldName.toLowerCase();
             for(String existingName : fieldMap.keySet()) {
                 if(existingName != null && existingName.toLowerCase() == needle) {
                     return true;
@@ -357,6 +340,110 @@ public inherited sharing class MetaDataUtilityCls {
         sanitized = 'Flowdometer__' + sanitized + '__c';
         System.debug(LoggingLevel.INFO, sanitized);
         return sanitized;
+    }
+
+    /**
+     * Enable field history tracking for standard objects using Tooling API REST calls
+     * Note: FieldDefinition.IsFieldHistoryTracked is read-only via DML, so we use REST API
+     * However, standard object field history tracking typically requires manual setup or Metadata API
+     * This method attempts to enable it but may not work for all standard objects
+     * @param sObjectApiName The API name of the object
+     * @param fieldName The API name of the field
+     * @return true if successful, false otherwise
+     */
+    private static Boolean enableFieldHistoryTrackingViaTooling(String sObjectApiName, String fieldName) {
+        try {
+            // Query for the FieldDefinition record to check current status
+            List<FieldDefinition> fieldDefs = [
+                SELECT Id, QualifiedApiName, IsFieldHistoryTracked
+                FROM FieldDefinition
+                WHERE EntityDefinition.QualifiedApiName = :sObjectApiName
+                AND QualifiedApiName = :fieldName
+                LIMIT 1
+            ];
+            
+            if (fieldDefs.isEmpty()) {
+                System.debug(LoggingLevel.ERROR, 'FieldDefinition not found for ' + sObjectApiName + '.' + fieldName);
+                return false;
+            }
+            
+            FieldDefinition fieldDef = fieldDefs[0];
+            
+            // If already tracked, return success
+            if (fieldDef.IsFieldHistoryTracked) {
+                System.debug(LoggingLevel.INFO, 'History tracking already enabled for ' + sObjectApiName + '.' + fieldName);
+                return true;
+            }
+            
+            // Note: FieldDefinition.IsFieldHistoryTracked is read-only via DML
+            // Use REST API call to Tooling API to update it
+            String baseUrl = URL.getOrgDomainUrl().toExternalForm();
+            String apiVersion = 'v58.0';
+            String sessionId = UserInfo.getSessionId();
+            
+            // Prepare the update payload
+            Map<String, Object> updatePayload = new Map<String, Object>();
+            updatePayload.put('IsFieldHistoryTracked', true);
+            
+            HttpRequest req = new HttpRequest();
+            req.setEndpoint(baseUrl + '/services/data/' + apiVersion + '/tooling/sobjects/FieldDefinition/' + fieldDef.Id);
+            req.setMethod('PATCH');
+            req.setHeader('Authorization', 'Bearer ' + sessionId);
+            req.setHeader('Content-Type', 'application/json');
+            req.setBody(JSON.serialize(updatePayload));
+            req.setTimeout(120000); // 120 second timeout
+            
+            Http http = new Http();
+            HttpResponse resp = http.send(req);
+            
+            System.debug(LoggingLevel.INFO, 'Tooling API REST response for ' + sObjectApiName + '.' + fieldName + 
+                        ': Status=' + resp.getStatusCode() + ', Body=' + resp.getBody());
+            
+            if (resp.getStatusCode() >= 200 && resp.getStatusCode() < 300) {
+                // Verify the update actually worked by re-querying
+                // Wait a moment for the update to propagate
+                // Note: In a transaction, this might not reflect immediately, but we'll check anyway
+                List<FieldDefinition> verifyDefs = [
+                    SELECT Id, QualifiedApiName, IsFieldHistoryTracked
+                    FROM FieldDefinition
+                    WHERE Id = :fieldDef.Id
+                    LIMIT 1
+                ];
+                
+                if (!verifyDefs.isEmpty() && verifyDefs[0].IsFieldHistoryTracked) {
+                    System.debug(LoggingLevel.INFO, 'Successfully enabled history tracking via Tooling API REST for ' + sObjectApiName + '.' + fieldName);
+                    return true;
+                } else {
+                    // Update call succeeded but field is still not tracked
+                    // This can happen if the field is not eligible for history tracking
+                    System.debug(LoggingLevel.WARN, 'Tooling API call succeeded but field is still not tracked. Field may not be eligible for history tracking.');
+                    return false;
+                }
+            } else {
+                // Log the full error response for debugging
+                String errorBody = resp.getBody();
+                System.debug(LoggingLevel.ERROR, 'Could not enable history tracking via Tooling API REST. Status: ' + resp.getStatusCode() + ', Body: ' + errorBody);
+                
+                // Check if it's a specific error we can handle
+                if (errorBody != null && errorBody.contains('FIELD_INTEGRITY_EXCEPTION')) {
+                    System.debug(LoggingLevel.WARN, 'Field integrity exception - field may not be eligible for history tracking');
+                } else if (errorBody != null && errorBody.contains('INSUFFICIENT_ACCESS')) {
+                    System.debug(LoggingLevel.WARN, 'Insufficient access to modify field history tracking');
+                } else if (errorBody != null && errorBody.contains('FIELD_CUSTOM_VALIDATION_EXCEPTION')) {
+                    System.debug(LoggingLevel.WARN, 'Field custom validation exception - field may have validation rules preventing history tracking');
+                } else if (errorBody != null && errorBody.contains('NOT_WRITEABLE')) {
+                    System.debug(LoggingLevel.WARN, 'Field IsFieldHistoryTracked is not writeable via this API');
+                }
+                
+                return false;
+            }
+            
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'Error enabling history tracking via Tooling API: ' + e.getMessage());
+            System.debug(LoggingLevel.ERROR, 'Stack trace: ' + e.getStackTraceString());
+            System.debug(LoggingLevel.INFO, 'For standard objects, field history tracking may need to be enabled manually in Setup > Object Manager');
+            return false;
+        }
     }
 
     //This method checks if the selected field has history tracking enabled. If field history isn't enabled, then it shows the user a message to 'Enable the History tracking'.
@@ -390,10 +477,9 @@ public inherited sharing class MetaDataUtilityCls {
                              '. Proceeding with caution.');
             }
             
-            // Special handling for Case and Opportunity which sometimes show as not having history tracking
-            // but actually do support it through the standard UI
+            // Special handling for Case and Opportunity - check if history tracking is supported
+            // but we still need to verify the specific field is tracked
             if(sObjectApiName == 'Opportunity' || sObjectApiName == 'Case') {
-                // Check if history tracking is already enabled at the object level
                 String historyName = sObjectApiName == 'Opportunity' ? 'OpportunityFieldHistory' : 'CaseHistory';
                 
                 try {
@@ -402,11 +488,7 @@ public inherited sharing class MetaDataUtilityCls {
                     if(historyType != null && historyType.getDescribe().isAccessible()) {
                         System.debug(LoggingLevel.INFO, 'History tracking is supported for ' + sObjectApiName + 
                                     ' through ' + historyName);
-                        
-                        // For these standard objects, we'll allow listeners without requiring explicit history tracking setup
-                        // This handles cases where history tracking is set up in the UI but not visible via the API
-                        returnVal = 'HISTORY_ENABLED_ALREADY';
-                        return returnVal;
+                        // Continue to check if the specific field is actually tracked
                     }
                 } catch(Exception e) {
                     System.debug(LoggingLevel.WARN, 'Error checking ' + historyName + ': ' + e.getMessage());
@@ -453,24 +535,23 @@ public inherited sharing class MetaDataUtilityCls {
                 return returnVal;
             }
             
-            // Check for history tracking
+            // Check for history tracking on the specific field
             String tmpVar1 = sObjectApiName;
-            List<Schema.FieldDefinition> historyTrackedFields = [
+            List<Schema.FieldDefinition> fieldDefs = [
                 SELECT QualifiedApiName, IsFieldHistoryTracked
                 FROM FieldDefinition
-                WHERE EntityDefinition.QualifiedApiName = :tmpVar1 AND IsFieldHistoryTracked = TRUE
+                WHERE EntityDefinition.QualifiedApiName = :tmpVar1 
+                AND QualifiedApiName = :fieldName
+                LIMIT 1
             ];
             
-            System.debug(LoggingLevel.INFO, 'Found ' + historyTrackedFields.size() + 
-                        ' fields with history tracking on ' + sObjectApiName);
-
-            // Check if history tracking is enabled for the given field
             Boolean isHistoryTrackedForThisField = false;
-            for(Schema.FieldDefinition field : historyTrackedFields) {
-                if(field.QualifiedApiName.equalsIgnoreCase(fieldName)) {
-                    isHistoryTrackedForThisField = true;
-                    break;
-                }
+            if (!fieldDefs.isEmpty()) {
+                isHistoryTrackedForThisField = fieldDefs[0].IsFieldHistoryTracked;
+                System.debug(LoggingLevel.INFO, 'Field ' + sObjectApiName + '.' + fieldName + 
+                            ' has IsFieldHistoryTracked = ' + isHistoryTrackedForThisField);
+            } else {
+                System.debug(LoggingLevel.WARN, 'FieldDefinition not found for ' + sObjectApiName + '.' + fieldName);
             }
             
             // If field is already tracked for history, return success
@@ -480,7 +561,8 @@ public inherited sharing class MetaDataUtilityCls {
                             sObjectApiName + '.' + fieldName);
             } else {
                 try {
-                    // Try to enable history tracking for the field
+                    // Try to enable history tracking for the field using Metadata API
+                    // This works for both custom and standard objects
                     MetadataService.enableFieldHistoryTracking(sObjectApiName, fieldName);
                     returnVal = 'HISTORY_NOT_ENABLED_EARLIER_BUT_ENABLED_NOW';
                     System.debug(LoggingLevel.INFO, 'Successfully enabled history tracking for ' + 

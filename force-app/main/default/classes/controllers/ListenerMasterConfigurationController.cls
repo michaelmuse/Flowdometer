@@ -208,7 +208,9 @@ public with sharing class ListenerMasterConfigurationController {
                                   Limits.getCpuTime() + '/' + Limits.getLimitCpuTime();
                 System.debug(LoggingLevel.WARN, cpuLimitMsg);
                 // Store warning in the error message field
-                newRecord.Flowdometer__Error_Message__c = cpuLimitMsg;
+                if (Schema.sObjectType.Listener__c.fields.Flowdometer__Error_Message__c.isCreateable()) {
+                    newRecord.Flowdometer__Error_Message__c = cpuLimitMsg;
+                }
             }
             
             // Check and log the history tracking status before record creation
@@ -221,7 +223,9 @@ public with sharing class ListenerMasterConfigurationController {
             
             // Log warning/error in error message field if applicable
             if (historyStatus != null && (historyStatus.startsWith('ERROR:') || historyStatus.startsWith('WARNING:'))) {
-                newRecord.Flowdometer__Error_Message__c = historyStatus;
+                if (Schema.sObjectType.Listener__c.fields.Flowdometer__Error_Message__c.isCreateable()) {
+                    newRecord.Flowdometer__Error_Message__c = historyStatus;
+                }
             }
             
             // Perform the insert operation
@@ -239,10 +243,20 @@ public with sharing class ListenerMasterConfigurationController {
                     newRecord.Flowdometer__Object_Name__c + '.' + newRecord.Flowdometer__Field_To_Track__c + ': ' + isHistoryEnabled);
                 
                 if (!isHistoryEnabled) {
-                    // History tracking failed, update the error message field
-                    String historyErrorMsg = 'Warning: History tracking could not be verified for ' + 
-                                          newRecord.Flowdometer__Object_Name__c + '.' + 
-                                          newRecord.Flowdometer__Field_To_Track__c;
+                    // History tracking is not enabled
+                    // Check if we already have a detailed warning message from checkFieldHistoryStatus
+                    String historyErrorMsg;
+                    if (historyStatus != null && historyStatus.startsWith('WARNING:')) {
+                        // Use the detailed message from checkFieldHistoryStatus which includes instructions
+                        historyErrorMsg = historyStatus;
+                    } else {
+                        // Fallback to generic message if no detailed message was provided
+                        historyErrorMsg = 'Warning: History tracking could not be verified for ' + 
+                                      newRecord.Flowdometer__Object_Name__c + '.' + 
+                                      newRecord.Flowdometer__Field_To_Track__c + 
+                                      '. Please enable field history tracking manually in Setup > Object Manager > ' +
+                                      newRecord.Flowdometer__Object_Name__c + ' > Fields & Relationships > Set History Tracking.';
+                    }
                     
                     // Check if we have permission to update the error message field
                     if (Schema.sObjectType.Flowdometer__Listener__c.fields.Flowdometer__Error_Message__c.isUpdateable()) {
@@ -286,7 +300,7 @@ public with sharing class ListenerMasterConfigurationController {
 
             // Friendly labels for the two lookup fields
             String fieldLabelForLookupToFlow   = trackedFieldLabel  + ' Flow';
-            String fieldLabelForLookupFromFlow = trackedObjectLabel + ' Record';
+            String fieldLabelForLookupFromFlow = trackedObjectLabel;
 
             String apiConvertedLabel = MetaDataUtilityCls.convertLabeltoAPIName(fieldLabelForLookupToFlow);
             
@@ -354,19 +368,48 @@ public with sharing class ListenerMasterConfigurationController {
         try {
             System.debug(LoggingLevel.INFO, 'Checking tracker creation for Listener ID: ' + listenerId);
             
-            // Query for the Listener record
+            // Ensure Listener__c fields are readable before querying
+            if (!Schema.sObjectType.Flowdometer__Listener__c.isAccessible() ||
+                !Schema.sObjectType.Flowdometer__Listener__c.fields.Flowdometer__Object_Name__c.isAccessible() ||
+                !Schema.sObjectType.Flowdometer__Listener__c.fields.Flowdometer__Field_To_Track__c.isAccessible() ||
+                !Schema.sObjectType.Flowdometer__Listener__c.fields.Flowdometer__Error_Message__c.isAccessible() ||
+                !Schema.sObjectType.Flowdometer__Listener__c.fields.Flowdometer__Enable_History__c.isAccessible()) {
+                System.debug(LoggingLevel.WARN, 'Insufficient access to Listener fields; skipping tracker check for ' + listenerId);
+                return;
+            }
+
+            // Query for the Listener record - include Enable_History__c to check toggle state
             Listener__c listener = [
-                SELECT Id, Flowdometer__Object_Name__c, Flowdometer__Field_To_Track__c, Flowdometer__Error_Message__c
+                SELECT Id, Flowdometer__Object_Name__c, Flowdometer__Field_To_Track__c, 
+                       Flowdometer__Error_Message__c, Flowdometer__Enable_History__c
                 FROM Flowdometer__Listener__c 
                 WHERE Id = :listenerId
+                WITH SECURITY_ENFORCED
                 LIMIT 1
             ];
             
+            // If Enable_History__c is false, Flow tracker records won't be created (by design)
+            // This is expected behavior - skip the warning check
+            if (listener.Flowdometer__Enable_History__c == false) {
+                System.debug(LoggingLevel.INFO, 'Enable_History__c is disabled for Listener ' + listenerId + 
+                            '. Flow tracker records will not be created until history tracking is enabled. This is expected behavior.');
+                return; // Exit early - no warning needed
+            }
+            
+            // Ensure Flow__c fields are readable before querying
+            if (!Schema.sObjectType.Flowdometer__Flow__c.isAccessible() ||
+                !Schema.sObjectType.Flowdometer__Flow__c.fields.Name.isAccessible() ||
+                !Schema.sObjectType.Flowdometer__Flow__c.fields.Flowdometer__Tracked_Object__c.isAccessible()) {
+                System.debug(LoggingLevel.WARN, 'Insufficient access to Flowdometer__Flow__c fields; skipping flow tracker verification.');
+                return;
+            }
+
             // Query for Flow records related to this Listener's target object
             List<Flowdometer__Flow__c> flows = [
                 SELECT Id, Name, Flowdometer__Tracked_Object__c 
                 FROM Flowdometer__Flow__c 
                 WHERE Flowdometer__Tracked_Object__c = :listener.Flowdometer__Object_Name__c
+                WITH SECURITY_ENFORCED
                 ORDER BY CreatedDate DESC
                 LIMIT 10
             ];
@@ -382,7 +425,9 @@ public with sharing class ListenerMasterConfigurationController {
                 System.debug(LoggingLevel.WARN, noTrackersMsg);
                 
                 // Update the Listener record with the error message
-                listener.Flowdometer__Error_Message__c = noTrackersMsg;
+                if (Schema.sObjectType.Listener__c.fields.Flowdometer__Error_Message__c.isUpdateable()) {
+                    listener.Flowdometer__Error_Message__c = noTrackersMsg;
+                }
                 update listener;
             } else {
                 // Trackers were created successfully
@@ -405,7 +450,9 @@ public with sharing class ListenerMasterConfigurationController {
                     
                     // Only update if we don't already have a more important error message
                     if (String.isBlank(listener.Flowdometer__Error_Message__c)) {
-                        listener.Flowdometer__Error_Message__c = historyWarning;
+                        if (Schema.sObjectType.Listener__c.fields.Flowdometer__Error_Message__c.isUpdateable()) {
+                            listener.Flowdometer__Error_Message__c = historyWarning;
+                        }
                         update listener;
                     }
                 }
@@ -419,7 +466,7 @@ public with sharing class ListenerMasterConfigurationController {
     }
 
     // Queueable to perform Metadata callout after DML is committed
-    public class LookupFieldCreator implements Queueable, Database.AllowsCallouts {
+    public inherited sharing class LookupFieldCreator implements Queueable, Database.AllowsCallouts {
         String targetObject;
         String fieldLabel;
         String referenceTo;
@@ -431,16 +478,50 @@ public with sharing class ListenerMasterConfigurationController {
             listenerId = lst;
         }
         public void execute(QueueableContext qc) {
-            // Check if field already exists
-            String fieldAPIName = MetaDataUtilityCls.convertLabeltoAPIName(fieldLabel);
-            if (MetaDataUtilityCls.doesFieldExist(targetObject, fieldAPIName)) {
-                // If field exists, just log it and return
-                System.debug(LoggingLevel.INFO, 'Field ' + fieldAPIName + ' already exists on ' + targetObject + ', skipping creation');
-                return;
+            String errorMessage = null;
+            
+            try {
+                // Check if field already exists
+                String fieldAPIName = MetaDataUtilityCls.convertLabeltoAPIName(fieldLabel);
+                if (MetaDataUtilityCls.doesFieldExist(targetObject, fieldAPIName)) {
+                    // If field exists, just log it and return
+                    System.debug(LoggingLevel.INFO, 'Field ' + fieldAPIName + ' already exists on ' + targetObject + ', skipping creation');
+                    return;
+                }
+                
+                // Only call createLookupField if the field doesn't exist
+                Map<String, String> result = MetaDataUtilityCls.createLookupField(targetObject, fieldLabel, referenceTo, listenerId);
+                
+                // Check if creation was successful
+                if (result != null && result.get('success') != 'true') {
+                    errorMessage = 'Failed to create lookup field ' + fieldAPIName + ' on ' + targetObject + 
+                                 ': ' + (result.get('error') != null ? result.get('error') : 'Unknown error');
+                    System.debug(LoggingLevel.ERROR, errorMessage);
+                } else {
+                    System.debug(LoggingLevel.INFO, 'Successfully created lookup field ' + fieldAPIName + ' on ' + targetObject);
+                }
+            } catch (Exception e) {
+                errorMessage = 'Exception creating lookup field ' + fieldLabel + ' on ' + targetObject + 
+                             ': ' + e.getMessage();
+                System.debug(LoggingLevel.ERROR, errorMessage);
+                System.debug(LoggingLevel.ERROR, 'Stack trace: ' + e.getStackTraceString());
             }
             
-            // Only call createLookupField if the field doesn't exist
-            MetaDataUtilityCls.createLookupField(targetObject, fieldLabel, referenceTo, listenerId);
+            // Update the Listener record with any errors
+            if (errorMessage != null && listenerId != null) {
+                try {
+                    if (Schema.sObjectType.Listener__c.fields.Flowdometer__Error_Message__c.isUpdateable()) {
+                        Listener__c listenerToUpdate = new Listener__c(
+                            Id = listenerId,
+                            Flowdometer__Error_Message__c = errorMessage
+                        );
+                        update listenerToUpdate;
+                        System.debug(LoggingLevel.INFO, 'Updated Listener record with error message: ' + errorMessage);
+                    }
+                } catch (Exception updateEx) {
+                    System.debug(LoggingLevel.ERROR, 'Failed to update Listener record with error message: ' + updateEx.getMessage());
+                }
+            }
         }
     }
 }

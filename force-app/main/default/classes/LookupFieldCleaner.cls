@@ -39,4 +39,4 @@ public with sharing class LookupFieldCleaner implements Queueable, Database.Allo
             }
         }
     }
-} 
+}

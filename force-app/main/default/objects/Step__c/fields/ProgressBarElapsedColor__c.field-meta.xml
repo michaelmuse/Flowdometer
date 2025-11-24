@@ -5,8 +5,8 @@
     <externalId>false</externalId>
     <formula>IF(
   StepActive__c,
-  "/resource/Flowdometer__PrimaryBlue",
-  "/resource/Flowdometer__CompletedGreen"
+  &quot;/resource/Flowdometer__PrimaryBlue&quot;,
+  &quot;/resource/Flowdometer__CompletedGreen&quot;
 )</formula>
     <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
     <label>Progress Bar Elapsed Color</label>

@@ -1,0 +1,453 @@
+﻿STASH COMPARISON REPORT
+=======================
+Generated: 2025-11-19 17:19:14
+Stash: stash@{0}
+
+SUMMARY
+-------
+Total Files in Stash: 991
+[OK] Identical Files: 0 (can be discarded)
+[DIFF] Different Files: 78 (need review)
+[NEW] New Files in Stash: 14 (not in current version)
+
+FILES WITH DIFFERENCES
+==================================================
+
+Modified Files (78):
+
+[MODIFIED] .forceignore
+   Status: DIFFERENT
+   Difference:  | Stash: 21 lines, Current: 18 lines
+   Lines: Stash=21, Current=18, Diff=3
+
+[MODIFIED] .gitignore
+   Status: DIFFERENT
+   Difference: First difference at line 32 | Stash: 83 lines, Current: 90 lines
+   Lines: Stash=83, Current=90, Diff=-7
+
+[MODIFIED] .pmdCache
+   Status: DIFFERENT
+   Difference: First difference at line 1
+   Lines: Stash=3, Current=3, Diff=0
+
+[MODIFIED] .prettierignore
+   Status: DIFFERENT
+   Difference: 
+   Lines: Stash=13, Current=13, Diff=0
+
+[MODIFIED] .prettierrc
+   Status: DIFFERENT
+   Difference: 
+   Lines: Stash=21, Current=21, Diff=0
+
+[MODIFIED] .vscode/settings.json
+   Status: DIFFERENT
+   Difference: First difference at line 8 | Stash: 10 lines, Current: 9 lines
+   Lines: Stash=10, Current=9, Diff=1
+
+[MODIFIED] force-app/main/default/aura/ListenerMasterConfigAction/ListenerMasterConfigAction.cmp
+   Status: DIFFERENT
+   Difference:  | Stash: 6 lines, Current: 7 lines
+   Lines: Stash=6, Current=7, Diff=-1
+
+[MODIFIED] force-app/main/default/aura/ListenerMasterConfigAction/ListenerMasterConfigActionController.js
+   Status: DIFFERENT
+   Difference:  | Stash: 3 lines, Current: 4 lines
+   Lines: Stash=3, Current=4, Diff=-1
+
+[MODIFIED] force-app/main/default/aura/ListenerMasterConfigAction/ListenerMasterConfigActionHelper.js
+   Status: DIFFERENT
+   Difference:  | Stash: 3 lines, Current: 4 lines
+   Lines: Stash=3, Current=4, Diff=-1
+
+[MODIFIED] force-app/main/default/aura/ListenerMasterConfigAction/ListenerMasterConfigActionRenderer.js
+   Status: DIFFERENT
+   Difference:  | Stash: 3 lines, Current: 4 lines
+   Lines: Stash=3, Current=4, Diff=-1
+
+[MODIFIED] force-app/main/default/classes/CalculateBusinessHoursDiff.cls
+   Status: DIFFERENT
+   Difference:  | Stash: 87 lines, Current: 88 lines
+   Lines: Stash=87, Current=88, Diff=-1
+
+[MODIFIED] force-app/main/default/classes/MetaDataUtilityCls.cls
+   Status: DIFFERENT
+   Difference: First difference at line 316 | Stash: 818 lines, Current: 715 lines
+   Lines: Stash=818, Current=715, Diff=103
+
+[MODIFIED] force-app/main/default/classes/MetaDataUtilityCls.cls-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 5 lines, Current: 6 lines
+   Lines: Stash=5, Current=6, Diff=-1
+
+[MODIFIED] force-app/main/default/classes/PostInstallScript.cls
+   Status: DIFFERENT
+   Difference: First difference at line 1 | Stash: 57 lines, Current: 3 lines
+   Lines: Stash=57, Current=3, Diff=54
+
+[MODIFIED] force-app/main/default/flows/Asana_Task_changes_create_Flows_and_Steps.flow-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 283 lines, Current: 284 lines
+   Lines: Stash=283, Current=284, Diff=-1
+
+[MODIFIED] force-app/main/default/flows/Asana_Task_created_in_Asana.flow-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 203 lines, Current: 204 lines
+   Lines: Stash=203, Current=204, Diff=-1
+
+[MODIFIED] force-app/main/default/flows/Assign_New_Goals_to_Matching_Flows_with_No_Goal.flow-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 323 lines, Current: 324 lines
+   Lines: Stash=323, Current=324, Diff=-1
+
+[MODIFIED] force-app/main/default/flows/Case_Status_changes_create_Flows_and_Steps.flow-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 370 lines, Current: 371 lines
+   Lines: Stash=370, Current=371, Diff=-1
+
+[MODIFIED] force-app/main/default/flows/Flowdometer_Autocalculate_Business_Hours.flow-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 114 lines, Current: 115 lines
+   Lines: Stash=114, Current=115, Diff=-1
+
+[MODIFIED] force-app/main/default/flows/Flowdometer_Update_Tasks_with_Current_Step.flow-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 216 lines, Current: 217 lines
+   Lines: Stash=216, Current=217, Diff=-1
+
+[MODIFIED] force-app/main/default/flows/Lead_Status_changes_create_Flows_and_Steps.flow-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 381 lines, Current: 382 lines
+   Lines: Stash=381, Current=382, Diff=-1
+
+[MODIFIED] force-app/main/default/flows/Listener_Batch_Flow.flow-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 179 lines, Current: 180 lines
+   Lines: Stash=179, Current=180, Diff=-1
+
+[MODIFIED] force-app/main/default/flows/Listener_Configuration_Main_Flow.flow-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 795 lines, Current: 796 lines
+   Lines: Stash=795, Current=796, Diff=-1
+
+[MODIFIED] force-app/main/default/flows/Listener_Flow_Sub_Flow.flow-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 1263 lines, Current: 1264 lines
+   Lines: Stash=1263, Current=1264, Diff=-1
+
+[MODIFIED] force-app/main/default/flows/Opportunity_Stage_changes_create_Flows_and_Steps.flow-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 370 lines, Current: 371 lines
+   Lines: Stash=370, Current=371, Diff=-1
+
+[MODIFIED] force-app/main/default/flows/asana_makes_flows_and_steps.flow-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 326 lines, Current: 327 lines
+   Lines: Stash=326, Current=327, Diff=-1
+
+[MODIFIED] force-app/main/default/lwc/customErrorMessage/customErrorMessage.html
+   Status: DIFFERENT
+   Difference:  | Stash: 38 lines, Current: 39 lines
+   Lines: Stash=38, Current=39, Diff=-1
+
+[MODIFIED] force-app/main/default/lwc/customErrorMessage/customErrorMessage.js
+   Status: DIFFERENT
+   Difference:  | Stash: 85 lines, Current: 86 lines
+   Lines: Stash=85, Current=86, Diff=-1
+
+[MODIFIED] force-app/main/default/lwc/flowdometerInstructions/flowdometerInstructions.css
+   Status: DIFFERENT
+   Difference:  | Stash: 46 lines, Current: 47 lines
+   Lines: Stash=46, Current=47, Diff=-1
+
+[MODIFIED] force-app/main/default/lwc/flowdometerInstructions/flowdometerInstructions.html
+   Status: DIFFERENT
+   Difference:  | Stash: 52 lines, Current: 53 lines
+   Lines: Stash=52, Current=53, Diff=-1
+
+[MODIFIED] force-app/main/default/lwc/flowdometerInstructions/flowdometerInstructions.js
+   Status: DIFFERENT
+   Difference: First difference at line 32 | Stash: 98 lines, Current: 99 lines
+   Lines: Stash=98, Current=99, Diff=-1
+
+[MODIFIED] force-app/main/default/lwc/listenerMasterConfiguration/listenerMasterConfiguration.html
+   Status: DIFFERENT
+   Difference:  | Stash: 118 lines, Current: 119 lines
+   Lines: Stash=118, Current=119, Diff=-1
+
+[MODIFIED] force-app/main/default/lwc/listenerMasterConfiguration/listenerMasterConfiguration.js
+   Status: DIFFERENT
+   Difference:  | Stash: 407 lines, Current: 408 lines
+   Lines: Stash=407, Current=408, Diff=-1
+
+[MODIFIED] force-app/main/default/lwc/listenerMasterConfiguration/listenerMasterConfiguration.js-meta.xml
+   Status: DIFFERENT
+   Difference: 
+   Lines: Stash=18, Current=18, Diff=0
+
+[MODIFIED] force-app/main/default/lwc/modal/modal.html
+   Status: DIFFERENT
+   Difference:  | Stash: 48 lines, Current: 49 lines
+   Lines: Stash=48, Current=49, Diff=-1
+
+[MODIFIED] force-app/main/default/lwc/modal/modal.js
+   Status: DIFFERENT
+   Difference:  | Stash: 48 lines, Current: 49 lines
+   Lines: Stash=48, Current=49, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Flow__c/fields/Next_Breach_At__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 13 lines, Current: 14 lines
+   Lines: Stash=13, Current=14, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Flow__c/fields/Progress_Bar_vs_Goal__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 17 lines, Current: 18 lines
+   Lines: Stash=17, Current=18, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Listener__c/Listener__c.object-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 175 lines, Current: 176 lines
+   Lines: Stash=175, Current=176, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Listener__c/fields/Error_Message__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 11 lines, Current: 12 lines
+   Lines: Stash=11, Current=12, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Listener__c/fields/Field_To_Track__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 14 lines, Current: 15 lines
+   Lines: Stash=14, Current=15, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Listener__c/fields/Frequency__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 15 lines, Current: 16 lines
+   Lines: Stash=15, Current=16, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Listener__c/fields/Last_Check__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 12 lines, Current: 13 lines
+   Lines: Stash=12, Current=13, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Listener__c/fields/Last_Execution_On__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 11 lines, Current: 12 lines
+   Lines: Stash=11, Current=12, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Listener__c/fields/Latest_Flow_Error_Message__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 11 lines, Current: 12 lines
+   Lines: Stash=11, Current=12, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Listener__c/fields/Next_Check__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 15 lines, Current: 16 lines
+   Lines: Stash=15, Current=16, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Listener__c/fields/Object_Name__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 14 lines, Current: 15 lines
+   Lines: Stash=14, Current=15, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Listener__c/fields/TerminalStage__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 18 lines, Current: 19 lines
+   Lines: Stash=18, Current=19, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Listener__c/fields/Type__c.field-meta.xml
+   Status: DIFFERENT
+   Difference: First difference at line 9 | Stash: 16 lines, Current: 17 lines
+   Lines: Stash=16, Current=17, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Listener__c/fields/Unprocessed_History_Records__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 12 lines, Current: 13 lines
+   Lines: Stash=12, Current=13, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Listener__c/fields/isActive__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 11 lines, Current: 12 lines
+   Lines: Stash=11, Current=12, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/BreachTime__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 34 lines, Current: 35 lines
+   Lines: Stash=34, Current=35, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/CreatedByMe__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 11 lines, Current: 12 lines
+   Lines: Stash=11, Current=12, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/EndTimestamp__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 17 lines, Current: 18 lines
+   Lines: Stash=17, Current=18, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/FlowGoalID__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 15 lines, Current: 16 lines
+   Lines: Stash=15, Current=16, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/GoalBreached__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 12 lines, Current: 13 lines
+   Lines: Stash=12, Current=13, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/HandleTimeVsGoal__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 28 lines, Current: 29 lines
+   Lines: Stash=28, Current=29, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/HandleTimeWeekdays__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 24 lines, Current: 25 lines
+   Lines: Stash=24, Current=25, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/HandleTimeWeekend__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 17 lines, Current: 18 lines
+   Lines: Stash=17, Current=18, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/Handle_Time_Business_Hours__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 14 lines, Current: 15 lines
+   Lines: Stash=14, Current=15, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/History_Record_ID__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 12 lines, Current: 13 lines
+   Lines: Stash=12, Current=13, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/History_Record_ID_for_Last_Step__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 12 lines, Current: 13 lines
+   Lines: Stash=12, Current=13, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/InitialTimestamp__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 17 lines, Current: 18 lines
+   Lines: Stash=17, Current=18, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/NextStepVsGoalNextStep__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 21 lines, Current: 22 lines
+   Lines: Stash=21, Current=22, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/ProgressBarElapsedColor__c.field-meta.xml
+   Status: DIFFERENT
+   Difference: First difference at line 8 | Stash: 17 lines, Current: 18 lines
+   Lines: Stash=17, Current=18, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/ProgressBarRemainingColor__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 19 lines, Current: 20 lines
+   Lines: Stash=19, Current=20, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/ProgressBarVsGoal__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 17 lines, Current: 18 lines
+   Lines: Stash=17, Current=18, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/Progress_Bar_Elapsed_Color__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 17 lines, Current: 18 lines
+   Lines: Stash=17, Current=18, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/Progress_Bar_Remaining_Color__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 19 lines, Current: 20 lines
+   Lines: Stash=19, Current=20, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/SequenceInitialFieldValue__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 13 lines, Current: 14 lines
+   Lines: Stash=13, Current=14, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/StartDate__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 13 lines, Current: 14 lines
+   Lines: Stash=13, Current=14, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/StepActive__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 20 lines, Current: 21 lines
+   Lines: Stash=20, Current=21, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/StepVsTotal__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 18 lines, Current: 19 lines
+   Lines: Stash=18, Current=19, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/TimeSinceBreach__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 34 lines, Current: 35 lines
+   Lines: Stash=34, Current=35, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/TimeUntilBreach__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 16 lines, Current: 17 lines
+   Lines: Stash=16, Current=17, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/TrackedFieldName__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 13 lines, Current: 14 lines
+   Lines: Stash=13, Current=14, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/TrackedObjectLink__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 13 lines, Current: 14 lines
+   Lines: Stash=13, Current=14, Diff=-1
+
+[MODIFIED] force-app/main/default/objects/Step__c/fields/TrackedObjectType__c.field-meta.xml
+   Status: DIFFERENT
+   Difference:  | Stash: 13 lines, Current: 14 lines
+   Lines: Stash=13, Current=14, Diff=-1
+
+
+New Files in Stash (14):
+
+[NEW] .cursorignore
+   File exists in stash but not in current version
+
+[NEW] .cursorrules
+   File exists in stash but not in current version
+
+[NEW] Flow_ids.csv
+   File exists in stash but not in current version
+
+[NEW] force-app/main/default/classes/CalculateBusinessHoursDiffTest.cls
+   File exists in stash but not in current version
+
+[NEW] force-app/main/default/classes/GetFlowsListController.cls
+   File exists in stash but not in current version
+
+[NEW] force-app/main/default/classes/ListenerFlowController.cls
+   File exists in stash but not in current version
+
+[NEW] force-app/main/default/classes/ListenerFlowControllerTest.cls
+   File exists in stash but not in current version
+
+[NEW] force-app/main/default/classes/ListenerUpdateFlowController.cls
+   File exists in stash but not in current version
+
+[NEW] force-app/main/default/classes/ListenerUpdateFlowControllerTest.cls
+   File exists in stash but not in current version
+
+[NEW] force-app/main/default/classes/MetaDataUtilityClsTest.cls
+   File exists in stash but not in current version
+
+[NEW] force-app/main/default/classes/MetadataService.cls
+   File exists in stash but not in current version
+
+[NEW] force-app/main/default/classes/MetadataServiceTest.cls
+   File exists in stash but not in current version
+
+[NEW] force-app/main/default/classes/TestDataFactory.cls
+   File exists in stash but not in current version
+
+[NEW] force-app/main/default/classes/TestDataFactoryTest.cls
+   File exists in stash but not in current version
+
+

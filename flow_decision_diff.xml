@@ -1,0 +1,84 @@
+<!-- 
+    DIFF: Check_FlowdoConfig Decision Element
+    ==========================================
+    
+    VERSION 22 (ACTIVE) vs VERSION 23 (DRAFT)
+-->
+
+<!-- ============================================ -->
+<!-- VERSION 22 (ACTIVE) - CURRENT BEHAVIOR      -->
+<!-- ============================================ -->
+<decisions>
+    <name>Check_FlowdoConfig</name>
+    <label>Check FlowdoConfig</label>
+    <locationX>833</locationX>
+    <locationY>134</locationY>
+    <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
+    <rules>
+        <name>isActive_Config</name>
+        <conditionLogic>and</conditionLogic>
+        <conditions>
+            <leftValueReference>varFlowDoConfig.Flowdometer__isActive__c</leftValueReference>
+            <operator>EqualTo</operator>
+            <rightValue>
+                <booleanValue>true</booleanValue>
+            </rightValue>
+        </conditions>
+        <!-- ONLY ONE CONDITION - No Enable_History__c check -->
+        <connector>
+            <targetReference>Reset_Trigger</targetReference>
+        </connector>
+        <label>isActive Config</label>
+    </rules>
+</decisions>
+
+<!-- ============================================ -->
+<!-- VERSION 23 (DRAFT) - PROPOSED BEHAVIOR       -->
+<!-- ============================================ -->
+<decisions>
+    <name>Check_FlowdoConfig</name>
+    <label>Check FlowdoConfig</label>
+    <locationX>833</locationX>
+    <locationY>134</locationY>
+    <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
+    <rules>
+        <name>isActive_Config</name>
+        <conditionLogic>and</conditionLogic>
+        <conditions>
+            <leftValueReference>varFlowDoConfig.isActive__c</leftValueReference>
+            <operator>EqualTo</operator>
+            <rightValue>
+                <booleanValue>true</booleanValue>
+            </rightValue>
+        </conditions>
+        <!-- ADDED CONDITION: Enable_History__c check -->
+        <conditions>
+            <leftValueReference>varFlowDoConfig.Enable_History__c</leftValueReference>
+            <operator>EqualTo</operator>
+            <rightValue>
+                <booleanValue>true</booleanValue>
+            </rightValue>
+        </conditions>
+        <connector>
+            <targetReference>Reset_Trigger</targetReference>
+        </connector>
+        <label>isActive Config</label>
+    </rules>
+</decisions>
+
+<!-- ============================================ -->
+<!-- DIFF SUMMARY                                 -->
+<!-- ============================================ -->
+<!--
+    ADDED in v23:
+    - Second condition checking Enable_History__c == true
+    
+    IMPACT:
+    - v22: Flow proceeds to Apex when isActive__c=true (regardless of Enable_History__c)
+    - v23: Flow only proceeds to Apex when BOTH isActive__c=true AND Enable_History__c=true
+    
+    PROBLEM:
+    - v23 incorrectly blocks the flow from calling Apex when Enable_History__c=false
+    - This prevents new history queries (after Last_Execution_On__c) from being processed
+    - The Apex code already handles Enable_History__c correctly, so the flow check is redundant and harmful
+-->

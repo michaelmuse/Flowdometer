@@ -1,0 +1,533 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<CxXMLResults InitiatorName="popcrab submitter" Owner="submitter" ScanId="1008519" ProjectId="8516" ProjectName="4675e46d-ae90-479e-a5b4-2170d2a22f61" TeamFullPathOnReportDate="CxServer\AppExchange\Portal" DeepLink="https://phx-cmarx-wp001.internal.salesforce.com/CxWebClient/ViewerMain.aspx?scanid=1008519&amp;projectid=8516" ScanStart="Friday, November 14, 2025 6:10:41 AM" Preset="PortalSecurity" ScanTime="00h:00m:40s" LinesOfCodeScanned="24866" FilesScanned="98" ReportCreationTime="Friday, November 14, 2025 10:11:59 AM" Team="Portal" CheckmarxVersion="9.7.1.1000 " ScanComments="popcrab" ScanType="Full" SourceOrigin="LocalPath" Visibility="Public">
+  <Query id="1026" categories="OWASP Top 10 2013;A5-Security Misconfiguration,OWASP Top 10 2017;A6-Security Misconfiguration,ASA Premium;ASA Premium,CWE top 25;CWE top 25,MOIS(KISA) Secure Coding 2021;MOIS(KISA) Security Functions,OWASP ASVS;V04 Access Control,OWASP Top 10 2021;A1-Broken Access Control,PCI DSS v3.2.1;PCI DSS (3.2.1) - 6.5.8 - Improper access control,SANS top 25;SANS top 25,Top Tier;Top Tier,PCI DSS v4.0;PCI DSS (4.0) - 6.2.4 Vulnerabilities in software development" cweId="285" name="FLS_Update" group="Apex_Force_com_Serious_Security_Risk" Severity="Medium" Language="Apex" LanguageHash="6218350765986917" LanguageChangeDate="2025-01-13T00:00:00.0000000" SeverityIndex="2" QueryPath="Apex\Cx\Apex Force com Serious Security Risk\FLS Update Version:2" QueryVersionCode="60823908">
+    <Result NodeId="10085190003" FileName="classes/ListenerMasterConfigurationController.cls" Status="New" Line="385" Column="26" FalsePositive="False" Severity="Medium" AssignToUser="" state="0" Remark="" DeepLink="https://phx-cmarx-wp001.internal.salesforce.com/CxWebClient/ViewerMain.aspx?scanid=1008519&amp;projectid=8516&amp;pathid=3" SeverityIndex="2" StatusIndex="2" DetectionDate="11/14/2025 10:11:21 AM">
+      <Path ResultId="1008519" PathId="3" SimilarityId="-1365358428" SourceMethod="checkTrackersAfterDelay" DestinationMethod="checkTrackersAfterDelay">
+        <PathNode>
+          <FileName>classes/ListenerMasterConfigurationController.cls</FileName>
+          <Line>385</Line>
+          <Column>26</Column>
+          <NodeId>1</NodeId>
+          <Name>flowdometer__error_message__c</Name>
+          <Type></Type>
+          <Length>29</Length>
+          <Snippet>
+            <Line>
+              <Number>385</Number>
+              <Code>listener.Flowdometer__Error_Message__c = noTrackersMsg;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+        <PathNode>
+          <FileName>classes/ListenerMasterConfigurationController.cls</FileName>
+          <Line>385</Line>
+          <Column>17</Column>
+          <NodeId>2</NodeId>
+          <Name>listener</Name>
+          <Type></Type>
+          <Length>8</Length>
+          <Snippet>
+            <Line>
+              <Number>385</Number>
+              <Code>listener.Flowdometer__Error_Message__c = noTrackersMsg;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+        <PathNode>
+          <FileName>classes/ListenerMasterConfigurationController.cls</FileName>
+          <Line>386</Line>
+          <Column>24</Column>
+          <NodeId>3</NodeId>
+          <Name>listener</Name>
+          <Type></Type>
+          <Length>8</Length>
+          <Snippet>
+            <Line>
+              <Number>386</Number>
+              <Code>update listener;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+      </Path>
+    </Result>
+    <Result NodeId="10085190004" FileName="classes/ListenerMasterConfigurationController.cls" Status="New" Line="408" Column="34" FalsePositive="False" Severity="Medium" AssignToUser="" state="0" Remark="" DeepLink="https://phx-cmarx-wp001.internal.salesforce.com/CxWebClient/ViewerMain.aspx?scanid=1008519&amp;projectid=8516&amp;pathid=4" SeverityIndex="2" StatusIndex="2" DetectionDate="11/14/2025 10:11:21 AM">
+      <Path ResultId="1008519" PathId="4" SimilarityId="-1909697595" SourceMethod="checkTrackersAfterDelay" DestinationMethod="checkTrackersAfterDelay">
+        <PathNode>
+          <FileName>classes/ListenerMasterConfigurationController.cls</FileName>
+          <Line>408</Line>
+          <Column>34</Column>
+          <NodeId>1</NodeId>
+          <Name>flowdometer__error_message__c</Name>
+          <Type></Type>
+          <Length>29</Length>
+          <Snippet>
+            <Line>
+              <Number>408</Number>
+              <Code>listener.Flowdometer__Error_Message__c = historyWarning;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+        <PathNode>
+          <FileName>classes/ListenerMasterConfigurationController.cls</FileName>
+          <Line>408</Line>
+          <Column>25</Column>
+          <NodeId>2</NodeId>
+          <Name>listener</Name>
+          <Type></Type>
+          <Length>8</Length>
+          <Snippet>
+            <Line>
+              <Number>408</Number>
+              <Code>listener.Flowdometer__Error_Message__c = historyWarning;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+        <PathNode>
+          <FileName>classes/ListenerMasterConfigurationController.cls</FileName>
+          <Line>409</Line>
+          <Column>32</Column>
+          <NodeId>3</NodeId>
+          <Name>listener</Name>
+          <Type></Type>
+          <Length>8</Length>
+          <Snippet>
+            <Line>
+              <Number>409</Number>
+              <Code>update listener;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+      </Path>
+    </Result>
+    <Result NodeId="10085190005" FileName="classes/ListenerFlowController.cls" Status="New" Line="671" Column="37" FalsePositive="False" Severity="Medium" AssignToUser="" state="0" Remark="" DeepLink="https://phx-cmarx-wp001.internal.salesforce.com/CxWebClient/ViewerMain.aspx?scanid=1008519&amp;projectid=8516&amp;pathid=5" SeverityIndex="2" StatusIndex="2" DetectionDate="11/14/2025 10:11:21 AM">
+      <Path ResultId="1008519" PathId="5" SimilarityId="2118578693" SourceMethod="parseRecordsToFlow" DestinationMethod="parseRecordsToFlow">
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>671</Line>
+          <Column>37</Column>
+          <NodeId>1</NodeId>
+          <Name>error_message__c</Name>
+          <Type></Type>
+          <Length>16</Length>
+          <Snippet>
+            <Line>
+              <Number>671</Number>
+              <Code>firstListenerConfig.Error_Message__c = 'Maximum retry count (' + MAX_RETRY_COUNT + ') reached. Please contact your administrator or check debug logs.';</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>671</Line>
+          <Column>17</Column>
+          <NodeId>2</NodeId>
+          <Name>firstlistenerconfig</Name>
+          <Type></Type>
+          <Length>19</Length>
+          <Snippet>
+            <Line>
+              <Number>671</Number>
+              <Code>firstListenerConfig.Error_Message__c = 'Maximum retry count (' + MAX_RETRY_COUNT + ') reached. Please contact your administrator or check debug logs.';</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>673</Line>
+          <Column>28</Column>
+          <NodeId>3</NodeId>
+          <Name>firstlistenerconfig</Name>
+          <Type></Type>
+          <Length>19</Length>
+          <Snippet>
+            <Line>
+              <Number>673</Number>
+              <Code>update firstListenerConfig;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+      </Path>
+    </Result>
+    <Result NodeId="10085190006" FileName="classes/ListenerFlowController.cls" Status="New" Line="715" Column="40" FalsePositive="False" Severity="Medium" AssignToUser="" state="0" Remark="" DeepLink="https://phx-cmarx-wp001.internal.salesforce.com/CxWebClient/ViewerMain.aspx?scanid=1008519&amp;projectid=8516&amp;pathid=6" SeverityIndex="2" StatusIndex="2" DetectionDate="11/14/2025 10:11:21 AM">
+      <Path ResultId="1008519" PathId="6" SimilarityId="-132149364" SourceMethod="parseRecordsToFlow" DestinationMethod="parseRecordsToFlow">
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>715</Line>
+          <Column>40</Column>
+          <NodeId>1</NodeId>
+          <Name>error_message__c</Name>
+          <Type></Type>
+          <Length>16</Length>
+          <Snippet>
+            <Line>
+              <Number>715</Number>
+              <Code>listenerConfig.Error_Message__c = errorMsg;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>715</Line>
+          <Column>25</Column>
+          <NodeId>2</NodeId>
+          <Name>listenerconfig</Name>
+          <Type></Type>
+          <Length>14</Length>
+          <Snippet>
+            <Line>
+              <Number>715</Number>
+              <Code>listenerConfig.Error_Message__c = errorMsg;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>716</Line>
+          <Column>32</Column>
+          <NodeId>3</NodeId>
+          <Name>listenerconfig</Name>
+          <Type></Type>
+          <Length>14</Length>
+          <Snippet>
+            <Line>
+              <Number>716</Number>
+              <Code>update listenerConfig;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+      </Path>
+    </Result>
+    <Result NodeId="10085190007" FileName="classes/ListenerFlowController.cls" Status="New" Line="818" Column="36" FalsePositive="False" Severity="Medium" AssignToUser="" state="0" Remark="" DeepLink="https://phx-cmarx-wp001.internal.salesforce.com/CxWebClient/ViewerMain.aspx?scanid=1008519&amp;projectid=8516&amp;pathid=7" SeverityIndex="2" StatusIndex="2" DetectionDate="11/14/2025 10:11:21 AM">
+      <Path ResultId="1008519" PathId="7" SimilarityId="-974160658" SourceMethod="parseRecordsToFlow" DestinationMethod="parseRecordsToFlow">
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>818</Line>
+          <Column>36</Column>
+          <NodeId>1</NodeId>
+          <Name>last_execution_on__c</Name>
+          <Type></Type>
+          <Length>20</Length>
+          <Snippet>
+            <Line>
+              <Number>818</Number>
+              <Code>listenerConfig.Last_Execution_On__c = System.now();</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>818</Line>
+          <Column>21</Column>
+          <NodeId>2</NodeId>
+          <Name>listenerconfig</Name>
+          <Type></Type>
+          <Length>14</Length>
+          <Snippet>
+            <Line>
+              <Number>818</Number>
+              <Code>listenerConfig.Last_Execution_On__c = System.now();</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>819</Line>
+          <Column>28</Column>
+          <NodeId>3</NodeId>
+          <Name>listenerconfig</Name>
+          <Type></Type>
+          <Length>14</Length>
+          <Snippet>
+            <Line>
+              <Number>819</Number>
+              <Code>update listenerConfig;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+      </Path>
+    </Result>
+    <Result NodeId="10085190008" FileName="classes/ListenerFlowController.cls" Status="New" Line="818" Column="36" FalsePositive="False" Severity="Medium" AssignToUser="" state="0" Remark="" DeepLink="https://phx-cmarx-wp001.internal.salesforce.com/CxWebClient/ViewerMain.aspx?scanid=1008519&amp;projectid=8516&amp;pathid=8" SeverityIndex="2" StatusIndex="2" DetectionDate="11/14/2025 10:11:21 AM">
+      <Path ResultId="1008519" PathId="8" SimilarityId="-974160658" SourceMethod="parseRecordsToFlow" DestinationMethod="parseRecordsToFlow">
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>818</Line>
+          <Column>36</Column>
+          <NodeId>1</NodeId>
+          <Name>last_execution_on__c</Name>
+          <Type></Type>
+          <Length>20</Length>
+          <Snippet>
+            <Line>
+              <Number>818</Number>
+              <Code>listenerConfig.Last_Execution_On__c = System.now();</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>818</Line>
+          <Column>21</Column>
+          <NodeId>2</NodeId>
+          <Name>listenerconfig</Name>
+          <Type></Type>
+          <Length>14</Length>
+          <Snippet>
+            <Line>
+              <Number>818</Number>
+              <Code>listenerConfig.Last_Execution_On__c = System.now();</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>829</Line>
+          <Column>21</Column>
+          <NodeId>3</NodeId>
+          <Name>listenerconfig</Name>
+          <Type></Type>
+          <Length>14</Length>
+          <Snippet>
+            <Line>
+              <Number>829</Number>
+              <Code>listenerConfig.Error_Message__c = errorMsg;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>830</Line>
+          <Column>28</Column>
+          <NodeId>4</NodeId>
+          <Name>listenerconfig</Name>
+          <Type></Type>
+          <Length>14</Length>
+          <Snippet>
+            <Line>
+              <Number>830</Number>
+              <Code>update listenerConfig;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+      </Path>
+    </Result>
+    <Result NodeId="10085190009" FileName="classes/ListenerFlowController.cls" Status="New" Line="829" Column="36" FalsePositive="False" Severity="Medium" AssignToUser="" state="0" Remark="" DeepLink="https://phx-cmarx-wp001.internal.salesforce.com/CxWebClient/ViewerMain.aspx?scanid=1008519&amp;projectid=8516&amp;pathid=9" SeverityIndex="2" StatusIndex="2" DetectionDate="11/14/2025 10:11:21 AM">
+      <Path ResultId="1008519" PathId="9" SimilarityId="-167451252" SourceMethod="parseRecordsToFlow" DestinationMethod="parseRecordsToFlow">
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>829</Line>
+          <Column>36</Column>
+          <NodeId>1</NodeId>
+          <Name>error_message__c</Name>
+          <Type></Type>
+          <Length>16</Length>
+          <Snippet>
+            <Line>
+              <Number>829</Number>
+              <Code>listenerConfig.Error_Message__c = errorMsg;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>829</Line>
+          <Column>21</Column>
+          <NodeId>2</NodeId>
+          <Name>listenerconfig</Name>
+          <Type></Type>
+          <Length>14</Length>
+          <Snippet>
+            <Line>
+              <Number>829</Number>
+              <Code>listenerConfig.Error_Message__c = errorMsg;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>830</Line>
+          <Column>28</Column>
+          <NodeId>3</NodeId>
+          <Name>listenerconfig</Name>
+          <Type></Type>
+          <Length>14</Length>
+          <Snippet>
+            <Line>
+              <Number>830</Number>
+              <Code>update listenerConfig;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+      </Path>
+    </Result>
+    <Result NodeId="10085190010" FileName="classes/ListenerFlowController.cls" Status="New" Line="860" Column="38" FalsePositive="False" Severity="Medium" AssignToUser="" state="0" Remark="" DeepLink="https://phx-cmarx-wp001.internal.salesforce.com/CxWebClient/ViewerMain.aspx?scanid=1008519&amp;projectid=8516&amp;pathid=10" SeverityIndex="2" StatusIndex="2" DetectionDate="11/14/2025 10:11:21 AM">
+      <Path ResultId="1008519" PathId="10" SimilarityId="-1126217808" SourceMethod="parseRecordsToFlow" DestinationMethod="parseRecordsToFlow">
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>860</Line>
+          <Column>38</Column>
+          <NodeId>1</NodeId>
+          <Name>error_message__c</Name>
+          <Type></Type>
+          <Length>16</Length>
+          <Snippet>
+            <Line>
+              <Number>860</Number>
+              <Code>listenerToUpdate.Error_Message__c = 'Failed to process history records: ' + ex.getMessage();</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>860</Line>
+          <Column>21</Column>
+          <NodeId>2</NodeId>
+          <Name>listenertoupdate</Name>
+          <Type></Type>
+          <Length>16</Length>
+          <Snippet>
+            <Line>
+              <Number>860</Number>
+              <Code>listenerToUpdate.Error_Message__c = 'Failed to process history records: ' + ex.getMessage();</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>861</Line>
+          <Column>28</Column>
+          <NodeId>3</NodeId>
+          <Name>listenertoupdate</Name>
+          <Type></Type>
+          <Length>16</Length>
+          <Snippet>
+            <Line>
+              <Number>861</Number>
+              <Code>update listenerToUpdate;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+      </Path>
+    </Result>
+    <Result NodeId="10085190011" FileName="classes/ListenerFlowController.cls" Status="New" Line="999" Column="24" FalsePositive="False" Severity="Medium" AssignToUser="" state="0" Remark="" DeepLink="https://phx-cmarx-wp001.internal.salesforce.com/CxWebClient/ViewerMain.aspx?scanid=1008519&amp;projectid=8516&amp;pathid=11" SeverityIndex="2" StatusIndex="2" DetectionDate="11/14/2025 10:11:21 AM">
+      <Path ResultId="1008519" PathId="11" SimilarityId="-319320600" SourceMethod="handleBatchAndUnprocessedRecords" DestinationMethod="handleBatchAndUnprocessedRecords">
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>999</Line>
+          <Column>24</Column>
+          <NodeId>1</NodeId>
+          <Name>flowdometer__unprocessed_history_records__c</Name>
+          <Type></Type>
+          <Length>43</Length>
+          <Snippet>
+            <Line>
+              <Number>999</Number>
+              <Code>listenerConfig.Flowdometer__Unprocessed_History_Records__c = remainingRecordsJson;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>999</Line>
+          <Column>9</Column>
+          <NodeId>2</NodeId>
+          <Name>listenerconfig</Name>
+          <Type></Type>
+          <Length>14</Length>
+          <Snippet>
+            <Line>
+              <Number>999</Number>
+              <Code>listenerConfig.Flowdometer__Unprocessed_History_Records__c = remainingRecordsJson;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+        <PathNode>
+          <FileName>classes/ListenerFlowController.cls</FileName>
+          <Line>1000</Line>
+          <Column>16</Column>
+          <NodeId>3</NodeId>
+          <Name>listenerconfig</Name>
+          <Type></Type>
+          <Length>14</Length>
+          <Snippet>
+            <Line>
+              <Number>1000</Number>
+              <Code>update listenerConfig;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+      </Path>
+    </Result>
+  </Query>
+  <Query id="1024" categories="OWASP Top 10 2013;A5-Security Misconfiguration,OWASP Top 10 2017;A6-Security Misconfiguration,ASA Premium;ASA Premium,CWE top 25;CWE top 25,MOIS(KISA) Secure Coding 2021;MOIS(KISA) Security Functions,OWASP ASVS;V04 Access Control,OWASP Top 10 2021;A1-Broken Access Control,PCI DSS v3.2.1;PCI DSS (3.2.1) - 6.5.8 - Improper access control,SANS top 25;SANS top 25,Top Tier;Top Tier,PCI DSS v4.0;PCI DSS (4.0) - 6.2.4 Vulnerabilities in software development" cweId="285" name="FLS_Create" group="Apex_Force_com_Serious_Security_Risk" Severity="Medium" Language="Apex" LanguageHash="6218350765986917" LanguageChangeDate="2025-01-13T00:00:00.0000000" SeverityIndex="2" QueryPath="Apex\Cx\Apex Force com Serious Security Risk\FLS Create Version:2" QueryVersionCode="60801853">
+    <Result NodeId="10085190001" FileName="classes/ListenerMasterConfigurationController.cls" Status="New" Line="211" Column="27" FalsePositive="False" Severity="Medium" AssignToUser="" state="0" Remark="" DeepLink="https://phx-cmarx-wp001.internal.salesforce.com/CxWebClient/ViewerMain.aspx?scanid=1008519&amp;projectid=8516&amp;pathid=1" SeverityIndex="2" StatusIndex="2" DetectionDate="11/14/2025 10:11:21 AM">
+      <Path ResultId="1008519" PathId="1" SimilarityId="1190960807" SourceMethod="createListenerRecord" DestinationMethod="createListenerRecord">
+        <PathNode>
+          <FileName>classes/ListenerMasterConfigurationController.cls</FileName>
+          <Line>211</Line>
+          <Column>27</Column>
+          <NodeId>1</NodeId>
+          <Name>flowdometer__error_message__c</Name>
+          <Type></Type>
+          <Length>29</Length>
+          <Snippet>
+            <Line>
+              <Number>211</Number>
+              <Code>newRecord.Flowdometer__Error_Message__c = cpuLimitMsg;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+        <PathNode>
+          <FileName>classes/ListenerMasterConfigurationController.cls</FileName>
+          <Line>211</Line>
+          <Column>17</Column>
+          <NodeId>2</NodeId>
+          <Name>newrecord</Name>
+          <Type></Type>
+          <Length>9</Length>
+          <Snippet>
+            <Line>
+              <Number>211</Number>
+              <Code>newRecord.Flowdometer__Error_Message__c = cpuLimitMsg;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+        <PathNode>
+          <FileName>classes/ListenerMasterConfigurationController.cls</FileName>
+          <Line>228</Line>
+          <Column>20</Column>
+          <NodeId>3</NodeId>
+          <Name>newrecord</Name>
+          <Type></Type>
+          <Length>9</Length>
+          <Snippet>
+            <Line>
+              <Number>228</Number>
+              <Code>insert newRecord;</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+      </Path>
+    </Result>
+  </Query>
+  <Query id="1031" categories="OWASP Top 10 2013;A4-Insecure Direct Object References,OWASP Top 10 2017;A5-Broken Access Control,ASA Premium;ASA Premium,MOIS(KISA) Secure Coding 2021;MOIS(KISA) Security Functions,OWASP ASVS;V01 Architecture, Design and Threat Modeling,OWASP Top 10 2021;A4-Insecure Design,PCI DSS v3.2.1;PCI DSS (3.2.1) - 6.5.8 - Improper access control,Top Tier;Top Tier,PCI DSS v4.0;PCI DSS (4.0) - 6.2.4 Vulnerabilities in software development" cweId="472" name="Sharing" group="Apex_Force_com_Serious_Security_Risk" Severity="Medium" Language="Apex" LanguageHash="6218350765986917" LanguageChangeDate="2025-01-13T00:00:00.0000000" SeverityIndex="2" QueryPath="Apex\Cx\Apex Force com Serious Security Risk\Sharing Version:3" QueryVersionCode="60890098">
+    <Result NodeId="10085190002" FileName="classes/MetaDataUtilityCls.cls" Status="New" Line="1" Column="25" FalsePositive="False" Severity="Medium" AssignToUser="" state="0" Remark="" DeepLink="https://phx-cmarx-wp001.internal.salesforce.com/CxWebClient/ViewerMain.aspx?scanid=1008519&amp;projectid=8516&amp;pathid=2" SeverityIndex="2" StatusIndex="2" DetectionDate="11/14/2025 10:11:21 AM">
+      <Path ResultId="1008519" PathId="2" SimilarityId="-1129336219" SourceMethod="{" DestinationMethod="{">
+        <PathNode>
+          <FileName>classes/MetaDataUtilityCls.cls</FileName>
+          <Line>1</Line>
+          <Column>25</Column>
+          <NodeId>1</NodeId>
+          <Name>metadatautilitycls</Name>
+          <Type></Type>
+          <Length>5</Length>
+          <Snippet>
+            <Line>
+              <Number>1</Number>
+              <Code>public inherited sharing class MetaDataUtilityCls {</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+      </Path>
+    </Result>
+  </Query>
+</CxXMLResults>
