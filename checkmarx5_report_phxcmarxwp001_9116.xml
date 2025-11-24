@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<CxXMLResults InitiatorName="popcrab submitter" Owner="submitter" ScanId="1009119" ProjectId="9116" ProjectName="019ab2b2-098b-40ac-a5df-ffbfec27d7e3" TeamFullPathOnReportDate="CxServer\AppExchange\Portal" DeepLink="https://phx-cmarx-wp001.internal.salesforce.com/CxWebClient/ViewerMain.aspx?scanid=1009119&amp;projectid=9116" ScanStart="Sunday, November 23, 2025 4:25:12 PM" Preset="PortalSecurity" ScanTime="00h:00m:43s" LinesOfCodeScanned="25402" FilesScanned="101" ReportCreationTime="Sunday, November 23, 2025 8:26:29 PM" Team="Portal" CheckmarxVersion="9.7.1.1000 " ScanComments="popcrab" ScanType="Full" SourceOrigin="LocalPath" Visibility="Public">
+  <Query id="1031" categories="OWASP Top 10 2013;A4-Insecure Direct Object References,OWASP Top 10 2017;A5-Broken Access Control,ASA Premium;ASA Premium,MOIS(KISA) Secure Coding 2021;MOIS(KISA) Security Functions,OWASP ASVS;V01 Architecture, Design and Threat Modeling,OWASP Top 10 2021;A4-Insecure Design,PCI DSS v3.2.1;PCI DSS (3.2.1) - 6.5.8 - Improper access control,Top Tier;Top Tier,PCI DSS v4.0;PCI DSS (4.0) - 6.2.4 Vulnerabilities in software development" cweId="472" name="Sharing" group="Apex_Force_com_Serious_Security_Risk" Severity="Medium" Language="Apex" LanguageHash="6218350765986917" LanguageChangeDate="2025-01-13T00:00:00.0000000" SeverityIndex="2" QueryPath="Apex\Cx\Apex Force com Serious Security Risk\Sharing Version:3" QueryVersionCode="60890098">
+    <Result NodeId="10091190001" FileName="classes/ListenerMasterConfigurationController.cls" Status="New" Line="469" Column="30" FalsePositive="False" Severity="Medium" AssignToUser="" state="0" Remark="" DeepLink="https://phx-cmarx-wp001.internal.salesforce.com/CxWebClient/ViewerMain.aspx?scanid=1009119&amp;projectid=9116&amp;pathid=1" SeverityIndex="2" StatusIndex="2" DetectionDate="11/23/2025 8:25:55 PM">
+      <Path ResultId="1009119" PathId="1" SimilarityId="-1899032355" SourceMethod="{" DestinationMethod="{">
+        <PathNode>
+          <FileName>classes/ListenerMasterConfigurationController.cls</FileName>
+          <Line>469</Line>
+          <Column>30</Column>
+          <NodeId>1</NodeId>
+          <Name>lookupfieldcreator</Name>
+          <Type></Type>
+          <Length>5</Length>
+          <Snippet>
+            <Line>
+              <Number>469</Number>
+              <Code>public inherited sharing class LookupFieldCreator implements Queueable, Database.AllowsCallouts {</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+      </Path>
+    </Result>
+    <Result NodeId="10091190002" FileName="classes/MetaDataUtilityCls.cls" Status="New" Line="1" Column="25" FalsePositive="False" Severity="Medium" AssignToUser="" state="0" Remark="" DeepLink="https://phx-cmarx-wp001.internal.salesforce.com/CxWebClient/ViewerMain.aspx?scanid=1009119&amp;projectid=9116&amp;pathid=2" SeverityIndex="2" StatusIndex="2" DetectionDate="11/23/2025 8:25:55 PM">
+      <Path ResultId="1009119" PathId="2" SimilarityId="-1129336219" SourceMethod="{" DestinationMethod="{">
+        <PathNode>
+          <FileName>classes/MetaDataUtilityCls.cls</FileName>
+          <Line>1</Line>
+          <Column>25</Column>
+          <NodeId>1</NodeId>
+          <Name>metadatautilitycls</Name>
+          <Type></Type>
+          <Length>5</Length>
+          <Snippet>
+            <Line>
+              <Number>1</Number>
+              <Code>public inherited sharing class MetaDataUtilityCls {</Code>
+            </Line>
+          </Snippet>
+        </PathNode>
+      </Path>
+    </Result>
+  </Query>
+</CxXMLResults>

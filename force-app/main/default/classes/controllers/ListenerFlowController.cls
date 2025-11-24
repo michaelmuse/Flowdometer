@@ -213,6 +213,10 @@ global with sharing class ListenerFlowController {
         if (listener == null || listener.Id == null || fieldApiNames == null || fieldApiNames.isEmpty()) {
             return;
         }
+        if (!Schema.sObjectType.Flowdometer__Listener__c.isAccessible()) {
+            System.debug(LoggingLevel.WARN, 'Listener__c is not accessible; skipping lazy load.');
+            return;
+        }
         Map<String, Object> populated = listener.getPopulatedFieldsAsMap();
         Set<String> missingFields = new Set<String>();
         for (String fieldApi : fieldApiNames) {
@@ -228,8 +232,9 @@ global with sharing class ListenerFlowController {
         }
         List<String> selectFields = new List<String>{ 'Id' };
         selectFields.addAll(missingFields);
+        Id listenerId = listener.Id;
         String query = 'SELECT ' + String.join(selectFields, ', ') + 
-                       ' FROM Flowdometer__Listener__c WHERE Id = \'' + String.escapeSingleQuotes(String.valueOf(listener.Id)) + '\' LIMIT 1';
+                       ' FROM Flowdometer__Listener__c WHERE Id = :listenerId WITH SECURITY_ENFORCED LIMIT 1';
         Listener__c refreshed = Database.query(query);
         for (String missingField : missingFields) {
             listener.put(missingField, refreshed.get(missingField));
@@ -376,6 +381,12 @@ global with sharing class ListenerFlowController {
             }
         }
         
+        if (!Schema.sObjectType.Flowdometer__Step__c.isAccessible() ||
+            !Schema.sObjectType.Flowdometer__Step__c.fields.Flowdometer__History_Record_ID__c.isAccessible()) {
+            System.debug(LoggingLevel.WARN, 'Flowdometer__Step__c is not accessible; returning empty exclusion list.');
+            return new List<Id>();
+        }
+
         // Query and cache the exclusion list
         List<Id> idsToExclude = new List<Id>();
         // Use direct list assignment instead of loop to reduce CPU overhead
@@ -383,6 +394,7 @@ global with sharing class ListenerFlowController {
             SELECT Flowdometer__History_Record_ID__c
             FROM Flowdometer__Step__c
             WHERE Flowdometer__History_Record_ID__c != NULL
+            WITH SECURITY_ENFORCED
             ORDER BY CreatedDate DESC
             LIMIT 1000
         ]) {
@@ -468,8 +480,17 @@ global with sharing class ListenerFlowController {
                     Map<String, Schema.SObjectField> fieldMap = sObjectType.getDescribe().fields.getMap();
                     
                     // Check if field exists on the object
-                    if (fieldMap.containsKey(trackedFieldName.toLowerCase())) {
-                        selectFields.add(trackedFieldName);
+                    Schema.SObjectField trackedField = fieldMap.get(trackedFieldName);
+                    if (trackedField == null) {
+                        trackedField = fieldMap.get(trackedFieldName.toLowerCase());
+                    }
+                    if (trackedField != null) {
+                        DescribeFieldResult trackedDescribe = trackedField.getDescribe();
+                        if (trackedDescribe.isAccessible()) {
+                            selectFields.add(trackedDescribe.getName());
+                        } else {
+                            System.debug(LoggingLevel.WARN, 'Field ' + trackedFieldName + ' is not readable; it will be skipped.');
+                        }
                     }
                 }
             }
@@ -481,8 +502,17 @@ global with sharing class ListenerFlowController {
                     Map<String, Schema.SObjectField> fieldMap = sObjectType.getDescribe().fields.getMap();
                     
                     // Check if the Type field exists on the object
-                    if (fieldMap.containsKey(listenerConfig.Type__c.toLowerCase())) {
-                selectFields.add(listenerConfig.Type__c);
+                    Schema.SObjectField typeField = fieldMap.get(listenerConfig.Type__c);
+                    if (typeField == null) {
+                        typeField = fieldMap.get(listenerConfig.Type__c.toLowerCase());
+                    }
+                    if (typeField != null) {
+                        DescribeFieldResult typeDescribe = typeField.getDescribe();
+                        if (typeDescribe.isAccessible()) {
+                            selectFields.add(typeDescribe.getName());
+                        } else {
+                            System.debug(LoggingLevel.WARN, 'Type field ' + listenerConfig.Type__c + ' is not readable; skipping.');
+                        }
                     }
                 }
             }
@@ -509,6 +539,7 @@ global with sharing class ListenerFlowController {
         if (!whereConditions.isEmpty()) {
             queryStr += ' WHERE ' + String.join(whereConditions, ' AND ');
         }
+        queryStr += ' WITH SECURITY_ENFORCED';
         
         // Common query modifiers
         if ((Boolean) queryModifiers.get('includeOrderBy')) {
@@ -576,7 +607,7 @@ global with sharing class ListenerFlowController {
         Integer maxRecordsToProcess = HISTORY_DEFAULT_FETCH_LIMIT;
         if (lastExecutionOn == null) {
             try {
-                String probeQuery = 'SELECT Id FROM ' + objHistoryName + ' LIMIT ' + HISTORY_PROBE_LIMIT;
+                String probeQuery = 'SELECT Id FROM ' + objHistoryName + ' WITH SECURITY_ENFORCED LIMIT ' + HISTORY_PROBE_LIMIT;
                 Integer probeCount = Database.query(probeQuery).size();
                 if (probeCount == HISTORY_PROBE_LIMIT) {
                     isLargeObject = true;
@@ -1019,7 +1050,7 @@ global with sharing class ListenerFlowController {
                             
                             String parentQuery = 'SELECT ' + String.join(selectFields, ', ') + 
                                                ' FROM ' + listenerConfig.Object_Name__c + 
-                                               ' WHERE Id IN :parentIds';
+                                               ' WHERE Id IN :parentIds WITH SECURITY_ENFORCED';
                             for (SObject sob : Database.query(parentQuery)) {
                                 Id sobId = (Id)sob.get('Id');
                                 sObjectMap.put(sobId, sob);

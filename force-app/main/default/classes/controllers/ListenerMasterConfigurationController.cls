@@ -368,12 +368,23 @@ public with sharing class ListenerMasterConfigurationController {
         try {
             System.debug(LoggingLevel.INFO, 'Checking tracker creation for Listener ID: ' + listenerId);
             
+            // Ensure Listener__c fields are readable before querying
+            if (!Schema.sObjectType.Flowdometer__Listener__c.isAccessible() ||
+                !Schema.sObjectType.Flowdometer__Listener__c.fields.Flowdometer__Object_Name__c.isAccessible() ||
+                !Schema.sObjectType.Flowdometer__Listener__c.fields.Flowdometer__Field_To_Track__c.isAccessible() ||
+                !Schema.sObjectType.Flowdometer__Listener__c.fields.Flowdometer__Error_Message__c.isAccessible() ||
+                !Schema.sObjectType.Flowdometer__Listener__c.fields.Flowdometer__Enable_History__c.isAccessible()) {
+                System.debug(LoggingLevel.WARN, 'Insufficient access to Listener fields; skipping tracker check for ' + listenerId);
+                return;
+            }
+
             // Query for the Listener record - include Enable_History__c to check toggle state
             Listener__c listener = [
                 SELECT Id, Flowdometer__Object_Name__c, Flowdometer__Field_To_Track__c, 
                        Flowdometer__Error_Message__c, Flowdometer__Enable_History__c
                 FROM Flowdometer__Listener__c 
                 WHERE Id = :listenerId
+                WITH SECURITY_ENFORCED
                 LIMIT 1
             ];
             
@@ -385,11 +396,20 @@ public with sharing class ListenerMasterConfigurationController {
                 return; // Exit early - no warning needed
             }
             
+            // Ensure Flow__c fields are readable before querying
+            if (!Schema.sObjectType.Flowdometer__Flow__c.isAccessible() ||
+                !Schema.sObjectType.Flowdometer__Flow__c.fields.Name.isAccessible() ||
+                !Schema.sObjectType.Flowdometer__Flow__c.fields.Flowdometer__Tracked_Object__c.isAccessible()) {
+                System.debug(LoggingLevel.WARN, 'Insufficient access to Flowdometer__Flow__c fields; skipping flow tracker verification.');
+                return;
+            }
+
             // Query for Flow records related to this Listener's target object
             List<Flowdometer__Flow__c> flows = [
                 SELECT Id, Name, Flowdometer__Tracked_Object__c 
                 FROM Flowdometer__Flow__c 
                 WHERE Flowdometer__Tracked_Object__c = :listener.Flowdometer__Object_Name__c
+                WITH SECURITY_ENFORCED
                 ORDER BY CreatedDate DESC
                 LIMIT 10
             ];
@@ -446,7 +466,7 @@ public with sharing class ListenerMasterConfigurationController {
     }
 
     // Queueable to perform Metadata callout after DML is committed
-    public class LookupFieldCreator implements Queueable, Database.AllowsCallouts {
+    public inherited sharing class LookupFieldCreator implements Queueable, Database.AllowsCallouts {
         String targetObject;
         String fieldLabel;
         String referenceTo;
