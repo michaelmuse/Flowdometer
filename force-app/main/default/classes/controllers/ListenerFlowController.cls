@@ -30,6 +30,13 @@ global with sharing class ListenerFlowController {
     private static List<Id> historyRecordIdsToExclude;
     private static Datetime exclusionListCacheTime;
     private static final Integer EXCLUSION_CACHE_DURATION_MINUTES = 5; // Cache exclusion list for 5 minutes
+    private static Map<String, Map<String, Schema.SObjectField>> describeFieldCache = new Map<String, Map<String, Schema.SObjectField>>();
+    private static final Integer FLOW_RESPONSE_BATCH_SIZE = 20;
+    private static final Integer HISTORICAL_QUERY_FETCH_LIMIT = FLOW_RESPONSE_BATCH_SIZE + 1;
+    private static final Integer HISTORY_DEFAULT_FETCH_LIMIT = 1000;
+    private static final Integer HISTORY_LARGE_OBJECT_LIMIT = 500;
+    private static final Integer HISTORY_PROBE_LIMIT = 501;
+    private static final Integer SMALL_BACKLOG_CHAR_THRESHOLD = 2000;
     
     // Retry tracking system to prevent infinite loops and handle transient errors
     private static Map<Id, Integer> retryCountMap = new Map<Id, Integer>();
@@ -64,6 +71,31 @@ global with sharing class ListenerFlowController {
         public Datetime varEditEndTime;
         public Id varLastHistoryRecordId;
         public String varType;
+    }
+    
+    private static Schema.SObjectField getCachedFieldDescribe(String objectName, String fieldApiName) {
+        if (String.isBlank(objectName) || String.isBlank(fieldApiName)) {
+            return null;
+        }
+        
+        Map<String, Schema.SObjectField> cachedFields = describeFieldCache.get(objectName);
+        if (cachedFields == null) {
+            Schema.SObjectType sobType = Schema.getGlobalDescribe().get(objectName);
+            if (sobType == null) {
+                return null;
+            }
+            cachedFields = new Map<String, Schema.SObjectField>();
+            Map<String, Schema.SObjectField> sourceMap = sobType.getDescribe().fields.getMap();
+            for (String fieldName : sourceMap.keySet()) {
+                if (fieldName == null) {
+                    continue;
+                }
+                cachedFields.put(fieldName.toLowerCase(), sourceMap.get(fieldName));
+            }
+            describeFieldCache.put(objectName, cachedFields);
+        }
+        
+        return cachedFields.get(fieldApiName.toLowerCase());
     }
 
     // Custom exception class for validation errors
@@ -165,6 +197,57 @@ global with sharing class ListenerFlowController {
         }
         
         return '';
+    }
+    
+    @TestVisible
+    private static String getListenerStringField(Listener__c listener, String fieldApiName) {
+        if (listener == null || String.isBlank(fieldApiName)) {
+            return null;
+        }
+        Object valueObj = listener.get(fieldApiName);
+        return valueObj != null ? String.valueOf(valueObj) : null;
+    }
+    
+    @TestVisible
+    private static void ensureListenerFieldsLoaded(Listener__c listener, Set<String> fieldApiNames) {
+        if (listener == null || listener.Id == null || fieldApiNames == null || fieldApiNames.isEmpty()) {
+            return;
+        }
+        Map<String, Object> populated = listener.getPopulatedFieldsAsMap();
+        Set<String> missingFields = new Set<String>();
+        for (String fieldApi : fieldApiNames) {
+            if (String.isBlank(fieldApi)) {
+                continue;
+            }
+            if (populated == null || !populated.containsKey(fieldApi)) {
+                missingFields.add(fieldApi);
+            }
+        }
+        if (missingFields.isEmpty()) {
+            return;
+        }
+        List<String> selectFields = new List<String>{ 'Id' };
+        selectFields.addAll(missingFields);
+        String query = 'SELECT ' + String.join(selectFields, ', ') + 
+                       ' FROM Flowdometer__Listener__c WHERE Id = \'' + String.escapeSingleQuotes(String.valueOf(listener.Id)) + '\' LIMIT 1';
+        Listener__c refreshed = Database.query(query);
+        for (String missingField : missingFields) {
+            listener.put(missingField, refreshed.get(missingField));
+        }
+    }
+    
+    private static void clearUnprocessedHistoryRecords(Listener__c listenerConfig) {
+        if (listenerConfig == null || listenerConfig.Flowdometer__Unprocessed_History_Records__c == null) {
+            return;
+        }
+        if (Schema.sObjectType.Listener__c.fields.Flowdometer__Unprocessed_History_Records__c.isUpdateable()) {
+            listenerConfig.Flowdometer__Unprocessed_History_Records__c = null;
+            try {
+                update listenerConfig;
+            } catch (Exception ex) {
+                System.debug(LoggingLevel.WARN, 'Failed to clear Unprocessed_History_Records__c: ' + ex.getMessage());
+            }
+        }
     }
     
     // Called by: getLatestHistoryValues
@@ -333,14 +416,14 @@ global with sharing class ListenerFlowController {
         System.debug(LoggingLevel.INFO, 'Tracking field: ' + fieldValue);
         
         // Validate field name to track before adding it to the query
-        if (String.isBlank(listenerConfig.Field_To_Track__c)) {
+        String trackedFieldName = getListenerStringField(listenerConfig, 'Flowdometer__Field_To_Track__c');
+        if (String.isBlank(trackedFieldName)) {
             throw new CustomException('Field_To_Track__c is not set in listenerConfig');
         }
         // We no longer declare fieldName here, we just validate it
-        // String fieldName = listenerConfig.Field_To_Track__c;
         
         // Log the field name after initialization
-        System.debug(LoggingLevel.INFO, 'Initialized fieldName: ' + listenerConfig.Field_To_Track__c);
+        System.debug(LoggingLevel.INFO, 'Initialized fieldName: ' + trackedFieldName);
         
         // Handle the fields to select and the WHERE conditions based on query type
         if (isHistoryQuery) {
@@ -378,15 +461,15 @@ global with sharing class ListenerFlowController {
             }
             
             // Validate field name to track before adding it to the query
-            if (String.isNotBlank(listenerConfig.Field_To_Track__c)) {
+            if (String.isNotBlank(trackedFieldName)) {
                 // Ensure the object exists in schema
                 Schema.SObjectType sObjectType = Schema.getGlobalDescribe().get(listenerConfig.Object_Name__c);
                 if (sObjectType != null) {
                     Map<String, Schema.SObjectField> fieldMap = sObjectType.getDescribe().fields.getMap();
                     
                     // Check if field exists on the object
-                    if (fieldMap.containsKey(listenerConfig.Field_To_Track__c.toLowerCase())) {
-            selectFields.add(listenerConfig.Field_To_Track__c);
+                    if (fieldMap.containsKey(trackedFieldName.toLowerCase())) {
+                        selectFields.add(trackedFieldName);
                     }
                 }
             }
@@ -469,10 +552,12 @@ global with sharing class ListenerFlowController {
         String objHistoryName,
         String parentIdField
     ) {
+        String fieldName = getListenerStringField(listenerConfig, 'Flowdometer__Field_To_Track__c');
+        
         // Add CPU limit protection
         if (Limits.getCpuTime() > Limits.getLimitCpuTime() * 0.7) {
             System.debug(LoggingLevel.ERROR, 'Approaching CPU limit in getLatestHistoryValues for ' + 
-                listenerConfig.Object_Name__c + '.' + listenerConfig.Field_To_Track__c + '. Returning empty result.');
+                listenerConfig.Object_Name__c + '.' + fieldName + '. Returning empty result.');
             
             return new HistoryValuesResult(
                 new Map<Id, List<SObject>>(),
@@ -482,31 +567,27 @@ global with sharing class ListenerFlowController {
         
         controllerInstance.sortingDatetimeMap.clear();
         String fieldValue = 'created';
-        // Define fieldName variable here at this scope level so it's available for query execution
-        String fieldName = listenerConfig.Field_To_Track__c;
+        // fieldName already retrieved above so it's available for query execution
         String objectSuffix = '__c';
         Boolean isHistoryQuery = true;
         
-        // Check if this is a large object
+        // Lightweight probe to determine if we should reduce the fetch size.
         Boolean isLargeObject = false;
-        Integer maxRecordsToProcess = 1000; // Default limit
-        
-        try {
-            // Try to get a count of history records before running the full query
-            String countQuery = 'SELECT COUNT() FROM ' + objHistoryName + ' LIMIT 50000';
-            Integer historyRecordCount = Database.countQuery(countQuery);
-            isLargeObject = (historyRecordCount > 5000); // If more than 5K history records, consider it large
-            
-            if (isLargeObject) {
-                System.debug(LoggingLevel.WARN, 'Large history object detected: ' + objHistoryName + 
-                    ' with ' + historyRecordCount + ' records. Limiting query results.');
-                // Reduce the limit for large objects
-                maxRecordsToProcess = 500;
+        Integer maxRecordsToProcess = HISTORY_DEFAULT_FETCH_LIMIT;
+        if (lastExecutionOn == null) {
+            try {
+                String probeQuery = 'SELECT Id FROM ' + objHistoryName + ' LIMIT ' + HISTORY_PROBE_LIMIT;
+                Integer probeCount = Database.query(probeQuery).size();
+                if (probeCount == HISTORY_PROBE_LIMIT) {
+                    isLargeObject = true;
+                    maxRecordsToProcess = HISTORY_LARGE_OBJECT_LIMIT;
+                    System.debug(LoggingLevel.WARN, 'Large history object detected via probe for ' + objHistoryName + 
+                        '. Limiting query results to ' + HISTORY_LARGE_OBJECT_LIMIT);
+                }
+            } catch (Exception e) {
+                System.debug(LoggingLevel.WARN, 'History probe query failed for ' + objHistoryName + 
+                    ': ' + e.getMessage());
             }
-        } catch (Exception e) {
-            // If count query fails, just log and continue with default limit
-            System.debug(LoggingLevel.WARN, 'Unable to determine record count for ' + objHistoryName + 
-                ': ' + e.getMessage());
         }
         
         String queryStr = buildQuery(
@@ -552,9 +633,15 @@ global with sharing class ListenerFlowController {
             for (SObject obj : queryResults) {
                 recordsProcessed++;
             
-                // Check CPU time less frequently (every 200 records instead of 100) to reduce overhead
-                // Only check if we're processing a large batch
-                if (recordsProcessed > 200 && Math.mod(recordsProcessed, 200) == 0) {
+                Boolean shouldCheckCpu = false;
+                if (lastExecutionOn == null) {
+                    // Historical sweep: check periodically to avoid timeouts when large batches arrive.
+                    shouldCheckCpu = (recordsProcessed > 200 && Math.mod(recordsProcessed, 200) == 0);
+                } else if (isLargeObject && recordsProcessed > HISTORY_LARGE_OBJECT_LIMIT) {
+                    // Incremental run on a known large object: still guard after significant progress.
+                    shouldCheckCpu = (Math.mod(recordsProcessed, 500) == 0);
+                }
+                if (shouldCheckCpu) {
                     Integer currentCpuTime = Limits.getCpuTime();
                     if (currentCpuTime - startCpuTime > cpuTimeLimit) {
                         System.debug(LoggingLevel.ERROR, 'CPU limit approaching during history processing. ' + 
@@ -584,7 +671,7 @@ global with sharing class ListenerFlowController {
         }
         
             System.debug(LoggingLevel.INFO, 'Successfully processed ' + recordsProcessed + 
-                ' history records for ' + listenerConfig.Object_Name__c + '.' + listenerConfig.Field_To_Track__c);
+                ' history records for ' + listenerConfig.Object_Name__c + '.' + fieldName);
             
             // Only update Last Execution On if we have history records, otherwise we'll keep querying for the same records
             if (!historyRecordsMap.isEmpty()) {
@@ -696,8 +783,11 @@ global with sharing class ListenerFlowController {
     ) {
         //START DEBUG - Enhanced logging for debugging
         Listener__c firstListenerConfig = listenerConfigList[0].listenerConfig;
+        ensureListenerFieldsLoaded(firstListenerConfig, new Set<String>{
+            'Flowdometer__Field_To_Track__c'
+        });
         String objectName = firstListenerConfig.Object_Name__c;
-        String fieldName = firstListenerConfig.Field_To_Track__c;
+        String fieldName = getListenerStringField(firstListenerConfig, 'Flowdometer__Field_To_Track__c');
         System.debug(LoggingLevel.INFO, '### FLOWDOMETER DEBUG: Processing listener for: Object=' + objectName + ', Field=' + fieldName);
         
         // Check for retry limits
@@ -747,6 +837,10 @@ global with sharing class ListenerFlowController {
                 if (lastExecutionOn == null && listenerConfig != null) {
                     lastExecutionOn = listenerConfig.Flowdometer__Last_Execution_On__c;
                 }
+                ensureListenerFieldsLoaded(listenerConfig, new Set<String>{
+                    'Flowdometer__Field_To_Track__c',
+                    'Flowdometer__Unprocessed_History_Records__c'
+                });
                 
                 // Special handling for certain object types
                 if (listenerConfig.Object_Name__c == 'Order') {
@@ -828,15 +922,21 @@ global with sharing class ListenerFlowController {
                     
                     // BEFORE querying new history, process any previously stored unprocessed history records
                     // Only process unprocessed records if history tracking is enabled
-                    String unprocessedRecordsJson = listenerConfig.Flowdometer__Unprocessed_History_Records__c;
+                    String unprocessedRecordsJson = getListenerStringField(listenerConfig, 'Flowdometer__Unprocessed_History_Records__c');
                     if (String.isNotBlank(unprocessedRecordsJson)) {
+                        Boolean smallBacklog = unprocessedRecordsJson.length() <= SMALL_BACKLOG_CHAR_THRESHOLD;
                         List<ListenerFlowController> lstListenerFlow = (List<ListenerFlowController>) JSON.deserialize(unprocessedRecordsJson, List<ListenerFlowController>.class);
                         response.lstListenerFlow = lstListenerFlow;
                         response.hasRecords = !lstListenerFlow.isEmpty();
                         response.isCheckSuccess = true;
 
                         // Batch size can be configurable; using 20 as the legacy default
-                        Integer batchSize = 20;
+                        Integer batchSize = FLOW_RESPONSE_BATCH_SIZE;
+                        if (smallBacklog && response.lstListenerFlow.size() <= batchSize) {
+                            clearUnprocessedHistoryRecords(listenerConfig);
+                            responseList.add(response);
+                            continue;
+                        }
                         Map<Id, Boolean> processedRecordsMap = new Map<Id, Boolean>();
 
                         // Use existing helper to split batches and serialize leftovers
@@ -1057,16 +1157,12 @@ global with sharing class ListenerFlowController {
 
                 // Translate API name to the field's UI label for better readability
                 String fieldLabel = fieldApi;
-                try {
-                    Schema.SObjectType sobType = Schema.getGlobalDescribe().get(listenerConfig.Object_Name__c);
-                    if(sobType != null) {
-                        Map<String,Schema.SObjectField> fmap = sobType.getDescribe().fields.getMap();
-                        Schema.SObjectField fld = fmap.get(fieldApi != null ? fieldApi.toLowerCase() : null);
-                        if(fld != null) {
-                            fieldLabel = fld.getDescribe().getLabel();
-                        }
-                    }
-                } catch(Exception ignore) {}
+                Schema.SObjectField cachedFieldDescribe = getCachedFieldDescribe(listenerConfig.Object_Name__c, fieldApi);
+                if (cachedFieldDescribe != null) {
+                    try {
+                        fieldLabel = cachedFieldDescribe.getDescribe().getLabel();
+                    } catch (Exception ignore) {}
+                }
 
                 listenerFlow.varCurrentFieldTracked = fieldLabel;
                 listenerFlow.varCurrentFieldValue = (String) historyRecord.get('NewValue');

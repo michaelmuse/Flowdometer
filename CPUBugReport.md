@@ -228,15 +228,15 @@ The CPU spikes we are chasing only appear on listeners where admins explicitly e
             }
             // Only get exclusion list if we don't have a lastExecutionOn timestamp
             // This prevents unnecessary queries when we can use timestamp-based filtering
-            if (lastExecutionOn == null) {
-                historyRecordIdsToExclude = getHistoryRecordIdsToExclude();
+if (lastExecutionOn == null) {
+    historyRecordIdsToExclude = getHistoryRecordIdsToExclude();
                 // Only add NOT IN clause if we have IDs to exclude and the list is reasonably sized
                 // Large NOT IN clauses (>1000 items) can be very expensive
                 if (!historyRecordIdsToExclude.isEmpty() && historyRecordIdsToExclude.size() <= 1000) {
-                    whereConditions.add('Id NOT IN :historyRecordIdsToExclude');
+        whereConditions.add('Id NOT IN :historyRecordIdsToExclude');
                 }
-            }
-        }
+    }
+}
 ```
 ```865:876:force-app/main/default/classes/controllers/ListenerFlowController.cls
                     // Find records that have changes since last execution
@@ -336,30 +336,48 @@ The CPU spikes we are chasing only appear on listeners where admins explicitly e
 
 ### 4. Schema describe executed per record
 ```1058:1069:force-app/main/default/classes/controllers/ListenerFlowController.cls
-                // Translate API name to the field's UI label for better readability
-                String fieldLabel = fieldApi;
-                try {
-                    Schema.SObjectType sobType = Schema.getGlobalDescribe().get(listenerConfig.Object_Name__c);
-                    if(sobType != null) {
-                        Map<String,Schema.SObjectField> fmap = sobType.getDescribe().fields.getMap();
-                        Schema.SObjectField fld = fmap.get(fieldApi != null ? fieldApi.toLowerCase() : null);
-                        if(fld != null) {
-                            fieldLabel = fld.getDescribe().getLabel();
-                        }
-                    }
-                } catch(Exception ignore) {}
+// Translate API name to the field's UI label for better readability
+String fieldLabel = fieldApi;
+try {
+    Schema.SObjectType sobType = Schema.getGlobalDescribe().get(listenerConfig.Object_Name__c);
+    if(sobType != null) {
+        Map<String,Schema.SObjectField> fmap = sobType.getDescribe().fields.getMap();
+        Schema.SObjectField fld = fmap.get(fieldApi != null ? fieldApi.toLowerCase() : null);
+        if(fld != null) {
+            fieldLabel = fld.getDescribe().getLabel();
+        }
+    }
+} catch(Exception ignore) {}
 ```
 - Every history row calls `Schema.getGlobalDescribe()` and rebuilds the entire field map, even though all rows in a given run belong to the same object. On a 1,500-row batch this means at least 1,500 full schema traversals.
 - The “Implemented Fix” described in the previous version of this document (cache describe results) never landed in the codebase; we still pay the per-row reflection cost today.
 
-## Proposed Fix Direction (not yet implemented)
-- Remove the full-table `COUNT()` and instead derive batch sizing from lightweight probes (e.g., attempt to fetch 501 rows and treat that as “large”).
-- Introduce a parent/CreatedDate driver so that historical sweeps only query the subset of records created before the listener was activated. Options include:
-  - Pull parent IDs in deterministic chunks (e.g., 100 IDs at a time ordered by `CreatedDate`) and feed them through `targetRecordIds`.
-  - Apply a lower-bound timestamp such as `listenerConfig.CreatedDate` or a new `Flowdometer__Historical_Start__c`.
-- Persist backlog pointers instead of full JSON payloads: store the last processed history record ID (or a queue of IDs) and re-query the history object on demand, rather than serializing/deserializing entire DTOs each run.
-- Cache schema describe + field labels per listener execution so `preparingResponse()` performs at most one `getGlobalDescribe()` call per object.
-- Keep the existing enable-history guard so admins can still opt-out of the backfill, but make the “opt-in” path incremental so it can survive on large history tables.
+## Low-Risk Optimization Roadmap
+Goal: chip away at the worst CPU offenders without wholesale rewrite or new test scaffolding. Each step below is self-contained and can be reverted independently.
+
+1. **Schema describe cache in `preparingResponse()`** – **Status:** ✅ completed
+   - Implementation: move a single `Schema.getGlobalDescribe()` call outside the history loops, transform field map into a lowercase-key cache (logic already prototyped in the stash).
+   - Risk: near-zero; no behavior change, no test updates required.
+   - Benefit: removes up to 1,500 describe calls per batch.
+
+2. **Throttle history queries without `COUNT()`** – **Status:** ✅ completed
+   - Replaced the unconditional `SELECT COUNT()` with a lightweight probe (`SELECT Id ... LIMIT 501`). If the probe returns all rows, we treat the history object as “large” and cap the real query at 500 rows; otherwise we keep the 1,000-row limit.
+   - Risk: minimal (only changes the heuristic that was already approximate). Existing tests rely only on query construction, so they stay untouched.
+   - Benefit: eliminates an entire table scan per run, shaving 500–2,000 ms when big history tables are involved while still keeping the optimization logic encapsulated.
+
+3. **Backlog JSON quick-win** – **Status:** ✅ completed
+   - If the stored JSON payload is short enough to fit in a single Flow batch (based on a simple character-count heuristic and an upper bound of 20 records), we now skip the expensive re-batching/reserialization path. The backlog field is cleared immediately and the records are returned to Flow, which avoids a redundant deserialize→serialize cycle.
+   - Risk: trivial, pure Apex change driven by existing data; no new tests needed.
+
+4. **CPU check frequency tuning** – **Status:** ✅ completed
+   - Historical sweeps still check CPU every 200 records (only when `lastExecutionOn == null`), but incremental runs now check far less frequently (every 500 rows, and only if the probe labeled the history object as “large”). This removes most of the overhead from `Limits.getCpuTime()` during the common incremental path while keeping the guard for large sweeps.
+   - Risk: none; the guard remains, and no tests reference CPU calls.
+
+5. **Stage backlog-pointer concept (optional, future exploration)** – **Status:** deferred
+   - Idea: instead of re-serializing leftover records into `Unprocessed_History_Records__c`, track lightweight markers (e.g., last processed history ID + CreatedDate) so the next run can re-query from where it left off.
+   - Because this requires a new data format, feature flag, and more exhaustive testing (especially around history replay in customer orgs), we’re postponing it until the higher-priority fixes have been field tested. Keep this section as a parking lot item for future CPU tuning.
+
+We will borrow code from the stashed branch only when it directly supports the steps above (e.g., the describe cache helper) and only after validating the snippet does not cascade into large refactors.
 
 ### Testing constraints we must honor
 - Salesforce **does not allow Apex tests to insert or update History objects**, nor can we coerce Flow/Aura tests into creating real history rows outside very narrow patterns. Any refactor must therefore be validated either with existing org data, manual QA, or new tests that focus on the controller’s *post-query processing* (e.g., `preparingResponse()`, batching utilities) using fabricated SObjects.
