@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Report xmlns="http://soap.sforce.com/2006/04/metadata">
+    <columns>
+        <field>Step__c$TrackedObjectLink__c</field>
+    </columns>
+    <columns>
+        <field>Step__c$TrackedFieldName__c</field>
+    </columns>
+    <columns>
+        <field>Step__c$ProgressBarVsGoal__c</field>
+    </columns>
+    <filter>
+        <criteriaItems>
+            <column>Step__c$BreachTime__c</column>
+            <columnToColumn>false</columnToColumn>
+            <isUnlocked>true</isUnlocked>
+            <operator>lessThan</operator>
+            <value>NEXT_N_DAYS:7</value>
+        </criteriaItems>
+        <criteriaItems>
+            <column>Step__c$BreachTime__c</column>
+            <columnToColumn>false</columnToColumn>
+            <isUnlocked>true</isUnlocked>
+            <operator>greaterThan</operator>
+            <value>YESTERDAY</value>
+        </criteriaItems>
+    </filter>
+    <description>DEPRECATED - This report is no longer actively maintained and may be removed in a future release.</description>
+    <format>Summary</format>
+    <groupingsDown>
+        <field>Step__c$BreachTime__c</field>
+        <sortOrder>Asc</sortOrder>
+    </groupingsDown>
+    <name>Upcoming Breaches</name>
+    <params>
+        <name>co</name>
+        <value>1</value>
+    </params>
+    <reportType>Flowdometer_Reports__c</reportType>
+    <scope>organization</scope>
+    <showDetails>true</showDetails>
+    <showGrandTotal>true</showGrandTotal>
+    <showSubTotals>true</showSubTotals>
+    <sortColumn>Step__c$ProgressBarVsGoal__c</sortColumn>
+    <sortOrder>Desc</sortOrder>
+    <timeFrameFilter>
+        <dateColumn>Step__c$CreatedDate</dateColumn>
+        <interval>INTERVAL_CUSTOM</interval>
+    </timeFrameFilter>
+</Report>

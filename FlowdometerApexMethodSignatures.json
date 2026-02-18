@@ -1,0 +1,2442 @@
+{
+  "force-app/main/default/classes/controllers/ListenerFlowController.cls": [
+    {
+      "signature": "public void sortHistoryList(List<SObject> historyList) {",
+      "lines": "105-118",
+      "variables_in_scope": [
+        "toSort",
+        "i"
+      ],
+      "called_methods": {},
+      "return_type": "void",
+      "return_var": "sortHistoryList",
+      "return": "void sortHistoryList",
+      "parameters": "List<SObject> historyList"
+    },
+    {
+      "signature": "public void sortHistoryList_Test(List<MockHistoryObject> mockHistoryList) {",
+      "lines": "120-142",
+      "variables_in_scope": [
+        "historyList",
+        "record",
+        "mockRecord"
+      ],
+      "called_methods": {},
+      "return_type": "void",
+      "return_var": "sortHistoryList_Test",
+      "return": "void sortHistoryList_Test",
+      "parameters": "List<MockHistoryObject> mockHistoryList"
+    },
+    {
+      "signature": "private static String getStringNotNull(Object valueObj) {",
+      "lines": "146-152",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "String",
+      "return_var": "getStringNotNull",
+      "return": "String getStringNotNull",
+      "parameters": "Object valueObj"
+    },
+    {
+      "signature": "public static Boolean isCustomObject(String objectName) {",
+      "lines": "156-163",
+      "variables_in_scope": [
+        "sObjectType"
+      ],
+      "called_methods": {},
+      "return_type": "Boolean",
+      "return_var": "isCustomObject",
+      "return": "Boolean isCustomObject",
+      "parameters": "String objectName"
+    },
+    {
+      "signature": "private static String getHistoryObjectName(String objectName) {",
+      "lines": "167-190",
+      "variables_in_scope": [
+        "isCustom",
+        "cleanedObjectName"
+      ],
+      "called_methods": {},
+      "return_type": "String",
+      "return_var": "getHistoryObjectName",
+      "return": "String getHistoryObjectName",
+      "parameters": "String objectName"
+    },
+    {
+      "signature": "private static String getParentName(String objectName) {",
+      "lines": "193-206",
+      "variables_in_scope": [
+        "objectToNameFieldMap"
+      ],
+      "called_methods": {},
+      "return_type": "String",
+      "return_var": "getParentName",
+      "return": "String getParentName",
+      "parameters": "String objectName"
+    },
+    {
+      "signature": "public Integer compareTo(Object compareTo) {",
+      "lines": "217-249",
+      "variables_in_scope": [
+        "compareToRecord",
+        "thisDate",
+        "otherDate",
+        "thisMillis",
+        "otherMillis",
+        "thisID",
+        "otherID"
+      ],
+      "called_methods": {},
+      "return_type": "Integer",
+      "return_var": "compareTo",
+      "return": "Integer compareTo",
+      "parameters": "Object compareTo"
+    },
+    {
+      "signature": "private static List<Id> getHistoryRecordIdsToExclude() {",
+      "lines": "267-281",
+      "variables_in_scope": [
+        "idsToExclude"
+      ],
+      "called_methods": {},
+      "return_type": "List<Id>",
+      "return_var": "getHistoryRecordIdsToExclude",
+      "return": "List<Id> getHistoryRecordIdsToExclude",
+      "parameters": ""
+    },
+    {
+      "signature": "private static String buildQuery( String tableName, String parentIdField, List<Id> targetRecordIds, Listener__c listenerConfig, Boolean isHistoryQuery, Datetime lastExecutionOn ) {",
+      "lines": "286-402",
+      "variables_in_scope": [
+        "selectFields",
+        "whereConditions",
+        "fieldValue",
+        "fieldName",
+        "Field",
+        "sObjectType",
+        "fieldMap",
+        "sObjectType",
+        "fieldMap",
+        "queryModifiers",
+        "queryStr"
+      ],
+      "called_methods": {
+        "buildQuery": [
+          286
+        ],
+        "getQueryModifiers": [
+          370,
+          370
+        ]
+      },
+      "return_type": "String",
+      "return_var": "buildQuery",
+      "return": "String buildQuery",
+      "parameters": "String tableName, String parentIdField, List<Id> targetRecordIds, Listener__c listenerConfig, Boolean isHistoryQuery, Datetime lastExecutionOn"
+    },
+    {
+      "signature": "private static HistoryValuesResult getLatestHistoryValues( List<Id> targetRecordIds, Listener__c listenerConfig, Datetime lastExecutionOn, ListenerFlowController controllerInstance, String objHistoryName, String parentIdField ) {",
+      "lines": "423-623",
+      "variables_in_scope": [
+        "fieldValue",
+        "fieldName",
+        "objectSuffix",
+        "isHistoryQuery",
+        "isLargeObject",
+        "maxRecordsToProcess",
+        "countQuery",
+        "historyRecordCount",
+        "maxRecordsToProcess",
+        "queryStr",
+        "historyRecordsMap",
+        "queryTimestamp",
+        "startCpuTime",
+        "cpuTimeLimit",
+        "recordsProcessed",
+        "parentId",
+        "createdDate",
+        "historyList",
+        "dateTimeList",
+        "specificHistoryList",
+        "oneHistoryParentIds",
+        "createdHistoryMap",
+        "tempHistoryLst",
+        "historyList",
+        "createdHistoryRecord",
+        "parentRecord",
+        "currentFieldValue",
+        "tempList",
+        "detailedError",
+        "currentRetryCount"
+      ],
+      "called_methods": {
+        "getLatestHistoryValues": [
+          423
+        ],
+        "buildQuery": [
+          471
+        ]
+      },
+      "return_type": "HistoryValuesResult",
+      "return_var": "getLatestHistoryValues",
+      "return": "HistoryValuesResult getLatestHistoryValues",
+      "parameters": "List<Id> targetRecordIds, Listener__c listenerConfig, Datetime lastExecutionOn, ListenerFlowController controllerInstance, String objHistoryName, String parentIdField"
+    },
+    {
+      "signature": "public static List<ListenerFlowLatestResponse> parseRecordsToFlow( List<ListenerFlowLatestRequest> listenerConfigList ) {",
+      "lines": "630-847",
+      "variables_in_scope": [
+        "firstListenerConfig",
+        "objectName",
+        "fieldName",
+        "listenerId",
+        "currentRetryCount",
+        "maxRetriesResponse",
+        "responseList",
+        "errorMessages",
+        "response",
+        "controllerInstance",
+        "listenerConfig",
+        "lastExecutionOn",
+        "errorMsg",
+        "unprocessedRecordsJson",
+        "lstListenerFlow",
+        "batchSize",
+        "processedRecordsMap",
+        "objName",
+        "objHistoryName",
+        "parentIdField",
+        "targetRecordIds",
+        "historyResult",
+        "parentIds",
+        "sObjectMap",
+        "parentNameField",
+        "parentQuery",
+        "sobId",
+        "batchSize",
+        "processedRecordsMap",
+        "errorMsg",
+        "errorResponse",
+        "listenerToUpdate"
+      ],
+      "called_methods": {
+        "parseRecordsToFlow": [
+          630
+        ],
+        "getLatestHistoryValues": [
+          741
+        ],
+        "preparingResponse": [
+          772
+        ]
+      },
+      "return_type": "List<ListenerFlowLatestResponse>",
+      "return_var": "parseRecordsToFlow",
+      "return": "List<ListenerFlowLatestResponse> parseRecordsToFlow",
+      "parameters": "List<ListenerFlowLatestRequest> listenerConfigList"
+    },
+    {
+      "signature": "public void preparingResponse( ListenerFlowLatestResponse response, Listener__c listenerConfig, Map<Id, SObject> sObjectMap, ListenerFlowController controllerInstance ) {",
+      "lines": "850-914",
+      "variables_in_scope": [
+        "historyList",
+        "previousHistoryId",
+        "listenerFlow",
+        "fieldApi",
+        "fieldLabel",
+        "sobType",
+        "fmap",
+        "fld",
+        "currentHistoryId",
+        "previousHistoryId"
+      ],
+      "called_methods": {
+        "preparingResponse": [
+          850
+        ]
+      },
+      "return_type": "void",
+      "return_var": "preparingResponse",
+      "return": "void preparingResponse",
+      "parameters": "ListenerFlowLatestResponse response, Listener__c listenerConfig, Map<Id, SObject> sObjectMap, ListenerFlowController controllerInstance"
+    },
+    {
+      "signature": "public void handleBatchAndUnprocessedRecords( ListenerFlowLatestResponse response, Listener__c listenerConfig, Integer batchSize, Map<Id, Boolean> processedRecordsMap ) {",
+      "lines": "919-979",
+      "variables_in_scope": [
+        "remainingRecords",
+        "firstBatch",
+        "i",
+        "item",
+        "i",
+        "original",
+        "simplified",
+        "remainingRecordsJson",
+        "fieldLimit"
+      ],
+      "called_methods": {},
+      "return_type": "void",
+      "return_var": "handleBatchAndUnprocessedRecords",
+      "return": "void handleBatchAndUnprocessedRecords",
+      "parameters": "ListenerFlowLatestResponse response, Listener__c listenerConfig, Integer batchSize, Map<Id, Boolean> processedRecordsMap"
+    },
+    {
+      "signature": "public void preparingResponse( ListenerFlowLatestResponse response, Listener__c listenerConfig, Map<Id, SObject> sObjectMap, ListenerFlowController controllerInstance, Boolean enableHistoryTracking ) {",
+      "lines": "984-998",
+      "variables_in_scope": [],
+      "called_methods": {
+        "preparingResponse": [
+          984,
+          997
+        ]
+      },
+      "return_type": "void",
+      "return_var": "preparingResponse",
+      "return": "void preparingResponse",
+      "parameters": "ListenerFlowLatestResponse response, Listener__c listenerConfig, Map<Id, SObject> sObjectMap, ListenerFlowController controllerInstance, Boolean enableHistoryTracking"
+    },
+    {
+      "signature": "public void preparingResponse( ListenerFlowLatestResponse response, Listener__c listenerConfig, Map<String, SObject> sObjectMap, ListenerFlowController controllerInstance ) {",
+      "lines": "1001-1017",
+      "variables_in_scope": [
+        "converted"
+      ],
+      "called_methods": {
+        "preparingResponse": [
+          1001,
+          1016
+        ]
+      },
+      "return_type": "void",
+      "return_var": "preparingResponse",
+      "return": "void preparingResponse",
+      "parameters": "ListenerFlowLatestResponse response, Listener__c listenerConfig, Map<String, SObject> sObjectMap, ListenerFlowController controllerInstance"
+    },
+    {
+      "signature": "public void preparingResponse( ListenerFlowLatestResponse response, Listener__c listenerConfig, Map<String, SObject> sObjectMap, ListenerFlowController controllerInstance, Boolean enableHistoryTracking ) {",
+      "lines": "1020-1039",
+      "variables_in_scope": [
+        "converted"
+      ],
+      "called_methods": {
+        "preparingResponse": [
+          1020,
+          1038
+        ]
+      },
+      "return_type": "void",
+      "return_var": "preparingResponse",
+      "return": "void preparingResponse",
+      "parameters": "ListenerFlowLatestResponse response, Listener__c listenerConfig, Map<String, SObject> sObjectMap, ListenerFlowController controllerInstance, Boolean enableHistoryTracking"
+    }
+  ],
+  "force-app/main/default/classes/controllers/tests/ListenerFlowControllerTest.cls": [
+    {
+      "signature": "public static void initializeHistoryRecordsMap() {",
+      "lines": "112-141",
+      "variables_in_scope": [
+        "opp",
+        "Id",
+        "oppHistoryRecordIds",
+        "oppHistories",
+        "oppHistoriesAsSObjects",
+        "historyRecordsMap"
+      ],
+      "called_methods": {},
+      "return_type": "void",
+      "return_var": "initializeHistoryRecordsMap",
+      "return": "void initializeHistoryRecordsMap",
+      "parameters": ""
+    }
+  ],
+  "force-app/main/default/classes/factories/TestDataFactory.cls": [
+    {
+      "signature": "public static List<Opportunity> createAndUpdateOpportunities( Id parentId, String field, Integer numRecords ) {",
+      "lines": "2-31",
+      "variables_in_scope": [
+        "opportunities",
+        "i",
+        "opp"
+      ],
+      "called_methods": {},
+      "return_type": "List<Opportunity>",
+      "return_var": "createAndUpdateOpportunities",
+      "return": "List<Opportunity> createAndUpdateOpportunities",
+      "parameters": "Id parentId, String field, Integer numRecords"
+    },
+    {
+      "signature": "public static Case createCase(String subject, String status) {",
+      "lines": "33-38",
+      "variables_in_scope": [
+        "newCase"
+      ],
+      "called_methods": {},
+      "return_type": "Case",
+      "return_var": "createCase",
+      "return": "Case createCase",
+      "parameters": "String subject, String status"
+    },
+    {
+      "signature": "public static Flowdometer__Listener__c createListenerConfig( String objectName, String fieldToTrack, Datetime lastExecutionOn, Boolean doInsert ) {",
+      "lines": "40-112",
+      "variables_in_scope": [
+        "existing",
+        "Flowdometer__Object_Name__c",
+        "Flowdometer__Field_To_Track__c",
+        "unsaved",
+        "toInsert",
+        "dmlOpts",
+        "Flowdometer__Object_Name__c",
+        "Flowdometer__Field_To_Track__c"
+      ],
+      "called_methods": {},
+      "return_type": "Flowdometer__Listener__c",
+      "return_var": "createListenerConfig",
+      "return": "Flowdometer__Listener__c createListenerConfig",
+      "parameters": "String objectName, String fieldToTrack, Datetime lastExecutionOn, Boolean doInsert"
+    },
+    {
+      "signature": "public static Opportunity createOpportunity( String name, String stageName, Date closeDate ) {",
+      "lines": "114-127",
+      "variables_in_scope": [
+        "opp"
+      ],
+      "called_methods": {},
+      "return_type": "Opportunity",
+      "return_var": "createOpportunity",
+      "return": "Opportunity createOpportunity",
+      "parameters": "String name, String stageName, Date closeDate"
+    },
+    {
+      "signature": "public static List<Opportunity> createOpportunityHistoryRecords( Integer numRecords, String stageName ) {",
+      "lines": "129-146",
+      "variables_in_scope": [
+        "historyRecords",
+        "i",
+        "CloseDate"
+      ],
+      "called_methods": {},
+      "return_type": "List<Opportunity>",
+      "return_var": "createOpportunityHistoryRecords",
+      "return": "List<Opportunity> createOpportunityHistoryRecords",
+      "parameters": "Integer numRecords, String stageName"
+    },
+    {
+      "signature": "public static List<Flow__c> createCustomObjects(Integer numRecords) {",
+      "lines": "148-156",
+      "variables_in_scope": [
+        "flows",
+        "i"
+      ],
+      "called_methods": {},
+      "return_type": "List<Flow__c>",
+      "return_var": "createCustomObjects",
+      "return": "List<Flow__c> createCustomObjects",
+      "parameters": "Integer numRecords"
+    },
+    {
+      "signature": "public static Account createAccount(String accountName) {",
+      "lines": "158-163",
+      "variables_in_scope": [
+        "acc"
+      ],
+      "called_methods": {},
+      "return_type": "Account",
+      "return_var": "createAccount",
+      "return": "Account createAccount",
+      "parameters": "String accountName"
+    }
+  ],
+  "force-app/apex-mdapi/classes/MetadataService.cls": [
+    {
+      "signature": "private static String apiEnabledSessionId(){",
+      "lines": "8-15",
+      "variables_in_scope": [
+        "sessionPage",
+        "vfContent",
+        "startIndex",
+        "endIndex"
+      ],
+      "called_methods": {},
+      "return_type": "String",
+      "return_var": "apiEnabledSessionId",
+      "return": "String apiEnabledSessionId",
+      "parameters": ""
+    },
+    {
+      "signature": "private static String sanitizeApiName(String label) {",
+      "lines": "17-40",
+      "variables_in_scope": [
+        "result",
+        "result"
+      ],
+      "called_methods": {},
+      "return_type": "String",
+      "return_var": "sanitizeApiName",
+      "return": "String sanitizeApiName",
+      "parameters": "String label"
+    },
+    {
+      "signature": "public static void createLookupField(string fldName, string objName, string relatedTo, string relationshipLabel){",
+      "lines": "43-57",
+      "variables_in_scope": [
+        "service",
+        "customField",
+        "apiName",
+        "results"
+      ],
+      "called_methods": {},
+      "return_type": "void",
+      "return_var": "createLookupField",
+      "return": "void createLookupField",
+      "parameters": "string fldName, string objName, string relatedTo, string relationshipLabel"
+    },
+    {
+      "signature": "public static void createExternalField(string ExfldName, string objName, string relatedTo){",
+      "lines": "59-71",
+      "variables_in_scope": [
+        "service",
+        "customField",
+        "results"
+      ],
+      "called_methods": {},
+      "return_type": "void",
+      "return_var": "createExternalField",
+      "return": "void createExternalField",
+      "parameters": "string ExfldName, string objName, string relatedTo"
+    },
+    {
+      "signature": "public static void enableFieldHistoryTracking(String sObjectApiName,String fieldAPIName){",
+      "lines": "73-89",
+      "variables_in_scope": [
+        "deployList",
+        "service",
+        "cusObj",
+        "results"
+      ],
+      "called_methods": {},
+      "return_type": "void",
+      "return_var": "enableFieldHistoryTracking",
+      "return": "void enableFieldHistoryTracking",
+      "parameters": "String sObjectApiName, String fieldAPIName"
+    },
+    {
+      "signature": "public static Boolean validateHistoryEnabled(String sObjectApiName){",
+      "lines": "91-102",
+      "variables_in_scope": [
+        "deployList",
+        "service",
+        "cusObj"
+      ],
+      "called_methods": {},
+      "return_type": "Boolean",
+      "return_var": "validateHistoryEnabled",
+      "return": "Boolean validateHistoryEnabled",
+      "parameters": "String sObjectApiName"
+    },
+    {
+      "signature": "public static void handleSaveResults(MetadataService.SaveResult saveResult) {",
+      "lines": "224-244",
+      "variables_in_scope": [
+        "messages"
+      ],
+      "called_methods": {},
+      "return_type": "void",
+      "return_var": "handleSaveResults",
+      "return": "void handleSaveResults",
+      "parameters": "MetadataService.SaveResult saveResult"
+    },
+    {
+      "signature": "public static MetadataService.MetadataPort createService(){",
+      "lines": "6606-6613",
+      "variables_in_scope": [
+        "service"
+      ],
+      "called_methods": {},
+      "return_type": "MetadataService.MetadataPort",
+      "return_var": "createService",
+      "return": "MetadataService.MetadataPort createService",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8250-8250",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8264-8264",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8278-8278",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8292-8292",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8306-8306",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8320-8320",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8334-8334",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8348-8348",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8362-8362",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8376-8376",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8390-8390",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8404-8404",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8418-8418",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8432-8432",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8446-8446",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8460-8460",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8474-8474",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8488-8488",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8502-8502",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8516-8516",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8530-8530",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8544-8544",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8558-8558",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8572-8572",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8586-8586",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8600-8600",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8614-8614",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8628-8628",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8642-8642",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8656-8656",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8670-8670",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8684-8684",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8698-8698",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8712-8712",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8726-8726",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8740-8740",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8754-8754",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8768-8768",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8782-8782",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8796-8796",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8810-8810",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8824-8824",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8838-8838",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8852-8852",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8866-8866",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8880-8880",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8894-8894",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8908-8908",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8922-8922",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8936-8936",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8950-8950",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8964-8964",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8978-8978",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "8992-8992",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9006-9006",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9020-9020",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9034-9034",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9048-9048",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9062-9062",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9076-9076",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9090-9090",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9104-9104",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9118-9118",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9132-9132",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9146-9146",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9160-9160",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9174-9174",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9188-9188",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9202-9202",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9216-9216",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9230-9230",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9244-9244",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9258-9258",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9272-9272",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9286-9286",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9300-9300",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9314-9314",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9328-9328",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9342-9342",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9356-9356",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9370-9370",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9384-9384",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9398-9398",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9412-9412",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9426-9426",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9440-9440",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9454-9454",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9468-9468",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9482-9482",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9496-9496",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9510-9510",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9524-9524",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9538-9538",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9552-9552",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9566-9566",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9580-9580",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9594-9594",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9608-9608",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9622-9622",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9636-9636",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9650-9650",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9664-9664",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9678-9678",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9692-9692",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9706-9706",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9720-9720",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9734-9734",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9748-9748",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9762-9762",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9776-9776",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9790-9790",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9804-9804",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9818-9818",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9832-9832",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9846-9846",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9860-9860",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9874-9874",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9888-9888",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9902-9902",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9916-9916",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9930-9930",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9944-9944",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9958-9958",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9972-9972",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "9986-9986",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10000-10000",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10014-10014",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10028-10028",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10042-10042",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10056-10056",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10070-10070",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10084-10084",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10098-10098",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10112-10112",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10126-10126",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10140-10140",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10154-10154",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10168-10168",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10182-10182",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10196-10196",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10210-10210",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10224-10224",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10238-10238",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10252-10252",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10266-10266",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10280-10280",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10294-10294",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10308-10308",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10322-10322",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10336-10336",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10350-10350",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10364-10364",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10378-10378",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10392-10392",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10406-10406",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10420-10420",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10434-10434",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10448-10448",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10462-10462",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10476-10476",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10490-10490",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10504-10504",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10518-10518",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10532-10532",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10546-10546",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10560-10560",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10574-10574",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10588-10588",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10602-10602",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10616-10616",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10630-10630",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10644-10644",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10658-10658",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10672-10672",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public IReadResult getResult() {",
+      "lines": "10686-10686",
+      "variables_in_scope": [],
+      "called_methods": {},
+      "return_type": "IReadResult",
+      "return_var": "getResult",
+      "return": "IReadResult getResult",
+      "parameters": ""
+    },
+    {
+      "signature": "public MetadataService.SaveResult renameMetadata(String type_x,String oldFullName,String newFullName) {",
+      "lines": "13345-13367",
+      "variables_in_scope": [
+        "request_x",
+        "response_map_x"
+      ],
+      "called_methods": {},
+      "return_type": "MetadataService.SaveResult",
+      "return_var": "renameMetadata",
+      "return": "MetadataService.SaveResult renameMetadata",
+      "parameters": "String type_x, String oldFullName, String newFullName"
+    },
+    {
+      "signature": "public MetadataService.DescribeMetadataResult describeMetadata(Double asOfVersion) {",
+      "lines": "13389-13409",
+      "variables_in_scope": [
+        "request_x",
+        "response_map_x"
+      ],
+      "called_methods": {},
+      "return_type": "MetadataService.DescribeMetadataResult",
+      "return_var": "describeMetadata",
+      "return": "MetadataService.DescribeMetadataResult describeMetadata",
+      "parameters": "Double asOfVersion"
+    },
+    {
+      "signature": "public MetadataService.DeployResult checkDeployStatus(String asyncProcessId,Boolean includeDetails) {",
+      "lines": "13410-13431",
+      "variables_in_scope": [
+        "request_x",
+        "response_map_x"
+      ],
+      "called_methods": {},
+      "return_type": "MetadataService.DeployResult",
+      "return_var": "checkDeployStatus",
+      "return": "MetadataService.DeployResult checkDeployStatus",
+      "parameters": "String asyncProcessId, Boolean includeDetails"
+    },
+    {
+      "signature": "public MetadataService.RetrieveResult checkRetrieveStatus(String asyncProcessId,Boolean includeZip) {",
+      "lines": "13432-13453",
+      "variables_in_scope": [
+        "request_x",
+        "response_map_x"
+      ],
+      "called_methods": {},
+      "return_type": "MetadataService.RetrieveResult",
+      "return_var": "checkRetrieveStatus",
+      "return": "MetadataService.RetrieveResult checkRetrieveStatus",
+      "parameters": "String asyncProcessId, Boolean includeZip"
+    },
+    {
+      "signature": "public MetadataService.AsyncResult retrieve(MetadataService.RetrieveRequest retrieveRequest) {",
+      "lines": "13454-13474",
+      "variables_in_scope": [
+        "request_x",
+        "response_map_x"
+      ],
+      "called_methods": {},
+      "return_type": "MetadataService.AsyncResult",
+      "return_var": "retrieve",
+      "return": "MetadataService.AsyncResult retrieve",
+      "parameters": "MetadataService.RetrieveRequest retrieveRequest"
+    },
+    {
+      "signature": "public MetadataService.CancelDeployResult cancelDeploy(String String_x) {",
+      "lines": "13475-13495",
+      "variables_in_scope": [
+        "request_x",
+        "response_map_x"
+      ],
+      "called_methods": {},
+      "return_type": "MetadataService.CancelDeployResult",
+      "return_var": "cancelDeploy",
+      "return": "MetadataService.CancelDeployResult cancelDeploy",
+      "parameters": "String String_x"
+    },
+    {
+      "signature": "public String deployRecentValidation(String validationId) {",
+      "lines": "13496-13516",
+      "variables_in_scope": [
+        "request_x",
+        "response_map_x"
+      ],
+      "called_methods": {},
+      "return_type": "String",
+      "return_var": "deployRecentValidation",
+      "return": "String deployRecentValidation",
+      "parameters": "String validationId"
+    },
+    {
+      "signature": "public MetadataService.DescribeValueTypeResult describeValueType(String type_x) {",
+      "lines": "13517-13537",
+      "variables_in_scope": [
+        "request_x",
+        "response_map_x"
+      ],
+      "called_methods": {},
+      "return_type": "MetadataService.DescribeValueTypeResult",
+      "return_var": "describeValueType",
+      "return": "MetadataService.DescribeValueTypeResult describeValueType",
+      "parameters": "String type_x"
+    },
+    {
+      "signature": "public MetadataService.AsyncResult deploy(String ZipFile,MetadataService.DeployOptions DeployOptions) {",
+      "lines": "13559-13580",
+      "variables_in_scope": [
+        "request_x",
+        "response_map_x"
+      ],
+      "called_methods": {},
+      "return_type": "MetadataService.AsyncResult",
+      "return_var": "deploy",
+      "return": "MetadataService.AsyncResult deploy",
+      "parameters": "String ZipFile, MetadataService.DeployOptions DeployOptions"
+    },
+    {
+      "signature": "public MetadataService.IReadResult readMetadata(String type_x,String[] fullNames) {",
+      "lines": "13581-13602",
+      "variables_in_scope": [
+        "request_x",
+        "response_map_x"
+      ],
+      "called_methods": {},
+      "return_type": "MetadataService.IReadResult",
+      "return_var": "readMetadata",
+      "return": "MetadataService.IReadResult readMetadata",
+      "parameters": "String type_x, String[] fullNames"
+    }
+  ]
+}

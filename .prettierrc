@@ -1,0 +1,21 @@
+{
+  "plugins": ["prettier-plugin-apex"],
+  "printWidth": 80,
+  "tabWidth": 4,
+  "useTabs": false,
+  "trailingComma": "none",
+  "overrides": [
+    {
+      "files": "**/lwc/**/*.html",
+      "options": { "parser": "lwc" }
+    },
+    {
+      "files": "*.{cmp,page,component}",
+      "options": { "parser": "html" }
+    },
+    {
+      "files": "*.js",
+      "options": { "parser": "babel" }
+    }
+  ]
+}

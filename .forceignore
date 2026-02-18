@@ -1,0 +1,33 @@
+# List files or directories below to ignore them when running force:source:push, force:source:pull, and force:source:status
+# More information: https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_exclude_source.htm
+#
+
+package.xml
+**/desktop.ini
+
+# LWC configuration files
+**/jsconfig.json
+**/.eslintrc.json
+
+# LWC Jest
+**/__tests__/**
+
+# Temp files
+*.temp
+*.tmp
+temp_*.cls
+
+# Admin/Test permissions not for package
+force-app/main/default/permissionsets/ECA_Admin.permissionset-meta.xml
+
+# Items excluded from package creation
+force-app/main/default/tabs/FlowdometerUninstall.tab-meta.xml
+force-app/main/default/staticresources/Goal.resource-meta.xml
+force-app/main/default/staticresources/Goal.png
+force-app/main/default/matchingRules/Listener__c.matchingRule-meta.xml
+force-app/main/default/objects/Flow__c/webLinks/Set_a_Goal_SLA.webLink-meta.xml
+force-app/main/default/objects/Activity/listViews/AllActivities.listView-meta.xml
+force-app/main/default/objects/Activity/listViews/MyActivities.listView-meta.xml
+force-app/main/default/objects/Activity/listViews/TodaysTasks.listView-meta.xml
+force-app/main/default/objects/Activity/listViews/UpcomingEvents.listView-meta.xml
+

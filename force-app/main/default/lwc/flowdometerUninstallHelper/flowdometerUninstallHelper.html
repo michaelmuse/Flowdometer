@@ -1,0 +1,59 @@
+<template>
+    <lightning-card title="Flowdometer Uninstall Helper" icon-name="utility:flow">
+        <div class="slds-p-around_medium">
+            <div class="slds-text-body_regular slds-m-bottom_medium">
+                <p class="slds-m-bottom_small">
+                    Before uninstalling the Flowdometer package, you need to deactivate all active flows to avoid 
+                    "Flow is still active" errors.
+                </p>
+                <p class="slds-m-bottom_small">
+                    Click the button below to automatically deactivate all Flowdometer flows.
+                </p>
+                <p class="slds-m-bottom_small">
+                    You can also open the Flows page to manually review and deactivate flows if needed.
+                </p>
+            </div>
+            
+            <div class="slds-grid slds-gutters slds-m-bottom_medium">
+                <div class="slds-col">
+                    <lightning-button 
+                        label="Deactivate All Flowdometer Flows" 
+                        variant="brand" 
+                        onclick={handleDeactivateFlows}
+                        disabled={buttonDisabled}>
+                    </lightning-button>
+                </div>
+                <div class="slds-col">
+                    <lightning-button 
+                        label="Open Flows" 
+                        variant="neutral" 
+                        onclick={handleOpenFlows}
+                        icon-name="utility:flow">
+                    </lightning-button>
+                </div>
+            </div>
+            
+            <div if:true={isLoading} class="slds-is-relative slds-m-top_medium">
+                <lightning-spinner alternative-text="Deactivating flows..." size="small"></lightning-spinner>
+            </div>
+            
+            <div if:true={deactivationStatus.showMessage} class="slds-m-top_medium">
+                <lightning-formatted-text 
+                    value={deactivationStatus.message} 
+                    class={statusVariant}>
+                </lightning-formatted-text>
+                
+                <template if:true={deactivationStatus.success}>
+                    <div class="slds-text-body_regular slds-m-top_medium">
+                        <p>You can now proceed with uninstalling the package from:</p>
+                        <p class="slds-m-top_x-small">
+                            <a href="/lightning/setup/ImportedPackage/home" target="_blank">
+                                Setup > Installed Packages
+                            </a>
+                        </p>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </lightning-card>
+</template>

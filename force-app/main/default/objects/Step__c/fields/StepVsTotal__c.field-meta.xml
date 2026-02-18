@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>StepVsTotal__c</fullName>
+    <formula>IF(GoalHandleTimeHrs__c&gt;0,
+(GoalHandleTimeHrs__c/ Flow__r.GoalCycleTime__c),IF(Final_Handle_Time__c &gt; 0,
+(Final_Handle_Time__c /  Flow__r.HandleTimeToCurrent__c ),null)
+)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <inlineHelpText>Portion this step is out of the total Cycle Time.</inlineHelpText>
+    <label>Step % of Cycle Time</label>
+    <precision>18</precision>
+    <required>false</required>
+    <scale>1</scale>
+    <trackTrending>false</trackTrending>
+    <type>Percent</type>
+</CustomField>

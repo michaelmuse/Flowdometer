@@ -1,0 +1,161 @@
+SALESFORCE PARTNER CASE - EXTERNAL CLIENT APP OAUTH CONFIGURATION
+====================================================================
+
+Package: Flowdometer (2GP Managed)
+Version: 3.0.0-3 (04tRo000000hJIjIAM)
+Issue: OAuth configuration for Tooling API in subscriber orgs after package install
+
+CONTEXT:
+We have a 2GP package that installs successfully with External Client App, External Credential, and Named Credential. Our previous Security Review failed because we used Session ID for Tooling API calls. We must implement OAuth 2.0. The package components deploy correctly but we cannot configure OAuth post-install in subscriber orgs.
+
+====================================================================
+PRIMARY QUESTION (MOST CRITICAL):
+====================================================================
+
+Q1: How do we obtain the initial OAuth token to provide to the Connect REST API?
+
+Your documentation says to use:
+POST /services/data/v58.0/connect/external-credentials/{id}/principals/{principalId}
+
+With body:
+{
+  "principalType": "NamedPrincipal",
+  "principalName": "FlowdometerPrincipal",
+  "parameters": {
+    "parameterName": "OAuthToken",
+    "parameterValue": "???"  <-- WHERE DO WE GET THIS?
+  }
+}
+
+PROBLEM: This API requires an OAuth token as INPUT, but we need OAuth configured to GET a token. This is circular.
+
+QUESTION: How do we trigger the OAuth consent flow to obtain the initial token? 
+- Is there a Connect API endpoint that INITIATES OAuth (not just populates)?
+- Should we redirect users to a Salesforce OAuth authorization URL?
+- Does the External Client App provide OAuth endpoints we should call?
+- What is the complete OAuth flow from "package installed" to "token acquired"?
+
+====================================================================
+SECONDARY QUESTIONS:
+====================================================================
+
+Q2: ExternalAuthIdentityProvider for Same-Org OAuth via External Client App
+
+Your schema shows ExternalAuthIdentityProvider pointing to external providers:
+  <authorizeUrl>https://identityprovider.com/oauth2/authorize</authorizeUrl>
+  <tokenUrl>https://identityprovider.com/oauth2/token</tokenUrl>
+
+But we want to authenticate to THE SAME Salesforce org using our External Client App.
+
+QUESTIONS:
+- What should authorizeUrl and tokenUrl be for same-org OAuth?
+  (e.g., https://login.salesforce.com/services/oauth2/authorize?)
+- How does ExternalAuthIdentityProvider reference the External Client App?
+  (We don't see a field like <externalClientApp> in your schema)
+- When we POST to /tooling/sobjects/ExternalAuthIdentityProvider, we get 404.
+  Is this a permissions issue or incorrect endpoint?
+
+====================================================================
+
+Q3: Complete End-to-End OAuth Flow
+
+Can you provide the COMPLETE sequence of steps/API calls for this scenario?
+
+STARTING STATE:
+- Package installed in subscriber org
+- External Client App exists (Flowdometer_ECA)
+- External Credential exists (Metadata_Cred) with PerUserPrincipal
+- Named Credential exists (Flowdometer_API)
+- NO OAuth configured yet
+
+USER ACTION:
+- Clicks "Authorize" button in our LWC
+
+NEEDED SEQUENCE:
+1. LWC calls Apex method
+2. Apex does... ??? (what API call to initiate OAuth?)
+3. User sees OAuth consent screen
+4. User clicks "Allow"
+5. OAuth callback returns token
+6. Apex/LWC does... ??? (Connect API to populate principal?)
+7. Named Credential is authenticated ✅
+
+Please fill in the ??? with exact API endpoints, request formats, and response handling.
+
+====================================================================
+
+Q4: Working Example or Sample Code
+
+Do you have:
+- A working AppExchange package that uses External Client App + External Credential OAuth in 2GP?
+- Sample Apex code showing the complete OAuth initialization flow?
+- A Trailhead module or GitHub repo demonstrating this pattern?
+- ISVforce documentation with a complete working example?
+
+We've spent 2 full days trying different approaches based on fragmented documentation. A complete working example would be invaluable.
+
+====================================================================
+
+Q5: Why Our ExternalAuthIdentityProvider Attempts Failed
+
+We tried to create ExternalAuthIdentityProvider via:
+
+METADATA DEPLOYMENT - All failed with "invalid at this location" errors:
+- <enabled>true</enabled>
+- <externalClientAppId>Flowdometer_ECA</externalClientAppId>
+- <type>ExternalClientApplication</type>
+- <authenticationProtocol>OAuth</authenticationProtocol>
+- <authenticationFlow>AuthorizationCode</authenticationFlow>
+
+TOOLING API:
+- POST /tooling/sobjects/ExternalAuthIdentityProvider
+- Result: 404 - "resource does not exist"
+
+UI:
+- Setup → External Credentials → Edit → Identity Provider dropdown
+- Search for "Flowdometer_ECA"
+- Result: "No results found"
+
+RETRIEVAL FROM WORKING ORG:
+- sf project retrieve start --metadata ExternalAuthIdentityProvider
+- Result: 0 records retrieved (even in working PBO with functioning OAuth)
+
+QUESTIONS:
+- Is the metadata type name correct? (ExternalAuthIdentityProvider?)
+- Why does Tooling API return 404 when you say it should work?
+- Why can't we retrieve any examples from our working PBO org?
+- Is there a feature flag or permission required to create these?
+
+====================================================================
+ADDITIONAL CONTEXT:
+====================================================================
+
+WHAT WE'VE TRIED (9 approaches documented):
+1. Package AuthProvider - ERROR: "not supported in 2GP"
+2. External Credential with AuthProvider - ERROR: packaging failure
+3. Simplified External Credential - ERROR: same as #1
+4. ExternalAuthIdentityProvider metadata - ERROR: schema validation
+5. Permission Set principal access - ERROR: invalid cross reference
+6. Manual UI configuration - ERROR: No results found in dropdown
+7. Metadata deployment (3 schemas) - ERROR: all fields "invalid at this location"
+8. Tooling API creation - ERROR: 404 resource not found
+9. Retrieve examples from PBO - SUCCESS but 0 records found
+
+ALL DOCUMENTATION IS PRESERVED in SecReviewSetup.md (lines 61-180)
+
+====================================================================
+WHAT WE NEED:
+====================================================================
+
+A WORKING, TESTED example of:
+1. Exact API calls to make from LWC/Apex after package install
+2. Exact OAuth flow to trigger consent screen
+3. Exact way to obtain OAuth token for Connect API
+4. Exact ExternalAuthIdentityProvider configuration for External Client Apps
+5. Confirmation this pattern has been successfully implemented by other ISVs
+
+NOT THEORETICAL - we need API calls that actually work when executed.
+
+====================================================================
+
+Thank you for your help. This is blocking our Security Review submission and package release.

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>jwtAuthKey</label>
+    <protected>true</protected>
+    <values>
+        <field>value__c</field>
+        <value xsi:type="xsd:string">MIIJKAIBAAKCAgEAp1FVYwPTIYU95Md4Fs7Gc5RvwGxR+2LqyGsJxvI7ZdXbMPXZ
+of9kW0k4lcwDQ+2tabxafeH74BzEV5sNSQPZiEksh1mgSV4gYTGMPvm8zAY9WBh2
+YourPrivateKeyHere
+w3Xia/1HRJLgzCxiThWEQ4e0MDWLcOy4YJzFJ3VgRHV9IxCZg7aMv5/lJ3q0+9e7
+Uew/oKiEhWx0m4ofSIR0IumXScYMNYN5i4UYzJwq15PDIgUXrI5Drfnftk0=</value>
+    </values>
+</CustomMetadata>

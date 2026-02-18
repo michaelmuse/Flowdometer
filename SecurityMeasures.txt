@@ -1,0 +1,75 @@
+Flowdometer Security Measures
+============================
+
+This document outlines the security measures implemented in the Flowdometer managed package to address common security concerns.
+
+1. CRUD/FLS Checks
+------------------
+- The main controller class `ListenerFlowController` uses `with sharing` to enforce organization-wide sharing rules
+- All field access is done through Schema.Describe calls to validate field existence and accessibility
+- The `buildQuery` method validates field names against the Schema before including them in queries
+- Field-level security is enforced by using Schema.Describe to check field accessibility before querying
+
+2. SOQL Injection Prevention
+---------------------------
+- All SOQL queries are constructed using parameterized queries with bind variables
+- The `buildQuery` method includes validation checks to prevent injection:
+  * Validates object names against Schema.getGlobalDescribe()
+  * Validates field names against Schema.Describe
+  * Prevents DML operations in queries
+  * Checks for suspicious characters or patterns
+- Query strings are validated before execution to ensure they start with 'SELECT' and don't contain DML keywords
+
+3. Sharing and Access Control
+----------------------------
+- All classes use `with sharing` to enforce organization-wide sharing rules
+- The main controller is marked as `global with sharing` to ensure proper access control
+- Parent record access is controlled through the sharing model
+- History record access is restricted to records the user has permission to view
+
+4. External Callout Security
+---------------------------
+- No external callouts are made in the package
+- All operations are performed within Salesforce's security context
+- No sensitive data is exposed to external systems
+
+5. Dynamic Apex Safety
+---------------------
+- Schema.Describe calls are used to validate object and field names
+- Dynamic SOQL is only used with validated and sanitized input
+- All dynamic queries are constructed with proper security checks
+- Field names are validated against Schema before use in queries
+
+6. Method and Class Exposure
+---------------------------
+- Only necessary methods are marked as `@AuraEnabled` or `@InvocableMethod`
+- Global methods are limited to those required for Flow integration
+- Test methods are properly marked with `@isTest`
+- Internal methods are marked as private where possible
+- Sensitive operations are encapsulated in private methods
+
+7. Object and Field Access
+-------------------------
+- Object access is validated through Schema.Describe
+- Field access is controlled through Schema.Describe
+- Custom object and field names are properly namespaced
+- Field-level security is enforced through Schema checks
+- Access to history records is restricted to authorized users
+
+8. Additional Security Measures
+-----------------------------
+- CPU time limits are monitored and enforced
+- Batch processing is implemented to handle large data volumes safely
+- Error handling includes proper logging without exposing sensitive information
+- Retry mechanisms are implemented with maximum retry limits
+- All user input is validated before processing
+
+9. Testing and Validation
+------------------------
+- Comprehensive test coverage for security scenarios
+- Test classes include negative test cases for security
+- Sharing rules are tested in test classes
+- Field-level security is verified in tests
+- Error handling and validation are thoroughly tested
+
+This document is maintained as part of the Flowdometer package and should be updated as new security measures are implemented or existing ones are modified. 

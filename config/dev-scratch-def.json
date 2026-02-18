@@ -1,0 +1,13 @@
+{
+  "orgName": "Flowdometer NoNamespace",
+  "edition": "Developer",
+  "features": ["EnableSetPasswordInApi", "ExternalClientApps"],
+  "settings": {
+    "lightningExperienceSettings": {
+      "enableS1DesktopEnabled": true
+    },
+    "mobileSettings": {
+      "enableS1EncryptedStoragePref2": false
+    }
+  }
+}

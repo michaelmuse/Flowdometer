@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ConnectedApp xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!-- Update your email address here -->
+    <contactEmail>dballinger@salesforce.com</contactEmail>
+    <label>JWTAuthAccess</label>
+    <oauthConfig>
+        <callbackUrl>http://localhost/OauthRedirect</callbackUrl>
+        <!-- contents of server.crt genered by openssl. Excludes leading BEGIN CERTIFICATE and trailing END CERTIFICATE lines
+            NOTE: As a best practice the certificate contents should be excluded from source control metadata.
+            As an alternative, it can be injected via a CLI step - https://github.com/forcedotcom/cli/blob/main/releasenotes/sfdx/README.md#71761-nov-10-2022
+        -->
+        <certificate>MIIF2TCC_YourCertificateHere_+Zkxmo/mbL/ShPug==</certificate>
+        <!-- This will get created for the new connected app in the org and needs to be updated in OAuthController.cls --> 
+        <!--<consumerKey>SalesforceWillProvide</consumerKey>-->
+        <isAdminApproved>true</isAdminApproved>
+        <isConsumerSecretOptional>false</isConsumerSecretOptional>
+        <isIntrospectAllTokens>false</isIntrospectAllTokens>
+        <isSecretRequiredForRefreshToken>true</isSecretRequiredForRefreshToken>
+        <scopes>Api</scopes>
+        <scopes>RefreshToken</scopes>
+    </oauthConfig>
+    <oauthPolicy>
+        <ipRelaxation>ENFORCE</ipRelaxation>
+        <refreshTokenPolicy>zero</refreshTokenPolicy>
+    </oauthPolicy>
+    <permissionSetName>JWT</permissionSetName>
+</ConnectedApp>

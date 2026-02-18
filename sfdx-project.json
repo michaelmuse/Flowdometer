@@ -1,0 +1,27 @@
+{
+  "packageDirectories": [
+    {
+      "versionName": "ver 3.0",
+      "versionNumber": "3.0.0.NEXT",
+      "path": "force-app",
+      "default": true,
+      "package": "Flowdometer",
+      "postInstallScript": "PostInstallScript",
+      "versionDescription": ""
+    }
+  ],
+  "name": "Flowdometer",
+  "namespace": "",
+  "sfdcLoginUrl": "https://login.salesforce.com",
+  "sourceApiVersion": "62.0",
+  "packageAliases": {
+    "Flowdometer": "0HoRo0000000LsTKAU",
+    "Flowdometer@3.0.0-1": "04tRo000000hFrpIAE",
+    "Flowdometer@3.0.0-2": "04tRo000000hGMTIA2",
+    "Flowdometer@3.0.0-3": "04tRo000000hJIjIAM",
+    "Flowdometer@3.0.0-4": "04tRo000000hNXdIAM",
+    "Flowdometer@3.0.0-5": "04tRo000000hNcTIAU",
+    "Flowdometer@3.0.0-6": "04tRo000000hNe5IAE",
+    "Flowdometer@3.0.0-7": "04tRo000000lVOXIA2"
+  }
+}

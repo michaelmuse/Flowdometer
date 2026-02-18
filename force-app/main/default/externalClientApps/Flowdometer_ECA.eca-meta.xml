@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExternalClientApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <contactEmail>help@flowdometer.com</contactEmail>
+    <distributionState>Packaged</distributionState>
+    <isProtected>false</isProtected>
+    <label>Flowdometer ECA</label>
+    <orgScopedExternalApp>00D5w000003IKik:Flowdometer_ECA</orgScopedExternalApp>
+</ExternalClientApplication>

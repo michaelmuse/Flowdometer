@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>HandleTimeWeekdays__c</fullName>
+    <description>Note that this formula rounds up to whole days</description>
+    <externalId>false</externalId>
+    <formula>IF( AND (Terminal_Stage__c, ISBLANK( Next_Step__c )) ,
+null,
+(5 * ( FLOOR( ( DATEVALUE( EndTimestamp__c ) - DATE( 1900, 1, 8) ) / 7 ) ) + MIN( 5, MOD(
+DATEVALUE(EndTimestamp__c) - DATE( 1900, 1, 8), 7 ) ) )
+-
+(5 * ( FLOOR( ( DATEVALUE( InitialTimestamp__c ) - DATE( 1900, 1, 8) ) / 7 ) ) + MIN( 5, MOD(
+DATEVALUE(InitialTimestamp__c) - DATE( 1900, 1, 8), 7 ) ) )
+)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <inlineHelpText>Note that this formula rounds up to whole days</inlineHelpText>
+    <label>Handle Time (Weekdays in this Step)</label>
+    <precision>18</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

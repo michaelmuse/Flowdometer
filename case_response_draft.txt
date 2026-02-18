@@ -1,0 +1,15 @@
+Hi,
+
+Thank you for your response. I understand 200+ days of extensions is significant — here is the context and my roadmap.
+
+My app previously passed security reviews. The new ECA requirement forced a full 1GP-to-2GP migration — 261 components, 74 tests, namespace cleanup, deprecated metadata removal — before I could even begin ECA work. That migration alone took ~2 months.
+
+The ECA implementation is where I've been blocked. I've documented 66 learnings and dead ends trying to implement Named Credentials with ECAs for same-org API calls in a 2GP managed package. I've tried Authorization Code flow (credentials stripped in subscriber orgs), SalesforceDefined protocol (parameter value unresolvable), ConnectApi injection (no API to read ECA keys), and more. Other ISVs face identical gaps (StackExchange #430199 — 6 upvotes, 0 answers since Feb 2025).
+
+Every support interaction has taken 1-2 weeks minimum. Cases have been reassigned between teams, adding another week each time. I booked Office Hours for Feb 9 per case advice — arranged childcare — and the meeting was cancelled. Agentforce has given incorrect guidance on multiple verified points (documented). No one has articulated the correct ECA implementation for this use case.
+
+PLAN: This will be a non-upgradeable fresh v3.0 — existing subscribers won't be forced to update. I need time to resolve the auth blocker, remove deprecated components locked in the current version, refactor flows to Apex, and complete security scanning. Target submission: June 2026, with review completion by July. Requesting extension through July 31, 2026.
+
+This is a free community app (24 reviews, 4.71 stars) I maintain purely for the ecosystem. Detailed technical roadmap attached.
+
+—Michael

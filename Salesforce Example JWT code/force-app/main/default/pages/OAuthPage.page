@@ -1,0 +1,15 @@
+<apex:page controller="OAuthController">
+    
+   
+    <apex:pageBlock >
+        <apex:pageBlockSection >
+              {!IF(ISNULL(token), requestMessage,"User is authorized, token obtained")}
+		</apex:pageBlockSection>
+    	<apex:pageBlockSection >
+            {!IF(ISNULL(token), errorMessage, "token: " + token)}
+        </apex:pageBlockSection>
+
+    </apex:pageBlock>
+    
+    
+</apex:page>
