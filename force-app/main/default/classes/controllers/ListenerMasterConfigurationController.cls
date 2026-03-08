@@ -306,6 +306,8 @@ public with sharing class ListenerMasterConfigurationController {
             String fieldLabelForLookupToFlow   = trackedFieldLabel  + ' Flow';
             String fieldLabelForLookupFromFlow = trackedObjectLabel;
 
+            String flowObjectApi = Flow__c.SObjectType.getDescribe().getName();
+
             String apiConvertedLabel = MetaDataUtilityCls.convertLabeltoAPIName(fieldLabelForLookupToFlow);
             
             // Check if the field already exists
@@ -317,7 +319,7 @@ public with sharing class ListenerMasterConfigurationController {
                     new LookupFieldCreator(
                         newRecord.Object_Name__c,
                         fieldLabelForLookupToFlow,
-                        'Flow__c',
+                        flowObjectApi,
                         newRecord.Id));
             } else {
                 System.debug(LoggingLevel.INFO, '### FLOWDOMETER DIAGNOSTIC: Lookup field already exists: ' + 
@@ -328,13 +330,13 @@ public with sharing class ListenerMasterConfigurationController {
             String apiLabelFromFlow = MetaDataUtilityCls.convertLabeltoAPIName(fieldLabelForLookupFromFlow);
             
             // Check if this field already exists
-            Boolean flowLookupExists = MetaDataUtilityCls.doesFieldExist('Flow__c', apiLabelFromFlow);
+            Boolean flowLookupExists = MetaDataUtilityCls.doesFieldExist(flowObjectApi, apiLabelFromFlow);
             
             if (!flowLookupExists) {
                 // Enqueue the reverse lookup creation
                 System.enqueueJob(
                     new LookupFieldCreator(
-                        'Flow__c',
+                        flowObjectApi,
                         fieldLabelForLookupFromFlow,
                         newRecord.Object_Name__c,
                         newRecord.Id));

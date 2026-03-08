@@ -22,7 +22,7 @@ global with sharing class ListenerUpdateFlowController {
                 throw new IllegalArgumentException('Missing required input parameters');
             }
             
-            MetaDataUtilityCls.setLookupFieldMaps('Flow__c');
+            MetaDataUtilityCls.setLookupFieldMaps(Flow__c.SObjectType.getDescribe().getName());
             System.debug(
                 'listenerFlowToUpdateLst - ' + lstFlowToUpdate
             );

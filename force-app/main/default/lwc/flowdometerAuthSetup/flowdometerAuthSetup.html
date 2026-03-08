@@ -20,67 +20,57 @@
             <!-- Not Connected -->
             <template if:false={isConnected}>
                 <template if:false={isLoading}>
-                    <div class="slds-box slds-theme_warning slds-m-bottom_medium" role="status" aria-live="polite">
+                    <div class="slds-box slds-theme_shade slds-m-bottom_medium" role="status">
                         <div class="slds-media">
                             <div class="slds-media__figure">
-                                <lightning-icon icon-name="utility:warning" size="medium" variant="warning"></lightning-icon>
+                                <lightning-icon icon-name="utility:setup" size="medium"></lightning-icon>
                             </div>
                             <div class="slds-media__body">
-                                <h3 class="slds-text-heading_small slds-m-bottom_x-small">{statusMessage}</h3>
+                                <h3 class="slds-text-heading_small slds-m-bottom_x-small">Almost ready!</h3>
                                 <p class="slds-text-body_regular">
-                                    Flowdometer needs permission to make same‑org API calls to enable field history tracking and create lookup fields.
-                                    This is a one‑time setup.
+                                    One quick step so Flowdometer can connect to your org.
+                                    Click <strong>Complete Setup</strong> — it only takes a moment.
                                 </p>
+                                <details class="slds-m-top_x-small slds-text-body_small slds-text-color_weak">
+                                    <summary style="cursor: pointer;">What does this do?</summary>
+                                    <p class="slds-m-top_xx-small">
+                                        Authorizes Flowdometer to create lookup fields and enable
+                                        history tracking on the objects you choose to monitor.
+                                    </p>
+                                </details>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Org & NC details -->
-                    <div class="slds-m-bottom_medium">
-                        <dl class="slds-list_horizontal slds-wrap">
-                            <dt class="slds-item_label slds-truncate slds-text-color_weak" title="My Domain">My Domain:</dt>
-                            <dd class="slds-item_detail slds-truncate" title={orgDomain}>{orgDomain}</dd>
-                            <dt class="slds-item_label slds-truncate slds-text-color_weak" title="Named Credential">Named Credential:</dt>
-                            <dd class="slds-item_detail slds-truncate" title="Flowdometer_API">Flowdometer_API</dd>
-                            <dt class="slds-item_label slds-truncate slds-text-color_weak" title="Base URL">Base URL (placeholder):</dt>
-                            <dd class="slds-item_detail slds-truncate" title="https://example.invalid/services/data/v61.0">https://example.invalid/services/data/v61.0</dd>
-                        </dl>
-                    </div>
-
-                    <!-- Setup Steps -->
-                    <div class="slds-text-align_center">
+                    <!-- Setup Actions -->
+                    <div class="slds-text-align_center slds-m-bottom_medium">
                         <lightning-button
-                            variant="neutral"
-                            label="Step 1: Edit Named Credential URL"
-                            title="Open Named Credential to set your My Domain URL"
-                            onclick={handleOpenNamedCredential}
+                            variant="brand"
+                            label="Complete Setup"
+                            title="Authorize Flowdometer to connect to your org"
+                            onclick={handleCompleteSetup}
                             icon-name="utility:setup"
                             class="slds-m-right_small">
                         </lightning-button>
                         <lightning-button
-                            variant="brand"
-                            label="Step 2: Authorize Flowdometer"
-                            title="Open External Credentials in Setup to authorize"
-                            onclick={handleOpenExternalCredential}
-                            icon-name="utility:lock"
-                            class="slds-m-right_small">
-                        </lightning-button>
-                        <lightning-button
-                            variant="success"
-                            label="Step 3: Validate Connection"
+                            variant="neutral"
+                            label="Check Connection"
                             title="Recheck connection status"
                             onclick={handleValidate}
                             icon-name="utility:refresh">
                         </lightning-button>
                     </div>
 
-                    <!-- Error details (optional) -->
-                    <template if:true={errorDetails}>
-                        <div class="slds-m-top_medium">
-                            <details class="slds-text-body_small slds-text-color_weak">
-                                <summary style="cursor: pointer;">Technical Details</summary>
-                                <pre class="slds-m-top_small slds-p-around_small slds-box" style="background-color: #f3f3f3; overflow-x: auto;">{errorDetails}</pre>
-                            </details>
+                    <!-- Troubleshooting (only after a failed setup attempt) -->
+                    <template if:true={showTroubleshooting}>
+                        <div class="slds-box slds-theme_default slds-m-top_medium" style="border-left: 3px solid #c23934;">
+                            <p class="slds-text-body_small slds-m-bottom_x-small">
+                                <strong>Setup didn&#39;t complete</strong>
+                            </p>
+                            <p class="slds-text-body_small slds-text-color_weak">{errorDetails}</p>
+                            <p class="slds-text-body_small slds-text-color_weak slds-m-top_small">
+                                Try running setup again. If this persists, contact help@flowdometer.com.
+                            </p>
                         </div>
                     </template>
                 </template>
@@ -89,10 +79,7 @@
             <!-- Help -->
             <div class="slds-m-top_large slds-text-align_center">
                 <p class="slds-text-body_small slds-text-color_weak">
-                    Need help? Visit
-                    <a href="https://flowdometer.com/docs/setup" target="_blank" rel="noopener noreferrer">the setup guide</a>
-                    or email
-                    <a href="mailto:help@flowdometer.com">help@flowdometer.com</a>.
+                    Need help? Visit the <a href="https://www.flowdometer.com/documentation" target="_blank" rel="noopener noreferrer">setup guide</a> or email help@flowdometer.com.
                 </p>
             </div>
         </div>

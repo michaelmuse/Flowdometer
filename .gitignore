@@ -101,3 +101,8 @@ test-results/
 
 # Git backup folders
 .git_corrupt_backup/
+.git_broken/
+
+# Temp working directories and scripts
+temp-*/
+temp-test-token.apex

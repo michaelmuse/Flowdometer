@@ -1,18 +1,16 @@
 /**
  * Post-install script for Flowdometer package.
- * Assigns the Flowdometer_User permission set to all active users on install.
- * Admin setup (Named Credential URL, External Credential authorization) is
- * guided by the flowdometerAuthSetup LWC — no Tasks, Chatter, or callouts here.
+ * Assigns the Flowdometer_User permission set to all active users.
+ * OAuth setup happens when admin clicks "Complete Setup" in the LWC.
  */
 public with sharing class PostInstallScript implements InstallHandler {
     private static final String PERMISSION_SET_NAME = 'Flowdometer_User';
 
     public void onInstall(InstallContext context) {
         try {
-            // Assign permission set only - no complex operations
             assignPermissionSet();
         } catch (Exception e) {
-            System.debug(LoggingLevel.ERROR, 'PostInstallScript error: ' + e.getMessage());
+            System.debug(LoggingLevel.ERROR, 'PostInstallScript PermSet error: ' + e.getMessage());
         }
     }
 

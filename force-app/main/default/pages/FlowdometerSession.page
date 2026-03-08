@@ -1,0 +1,3 @@
+<apex:page applyBodyTag="false" applyHtmlTag="false"
+           showHeader="false" sidebar="false"
+           contentType="application/json">{"sid":"{!$Api.Session_Id}"}</apex:page>

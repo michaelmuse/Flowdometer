@@ -352,18 +352,14 @@ public inherited sharing class MetaDataUtilityCls {
         return sanitized;
     }
 
+    private static final String TOOLING_API_VERSION = 'v62.0';
+
     /**
-     * Enable field history tracking for standard objects using Tooling API REST calls
-     * Note: FieldDefinition.IsFieldHistoryTracked is read-only via DML, so we use REST API
-     * However, standard object field history tracking typically requires manual setup or Metadata API
-     * This method attempts to enable it but may not work for all standard objects
-     * @param sObjectApiName The API name of the object
-     * @param fieldName The API name of the field
-     * @return true if successful, false otherwise
+     * Enable field history tracking for standard objects using Tooling API REST calls.
+     * FieldDefinition.IsFieldHistoryTracked is read-only via DML, so we use REST API.
      */
     private static Boolean enableFieldHistoryTrackingViaTooling(String sObjectApiName, String fieldName) {
         try {
-            // Query for the FieldDefinition record to check current status
             List<FieldDefinition> fieldDefs = [
                 SELECT Id, QualifiedApiName, IsFieldHistoryTracked
                 FROM FieldDefinition
@@ -371,83 +367,65 @@ public inherited sharing class MetaDataUtilityCls {
                 AND QualifiedApiName = :fieldName
                 LIMIT 1
             ];
-            
+
             if (fieldDefs.isEmpty()) {
                 System.debug(LoggingLevel.ERROR, 'FieldDefinition not found for ' + sObjectApiName + '.' + fieldName);
                 return false;
             }
-            
+
             FieldDefinition fieldDef = fieldDefs[0];
-            
-            // If already tracked, return success
+
             if (fieldDef.IsFieldHistoryTracked) {
                 System.debug(LoggingLevel.INFO, 'History tracking already enabled for ' + sObjectApiName + '.' + fieldName);
                 return true;
             }
-            
-            // Note: FieldDefinition.IsFieldHistoryTracked is read-only via DML
-            // Use REST API call to Tooling API via Named Credential to update it
-            // Prepare the update payload
+
+            FlowdometerTokenService.TokenResult tokenResult = FlowdometerTokenService.getToken();
+            if (!tokenResult.success) {
+                System.debug(LoggingLevel.ERROR, 'Cannot enable history tracking – token acquisition failed.');
+                return false;
+            }
+
+            String toolingBase = URL.getOrgDomainUrl().toExternalForm()
+                + '/services/data/' + TOOLING_API_VERSION + '/tooling';
+
             Map<String, Object> updatePayload = new Map<String, Object>();
             updatePayload.put('IsFieldHistoryTracked', true);
-            
+
             HttpRequest req = new HttpRequest();
-            // Use Named Credential - it handles OAuth automatically
-            req.setEndpoint('callout:Flowdometer_API/tooling/sobjects/FieldDefinition/' + fieldDef.Id);
+            req.setEndpoint(toolingBase + '/sobjects/FieldDefinition/' + fieldDef.Id);
             req.setMethod('PATCH');
             req.setHeader('Content-Type', 'application/json');
+            req.setHeader('Authorization', 'Bearer ' + tokenResult.accessToken);
             req.setBody(JSON.serialize(updatePayload));
-            req.setTimeout(120000); // 120 second timeout
-            
-            Http http = new Http();
-            HttpResponse resp = http.send(req);
-            
-            System.debug(LoggingLevel.INFO, 'Tooling API REST response for ' + sObjectApiName + '.' + fieldName + 
-                        ': Status=' + resp.getStatusCode() + ', Body=' + resp.getBody());
-            
+            req.setTimeout(120000);
+
+            HttpResponse resp = new Http().send(req);
+
+            System.debug(LoggingLevel.INFO, 'Tooling API REST response for ' + sObjectApiName + '.' + fieldName +
+                        ': Status=' + resp.getStatusCode());
+
             if (resp.getStatusCode() >= 200 && resp.getStatusCode() < 300) {
-                // Verify the update actually worked by re-querying
-                // Wait a moment for the update to propagate
-                // Note: In a transaction, this might not reflect immediately, but we'll check anyway
                 List<FieldDefinition> verifyDefs = [
                     SELECT Id, QualifiedApiName, IsFieldHistoryTracked
                     FROM FieldDefinition
                     WHERE Id = :fieldDef.Id
                     LIMIT 1
                 ];
-                
+
                 if (!verifyDefs.isEmpty() && verifyDefs[0].IsFieldHistoryTracked) {
-                    System.debug(LoggingLevel.INFO, 'Successfully enabled history tracking via Tooling API REST for ' + sObjectApiName + '.' + fieldName);
                     return true;
                 } else {
-                    // Update call succeeded but field is still not tracked
-                    // This can happen if the field is not eligible for history tracking
                     System.debug(LoggingLevel.WARN, 'Tooling API call succeeded but field is still not tracked. Field may not be eligible for history tracking.');
                     return false;
                 }
             } else {
-                // Log the full error response for debugging
-                String errorBody = resp.getBody();
-                System.debug(LoggingLevel.ERROR, 'Could not enable history tracking via Tooling API REST. Status: ' + resp.getStatusCode() + ', Body: ' + errorBody);
-                
-                // Check if it's a specific error we can handle
-                if (errorBody != null && errorBody.contains('FIELD_INTEGRITY_EXCEPTION')) {
-                    System.debug(LoggingLevel.WARN, 'Field integrity exception - field may not be eligible for history tracking');
-                } else if (errorBody != null && errorBody.contains('INSUFFICIENT_ACCESS')) {
-                    System.debug(LoggingLevel.WARN, 'Insufficient access to modify field history tracking');
-                } else if (errorBody != null && errorBody.contains('FIELD_CUSTOM_VALIDATION_EXCEPTION')) {
-                    System.debug(LoggingLevel.WARN, 'Field custom validation exception - field may have validation rules preventing history tracking');
-                } else if (errorBody != null && errorBody.contains('NOT_WRITEABLE')) {
-                    System.debug(LoggingLevel.WARN, 'Field IsFieldHistoryTracked is not writeable via this API');
-                }
-                
+                System.debug(LoggingLevel.ERROR, 'Could not enable history tracking via Tooling API REST. Status: ' + resp.getStatusCode());
                 return false;
             }
-            
+
         } catch (Exception e) {
             System.debug(LoggingLevel.ERROR, 'Error enabling history tracking via Tooling API: ' + e.getMessage());
-            System.debug(LoggingLevel.ERROR, 'Stack trace: ' + e.getStackTraceString());
-            System.debug(LoggingLevel.INFO, 'For standard objects, field history tracking may need to be enabled manually in Setup > Object Manager');
             return false;
         }
     }
@@ -679,17 +657,21 @@ public inherited sharing class MetaDataUtilityCls {
     }
 
     /**
-     * Create a lookup field using Tooling API REST (replaces SOAP MetadataService)
-     * @param targetObject The object on which to create the lookup field
-     * @param fieldLabel The label for the field
-     * @param referenceTo The object the lookup references
-     * @return true if successful, false otherwise
+     * Create a lookup field using Tooling API REST (replaces SOAP MetadataService).
      */
     private static Boolean createLookupFieldViaTooling(String targetObject, String fieldLabel, String referenceTo) {
         try {
+            FlowdometerTokenService.TokenResult tokenResult = FlowdometerTokenService.getToken();
+            if (!tokenResult.success) {
+                System.debug(LoggingLevel.ERROR, 'Cannot create lookup field – token acquisition failed.');
+                return false;
+            }
+
+            String toolingBase = URL.getOrgDomainUrl().toExternalForm()
+                + '/services/data/' + TOOLING_API_VERSION + '/tooling';
+
             String fieldApiName = convertLabeltoAPIName(fieldLabel);
-            
-            // Prepare metadata payload for Tooling API
+
             Map<String, Object> fieldMetadata = new Map<String, Object>{
                 'FullName' => targetObject + '.' + fieldApiName,
                 'Metadata' => new Map<String, Object>{
@@ -701,23 +683,22 @@ public inherited sharing class MetaDataUtilityCls {
                     'deleteConstraint' => 'SetNull'
                 }
             };
-            
-            // Make callout using Named Credential
+
             HttpRequest req = new HttpRequest();
-            req.setEndpoint('callout:Flowdometer_API/tooling/sobjects/CustomField');
+            req.setEndpoint(toolingBase + '/sobjects/CustomField');
             req.setMethod('POST');
             req.setHeader('Content-Type', 'application/json');
+            req.setHeader('Authorization', 'Bearer ' + tokenResult.accessToken);
             req.setBody(JSON.serialize(fieldMetadata));
             req.setTimeout(120000);
-            
-            Http http = new Http();
-            HttpResponse res = http.send(req);
-            
+
+            HttpResponse res = new Http().send(req);
+
             if (res.getStatusCode() == 201) {
                 System.debug(LoggingLevel.INFO, 'Successfully created lookup field: ' + fieldApiName);
                 return true;
             } else {
-                System.debug(LoggingLevel.ERROR, 'Failed to create lookup field. Status: ' + 
+                System.debug(LoggingLevel.ERROR, 'Failed to create lookup field. Status: ' +
                             res.getStatusCode() + ', Body: ' + res.getBody());
                 return false;
             }

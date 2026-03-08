@@ -1,78 +1,43 @@
-# Flowdometer OAuth Migration Guide
+# Flowdometer
 
-## Summary
+A Salesforce 2GP managed package for monitoring and measuring field-change workflows.
 
-This document outlines the changes made to Flowdometer's authentication mechanism to comply with Salesforce Security Review requirements. The app previously used `UserInfo.getSessionId()` for same-org Tooling API calls, which was rejected. This update replaces that approach with a platform-managed OAuth flow using Named Credentials and External Credentials.
+## Authentication Architecture
 
-## Changes Made
+Flowdometer makes same-org Tooling and Metadata API calls to create lookup fields,
+enable history tracking, and manage listener configuration.  All API access uses an
+OAuth 2.0 **client\_credentials** flow backed by a packaged External Client App (ECA).
 
-### 1. Authentication Replacement
+| Component | Purpose |
+|---|---|
+| `Flowdometer_ECA` (ExternalClientApplication) | Packaged OAuth client; its Consumer Key / Secret replicate to subscriber orgs via ECA "Reference" mechanism |
+| `Eca_Secret__mdt` (Protected Custom Metadata) | Stores the client ID and secret; only accessible to managed-package Apex |
+| `FlowdometerTokenService` | Exchanges credentials for an access token via `/services/oauth2/token`; caches token per transaction |
+| `FlowdometerAuthService` | One-click "Complete Setup" enables Client Credentials + sets Run-As user via Metadata API SOAP call |
 
-**Old Approach**: Used `UserInfo.getSessionId()` in `FlowdometerAuthService` to make Tooling/Metadata API calls.
+### How it works
 
-**New Approach**: 
-- **External Credential**: `Flowdometer_SF_Platform` (uses Salesforce Platform provider with `NamedPrincipal`)
-- **Named Credential**: `Flowdometer_API` (binds to the External Credential, uses placeholder URL)
-- **Authorization**: Admins authorize once via Setup UI; tokens are managed by Salesforce platform
-- **Execution**: All Tooling/Metadata calls use `callout:Flowdometer_API/...` syntax
+1. **Install** — ECA deploys with the package. A policy auto-generates with Client Credentials disabled.
+2. **Complete Setup** — Admin clicks the button in the Flowdometer app.  `FlowdometerAuthService.completeSetup()` sends a SOAP `updateMetadata` call (via a VF-sourced session) to enable Client Credentials and set the current admin as Run-As user.
+3. **Runtime** — Every class that needs API access calls `FlowdometerTokenService.getToken()`, which reads the Protected CMDT, POSTs a `client_credentials` token exchange, and returns a Bearer token.  The token is cached for the duration of the Apex transaction.
 
-### 2. FlowdometerAuthService Updates
-
-- Removed all session ID and OAuth 2.0 flow code
-- Added new methods:
-  - `checkConnectionStatus()` - Tests connection to limits endpoint
-  - `getOrgDomainUrl()` - Returns subscriber's My Domain
-  - `getNamedCredentialSetupUrl()` - Returns deep link to edit NC
-  - `getExternalCredentialAuthUrl()` - Returns deep link to EC authorize page
-- Now acts as a connection checker and setup assistant
-
-### 3. Setup LWC Enhancement
-
-- `flowdometerAuthSetup` now provides a clean, admin-friendly UI
-- Displays connection status and My Domain
-- Provides "Authorize", "Edit Named Credential", and "Validate" buttons
-- Fires `authsuccess` event when connected
-
-### 4. Permission Set Update
-
-- Added `externalCredentialPrincipalAccesses` for `Flowdometer_SF_Platform` (NamedPrincipal)
-- Added class access for `FlowdometerAuthService`
-
-### 5. Package Manifest Changes
-
-- Removed `OAuthTokenUtil` from Apex classes
-- Removed ECA artifacts (`Flowdometer_ECA`, `Flowdometer_ECA_oauth`)
-- Updated `ExternalCredential` to `Flowdometer_SF_Platform`
-- Kept `NamedCredential` as `Flowdometer_API`
+No Named Credentials, External Credentials, or EAIP components are used at runtime.
+No session IDs are used for ongoing API calls.
 
 ## Admin Setup Steps
 
 After installation:
 
-1. Navigate to the Flowdometer Setup component (e.g., via SetupListenersandGoals app)
-2. If not connected, click "Authorize Flowdometer"
-3. In the External Credentials setup page, select "Flowdometer SF Platform"
-4. Click "Authenticate"
-5. Return to the Flowdometer Setup card
-6. Click "Validate Connection" to confirm setup
-7. The card should now show "Connected"
-
-Note: The "Edit Named Credential" button helps admins update the NC URL to their My Domain if needed.
+1. Open the **Flowdometer** app
+2. The Setup LWC shows "Almost ready!" — click **Complete Setup**
+3. Click **Check Connection** — should show "Connected!"
+4. Start creating Listeners
 
 ## Security Review Notes
 
-### Why This Change Was Necessary
-
-- **Session ID Usage**: Previously used `UserInfo.getSessionId()` which is prohibited for Security Review
-- **Platform OAuth**: Uses built-in Salesforce OAuth 2.0 with Named Credentials, which is the recommended approach for same-org API access
-- **No Token Storage**: Tokens are managed by Salesforce platform, not stored in Apex
-- **Least Privilege**: Uses `NamedPrincipal` for org-wide authorization; admin-only setup required
-- **No Manual Token Handling**: No Apex code manually handles tokens, refreshes, or secrets
-
-### Compliance Benefits
-
-- **No Session ID Exposure**: Eliminates risk of session token leakage
-- **Platform-Managed**: Tokens are refreshed and rotated by Salesforce
-- **Audit Trail**: Calls are audited against the authorized principal (admin who authorized)
-- **No Secrets**: No private keys, tokens, or credentials stored in code or metadata
-- **Same Org Only**: All calls remain within subscriber's org
+- **No `UserInfo.getSessionId()` in runtime API calls** — all callouts use OAuth Bearer tokens from the ECA client\_credentials flow
+- **Session ID used once** — only during "Complete Setup" to invoke the Metadata API SOAP endpoint (required because Lightning sessions lack Metadata API scope)
+- **Secrets in Protected CMDT** — `Eca_Secret__mdt` is only readable by managed-package Apex; never logged or exposed
+- **Token caching** — transaction-scoped only; no persistent token storage
+- **Same-org only** — all endpoints derive from `URL.getOrgDomainUrl()`
+- **Admin-gated** — setup action requires Customize Application permission

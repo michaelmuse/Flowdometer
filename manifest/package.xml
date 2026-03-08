@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
     <types>
+        <members>Eca_Secret__mdt</members>
         <members>Feature_Flag__mdt</members>
         <members>Listener__c</members>
         <members>Flow__c</members>
@@ -14,6 +15,8 @@
         <members>FlowDeactivator</members>
         <members>FlowdometerAuthService</members>
         <members>FlowdometerAuthServiceTest</members>
+        <members>FlowdometerTokenService</members>
+        <members>FlowdometerTokenServiceTest</members>
         <members>FlowdometerUninstallHelper</members>
         <members>ListenerFlowController</members>
         <members>ListenerFlowControllerTest</members>
@@ -143,22 +146,19 @@
         <name>PermissionSet</name>
     </types>
     <types>
-        <members>Flowdometer_SF_Platform</members>
-        <name>ExternalAuthIdentityProvider</name>
-    </types>
-    <types>
-        <members>Flowdometer_SF_Platform</members>
-        <name>ExternalCredential</name>
-    </types>
-    <types>
-        <members>Flowdometer_API</members>
-        <name>NamedCredential</name>
-    </types>
-    <types>
         <members>Flowdometer_ECA</members>
         <name>ExternalClientApplication</name>
     </types>
     <types>
+        <members>Flowdometer_ECA_oauth</members>
+        <name>ExtlClntAppOauthSettings</name>
+    </types>
+    <types>
+        <members>FlowdometerSession</members>
+        <name>ApexPage</name>
+    </types>
+    <types>
+        <members>Eca_Secret.Default</members>
         <members>Feature_Flag.AdminNotifications</members>
         <members>Feature_Flag.EnhancedErrorHandling</members>
         <members>Feature_Flag.RetryMetadataOperations</members>

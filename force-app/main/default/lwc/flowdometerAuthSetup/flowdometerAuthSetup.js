@@ -1,101 +1,82 @@
 import { LightningElement } from 'lwc';
 import checkConnectionStatus from '@salesforce/apex/FlowdometerAuthService.checkConnectionStatus';
-import getOrgDomainUrl from '@salesforce/apex/FlowdometerAuthService.getOrgDomainUrl';
-import getNamedCredentialSetupUrl from '@salesforce/apex/FlowdometerAuthService.getNamedCredentialSetupUrl';
-import getExternalCredentialAuthUrl from '@salesforce/apex/FlowdometerAuthService.getExternalCredentialAuthUrl';
+import completeSetup from '@salesforce/apex/FlowdometerAuthService.completeSetup';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
 export default class FlowdometerAuthSetup extends LightningElement {
     isLoading = true;
     isConnected = false;
-    statusMessage = 'Checking connection...';
     errorDetails = '';
-    orgDomain = '';
+    setupAttempted = false;
+
+    get showTroubleshooting() {
+        return this.setupAttempted && this.errorDetails;
+    }
 
     connectedCallback() {
-        this.initialize();
+        this.checkConnection(true);
     }
 
-    async initialize() {
-        try {
-            // Fetch org domain for display early
-            const domain = await getOrgDomainUrl();
-            this.orgDomain = domain;
-        } catch (e) {
-            // Non-blocking; continue
-        } finally {
-            await this.validateConnection(true);
-        }
-    }
-
-    async validateConnection(initial = false) {
+    async checkConnection(initial = false) {
         this.isLoading = true;
         try {
             const status = await checkConnectionStatus();
             this.isConnected = !!status.connected;
-            this.statusMessage = status.message || (this.isConnected ? 'Connected' : 'Not Connected');
 
-            // Prefer orgDomain from server if provided
-            if (status.orgDomainUrl) {
-                this.orgDomain = status.orgDomainUrl;
+            if (!this.isConnected && !this.setupAttempted) {
+                this.errorDetails = '';
+            } else if (!this.isConnected) {
+                this.errorDetails = status.errorDetails || '';
             }
-
-            // Stash links for button handlers
-            this._ncUrl = status.namedCredentialSetupUrl;
-            this._ecUrl = status.externalCredentialAuthUrl;
-
-            this.errorDetails = status.errorDetails || '';
 
             if (this.isConnected && !initial) {
-                this.showToast('Success', 'Flowdometer is authorized and ready.', 'success');
+                this.showToast('Success', 'Flowdometer is connected and ready.', 'success');
             }
 
-            // Fire authsuccess to unblock parent when connected
             if (this.isConnected) {
                 this.dispatchEvent(new CustomEvent('authsuccess'));
             }
         } catch (error) {
-            // Resilient, admin-friendly error
-            const msg = error && error.body && error.body.message ? error.body.message : (error && error.message) ? error.message : 'Unknown error';
-            this.statusMessage = 'Unable to verify connection. Please try Validate Connection.';
-            this.errorDetails = msg;
             this.isConnected = false;
+            if (this.setupAttempted) {
+                this.errorDetails = error?.body?.message || error?.message || 'Unknown error';
+            }
         } finally {
             this.isLoading = false;
         }
     }
 
     handleValidate = () => {
-        this.validateConnection(false);
+        this.checkConnection(false);
     };
 
-    handleOpenNamedCredential = async () => {
-        try {
-            if (!this._ncUrl) {
-                this._ncUrl = await getNamedCredentialSetupUrl();
-            }
-            if (this._ncUrl) {
-                window.open(this._ncUrl, '_blank', 'noopener');
-            } else {
-                this.showToast('Setup Unavailable', 'Unable to open Named Credential. Please navigate via Setup.', 'warning');
-            }
-        } catch (e) {
-            this.showToast('Error', 'Failed to open Named Credential setup.', 'error');
+    async fetchApiSession() {
+        const urls = ['/apex/FlowdometerSession', '/apex/Flowdometer__FlowdometerSession'];
+        for (const url of urls) {
+            try {
+                const res = await fetch(url, { credentials: 'same-origin' });
+                if (!res.ok) continue;
+                const text = await res.text();
+                const data = JSON.parse(text.trim());
+                if (data.sid) return data.sid;
+            } catch (_) { /* try next URL */ }
         }
-    };
+        return null;
+    }
 
-    handleOpenExternalCredential = async () => {
+    handleCompleteSetup = async () => {
+        this.isLoading = true;
+        this.setupAttempted = true;
         try {
-            if (!this._ecUrl) {
-                this._ecUrl = await getExternalCredentialAuthUrl();
-            }
-            if (this._ecUrl) {
-                window.open(this._ecUrl, '_blank', 'noopener');
-            } else {
-                this.showToast('Setup Unavailable', 'Unable to open External Credentials. Please navigate via Setup.', 'warning');
-            }
-        } catch (e) {
-            this.showToast('Error', 'Failed to open External Credentials.', 'error');
+            const apiSession = await this.fetchApiSession();
+            await completeSetup({ apiSessionId: apiSession });
+            this.showToast('Setup Complete', 'Connection configured. Validating...', 'success');
+            await this.checkConnection(false);
+        } catch (error) {
+            const msg = error?.body?.message || error?.message || 'Setup could not be completed.';
+            this.showToast('Setup Incomplete', 'Try running setup again, or contact help@flowdometer.com.', 'warning');
+            this.errorDetails = msg;
+            this.isLoading = false;
         }
     };
 

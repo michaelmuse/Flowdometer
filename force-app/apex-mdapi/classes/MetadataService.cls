@@ -29,109 +29,26 @@ public class MetadataService {
 	public static String SOAP_M_URI='http://soap.sforce.com/2006/04/metadata';
 
     /**
-     * Gets an OAuth token for Metadata API calls using Named Credential
-     * This method replaces the insecure session ID approach with secure OAuth authentication
-     * 
-     * For same-org Metadata API calls, we use a Named Credential configured with OAuth 2.0.
-     * The Named Credential "Flowdometer_API" should be set up to point to the same org
-     * and use OAuth 2.0 authentication. The PostInstallScript handles this setup automatically.
-     * 
-     * @return OAuth access token for Metadata API authentication
+     * Gets an OAuth access token for Metadata API SOAP calls.
+     * Delegates to FlowdometerTokenService which acquires a
+     * client_credentials token from the packaged ECA.
      */
     @TestVisible
     public static String getOAuthToken(){
-        // Check if we're in a test context - use mock token
         if (Test.isRunningTest()) {
             return 'TEST_OAUTH_TOKEN';
         }
-        
-        // For same-org Metadata API calls with OAuth, we need to get the token from
-        // a Named Credential. Since Apex doesn't directly expose Named Credential tokens,
-        // we use a workaround: make an HTTP callout using the Named Credential to extract
-        // the OAuth token from the Authorization header.
-        
-        try {
-            // Use Named Credential to make a callout and extract the OAuth token
-            // The Named Credential endpoint should be configured to point to the org's Metadata API
-            String orgUrl = URL.getOrgDomainUrl().toExternalForm();
-            
-            // Make a callout using Named Credential to get the OAuth token
-            // We'll use a simple REST endpoint to trigger the Named Credential authentication
-            HttpRequest req = new HttpRequest();
-            // Use Named Credential in the endpoint - this will automatically include OAuth token
-            req.setEndpoint('callout:Flowdometer_API/services/data/v58.0/sobjects/User/describe');
-            req.setMethod('GET');
-            req.setTimeout(30000);
-            
-            Http http = new Http();
-            HttpResponse res = http.send(req);
-            
-            // If the callout succeeds, the OAuth token was used automatically
-            // But we need the actual token value for the SOAP SessionHeader
-            // So we'll use a different approach: get token via the current session's OAuth context
-            
-            // For SOAP Metadata API, we need the actual OAuth token value in the SessionHeader
-            // Since Apex doesn't directly expose Named Credential tokens, we need to use
-            // the Connect REST API to retrieve it from the External Credential
-            return getOAuthTokenFromNamedCredential();
-            
-        } catch (CalloutException ce) {
-            // Named Credential might not be configured yet
-            System.debug(LoggingLevel.WARN, 'Named Credential callout failed: ' + ce.getMessage());
-            return getOAuthTokenFromNamedCredential();
-        } catch (Exception e) {
-            System.debug(LoggingLevel.ERROR, 'Error getting OAuth token: ' + e.getMessage());
-            throw new MetadataServiceException('Unable to obtain OAuth token for Metadata API. OAuth authentication is required for security compliance. Please ensure Named Credential "Flowdometer_API" is configured. Error: ' + e.getMessage());
+
+        FlowdometerTokenService.TokenResult tokenResult = FlowdometerTokenService.getToken();
+        if (tokenResult.success) {
+            return tokenResult.accessToken;
         }
+
+        throw new MetadataServiceException(
+            'Unable to obtain OAuth token for Metadata API: ' + tokenResult.errorMessage
+        );
     }
-    
-    /**
-     * Gets OAuth token from Named Credential using Connect REST API
-     * This method uses the Connect REST API to retrieve the OAuth token from a properly
-     * configured Named Credential, without using session IDs
-     * @return OAuth access token
-     */
-    private static String getOAuthTokenFromNamedCredential() {
-        // For same-org Metadata API calls, we need to use a Named Credential that's been
-        // authenticated via OAuth 2.0. The PostInstallScript should handle this setup.
-        // 
-        // At runtime, we need to get the OAuth token from the Named Credential.
-        // Since Apex doesn't directly expose Named Credential tokens, we use the Connect REST API
-        // to retrieve the token from the External Credential associated with the Named Credential.
-        
-        try {
-            // Use Connect REST API to get OAuth token from External Credential
-            // This requires the Named Credential to be properly configured with OAuth
-            String orgUrl = URL.getOrgDomainUrl().toExternalForm();
-            String apiVersion = '58.0';
-            
-            // The Named Credential "Flowdometer_API" should be configured with OAuth 2.0
-            // and linked to an External Credential that contains the OAuth token.
-            // 
-            // To retrieve the OAuth token, we need to use the Connect REST API to access
-            // the External Credential's principal. However, this requires specific permissions.
-            // 
-            // The PostInstallScript should handle the Named Credential and External Credential
-            // setup automatically, including OAuth token population.
-            //
-            // For now, we'll indicate that the setup is required. The PostInstallScript
-            // will configure this during package installation.
-            
-            // TODO: Implement Connect REST API call to retrieve OAuth token from External Credential
-            // This requires: GET /services/data/vXX.X/connect/credentials/{credentialId}/principals/{principalId}
-            
-        } catch (Exception e) {
-            System.debug(LoggingLevel.WARN, 'Error getting OAuth token from Named Credential: ' + e.getMessage());
-        }
-        
-        // If we can't get the token, throw exception with clear message
-        throw new MetadataServiceException('OAuth token retrieval requires Named Credential setup. The PostInstallScript should configure Named Credential "Flowdometer_API" automatically during package installation. If this error persists after installation, please verify Named Credential configuration in Setup > Named Credentials.');
-    }
-    
-    
-    /**
-     * Custom exception for Metadata Service authentication errors
-     */
+
     public class MetadataServiceException extends Exception {}
 
     private static String sanitizeApiName(String label) {
@@ -6743,8 +6660,6 @@ public class MetadataService {
     public static MetadataService.MetadataPort createService(){
         MetadataService.MetadataPort service=new MetadataService.MetadataPort();
         service.SessionHeader=new MetadataService.SessionHeader_element();
-        // Use OAuth token instead of session ID for secure Metadata API authentication
-        // This meets Salesforce Security Review requirements
         service.SessionHeader.sessionId=MetadataService.getOAuthToken();
         return service;
     }
