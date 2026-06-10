@@ -111,6 +111,34 @@ public class TestDataFactory {
         }
     }
 
+    // Convenience builder for a Listener that also configures the optional
+    // Type__c source field and the Enable_History__c toggle in a single call,
+    // so individual tests don't have to re-do the create-then-update dance.
+    public static Listener__c createListenerConfigWithType(
+        String objectName,
+        String fieldToTrack,
+        String typeField,
+        Boolean enableHistory,
+        Datetime lastExecutionOn
+    ) {
+        Listener__c listener = createListenerConfig(
+            objectName,
+            fieldToTrack,
+            lastExecutionOn,
+            true
+        );
+
+        if (String.isNotBlank(typeField)) {
+            listener.Type__c = typeField;
+        }
+        listener.Enable_History__c = enableHistory;
+
+        if (listener.Id != null) {
+            update listener;
+        }
+        return listener;
+    }
+
     public static Opportunity createOpportunity(
         String name,
         String stageName,

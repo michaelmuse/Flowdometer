@@ -27,8 +27,8 @@ global with sharing class ListenerFlowController {
     @AuraEnabled
     global Id varLastHistoryRecordId;
     public List<ListenerFlowController> processedRecords = new List<ListenerFlowController>();
-    private static List<Id> historyRecordIdsToExclude;
-    private static Datetime exclusionListCacheTime;
+    @TestVisible private static List<Id> historyRecordIdsToExclude;
+    @TestVisible private static Datetime exclusionListCacheTime;
     private static final Integer EXCLUSION_CACHE_DURATION_MINUTES = 5; // Cache exclusion list for 5 minutes
     private static Map<String, Map<String, Schema.SObjectField>> describeFieldCache = new Map<String, Map<String, Schema.SObjectField>>();
     private static final Integer FLOW_RESPONSE_BATCH_SIZE = 20;

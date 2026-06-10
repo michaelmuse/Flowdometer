@@ -1,5 +1,5 @@
 Description:
-Flowdometer is a free, open-source SLA engine that bolts onto any standard or custom object in Salesforce. 
+Flowdometer is anSLA engine that bolts onto any standard or custom object in Salesforce. 
 Instead of relying on the Case-only Entitlements/Milestones framework, it watches whichever fields you 
 already have history-tracking enabled for—stage, status picklists, owner look-ups, even custom references—and 
 records each transition as a "Step" tied to a parent "Flow." 
@@ -22,6 +22,9 @@ object restrictions.
 
 Marketing Site: 
   https://www.flowdometer.com/
+
+AppExchange:
+  https://appexchange.salesforce.com/appxListingDetail?listingId=a0N3A00000GB0VkUAL
 
 End User Setup Documentation: 
   https://www.flowdometer.com/documentation

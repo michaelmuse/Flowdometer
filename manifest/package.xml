@@ -15,6 +15,10 @@
         <members>FlowDeactivator</members>
         <members>FlowdometerAuthService</members>
         <members>FlowdometerAuthServiceTest</members>
+        <members>FlowdometerPermissionReconciler</members>
+        <members>FlowdometerPermissionReconcilerTest</members>
+        <members>FlowdometerRecordTypeProvider</members>
+        <members>FlowdometerRecordTypeProviderTest</members>
         <members>FlowdometerTokenService</members>
         <members>FlowdometerTokenServiceTest</members>
         <members>FlowdometerUninstallHelper</members>
@@ -31,6 +35,7 @@
         <members>MetaDataUtilityCls</members>
         <members>MetaDataUtilityClsTest</members>
         <members>PostInstallScript</members>
+        <members>PostInstallScriptTest</members>
         <members>TestDataFactory</members>
         <members>TestDataFactoryTest</members>
         <members>ToolingAPIMock</members>
@@ -70,6 +75,16 @@
         <name>ContentAsset</name>
     </types>
     <types>
+        <members>Blank</members>
+        <members>CompletedGreen</members>
+        <members>ExpiringRed</members>
+        <members>Goal</members>
+        <members>LightBlue</members>
+        <members>PrimaryBlue</members>
+        <members>UnusedGray</members>
+        <name>StaticResource</name>
+    </types>
+    <types>
         <members>Command_Center</members>
         <members>Flow_Lightning_Page</members>
         <members>Flowdometer_UtilityBar</members>
@@ -87,6 +102,24 @@
         <name>CustomApplication</name>
     </types>
     <types>
+        <members>Command_Center</members>
+        <members>Flow__c</members>
+        <members>FlowdometerUninstall</members>
+        <members>Listener__c</members>
+        <members>Setup</members>
+        <members>Step__c</members>
+        <name>CustomTab</name>
+    </types>
+    <types>
+        <members>Feature_Flag__mdt-Feature Flag Layout</members>
+        <members>Flow__c-Flow Goal Layout</members>
+        <members>Flow__c-Flow Tracker Layout</members>
+        <members>Listener__c-Listener Layout</members>
+        <members>Step__c-Step Goal Layout</members>
+        <members>Step__c-Step Tracker Layout</members>
+        <name>Layout</name>
+    </types>
+    <types>
         <members>Flowdometer/BgWwEFbNRvBhkKvUIefiAOdqdZDBTY</members>
         <members>Flowdometer/JIxvdWrdyZrgSfUwIXxlUokmhEEulu</members>
         <members>Flowdometer/KAlbxfKiDHwaUKYVaHfaruFQaVXqFT</members>
@@ -98,6 +131,10 @@
     <types>
         <members>FlowdometerReports</members>
         <name>ReportFolder</name>
+    </types>
+    <types>
+        <members>Flowdometer_Reports</members>
+        <name>ReportType</name>
     </types>
     <types>
         <members>FlowdometerReports/Avg_Step_completion_time_vs_Goal_S3n</members>

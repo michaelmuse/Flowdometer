@@ -1461,4 +1461,88 @@ public class ListenerFlowControllerTest {
         System.assertEquals(null, actualFieldName, 'Should not find invalid field');
         // Query should not include invalid field, preventing SOQL injection
     }
+
+    // NOTE on Type__c population: the value path inside preparingResponse() reads
+    // history rows (OpportunityFieldHistory et al). Those history SObjects cannot be
+    // fabricated in an Apex test (the platform rejects constructing them, including
+    // via JSON deserialization), so the real-method end-to-end verification of
+    // Type__c population lives in the Tier 2 QA script qaListenerWithType, which runs
+    // against an org with genuine field history. The inline logic is still covered by
+    // testTypeFieldValue_* above.
+
+    // ========== getHistoryObjectName Order special-case ==========
+
+    @IsTest
+    static void testGetHistoryObjectName_OrderSpecialCase() {
+        // Order has a bespoke history object name that is neither <Object>History
+        // generic-standard nor the Opportunity special case.
+        System.assertEquals(
+            'OrderHistory',
+            ListenerFlowController.getHistoryObjectName('Order'),
+            'Should return OrderHistory for the Order standard object'
+        );
+    }
+
+    // ========== History de-duplication wiring ==========
+    // When running a historical query (lastExecutionOn == null), already-processed
+    // history rows must be excluded so we never create duplicate Steps. This verifies
+    // the query is built with the NOT IN exclusion clause when prior Steps exist.
+
+    @IsTest
+    static void testHistoryDeduplication_BuildQueryExcludesProcessed() {
+        Opportunity opp = TestDataFactory.createOpportunity(
+            'Dedup Opp',
+            'Prospecting',
+            Date.today().addDays(10)
+        );
+
+        // Seed an existing Step carrying a History_Record_ID__c so the exclusion
+        // list is non-empty. Step__c is master-detail to Flow__c.
+        Flow__c flow = new Flow__c();
+        insert flow;
+        Step__c existingStep = new Step__c(
+            Flow__c = flow.Id,
+            History_Record_ID__c = opp.Id // any valid Id string
+        );
+        insert existingStep;
+
+        Listener__c listener = TestDataFactory.createListenerConfig(
+            'Opportunity',
+            'StageName',
+            null, // historical query path
+            true
+        );
+        Listener__c queried = [
+            SELECT Id, Last_Execution_On__c, Object_Name__c, Field_To_Track__c
+            FROM Listener__c
+            WHERE Id = :listener.Id
+            LIMIT 1
+        ];
+        queried.Last_Execution_On__c = null;
+
+        String objName = queried.Object_Name__c;
+        String parentIdField = objName.endsWith('__c')
+            ? 'ParentId'
+            : (objName + 'Id');
+        String historyObjectName = ListenerFlowController.getHistoryObjectName(objName);
+        ListenerFlowController.historyRecordIdsToExclude = new List<Id>{ opp.Id };
+        ListenerFlowController.exclusionListCacheTime = Datetime.now();
+
+        Test.startTest();
+        String queryStr = ListenerFlowController.buildQuery(
+            historyObjectName,
+            parentIdField,
+            new List<Id>{ opp.Id },
+            queried,
+            true, // isHistoryQuery
+            null // lastExecutionOn null -> exclusion list path
+        );
+        Test.stopTest();
+
+        System.assert(
+            queryStr.contains('Id NOT IN :historyRecordIdsToExclude'),
+            'Historical query should exclude already-processed history records. Query was: ' +
+            queryStr
+        );
+    }
 }

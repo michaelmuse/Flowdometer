@@ -1,6 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <apiVersion>65.0</apiVersion>
+    <actionCalls>
+        <name>Get_Record_Type_Ids</name>
+        <label>Get Record Type Ids</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <actionName>FlowdometerRecordTypeProvider</actionName>
+        <actionType>apex</actionType>
+        <connector>
+            <targetReference>getFlowLaunchingGoalMaker</targetReference>
+        </connector>
+        <flowTransactionModel>CurrentTransaction</flowTransactionModel>
+        <nameSegment>FlowdometerRecordTypeProvider</nameSegment>
+        <outputParameters>
+            <assignToReference>varFlowGoalRT</assignToReference>
+            <name>flowGoalRecordTypeId</name>
+        </outputParameters>
+        <outputParameters>
+            <assignToReference>varStepGoalRT</assignToReference>
+            <name>stepGoalRecordTypeId</name>
+        </outputParameters>
+    </actionCalls>
     <assignments>
         <name>Assign_from_First_Step</name>
         <label>Assign from First Step</label>
@@ -629,66 +650,6 @@ null
         <object>Step__c</object>
     </recordCreates>
     <recordLookups>
-        <name>Get_Flow_Goal_RT</name>
-        <label>Get Flow Goal RT</label>
-        <locationX>0</locationX>
-        <locationY>0</locationY>
-        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
-        <connector>
-            <targetReference>Get_Step_Goal_RT</targetReference>
-        </connector>
-        <filterLogic>and</filterLogic>
-        <filters>
-            <field>DeveloperName</field>
-            <operator>EqualTo</operator>
-            <value>
-                <stringValue>Goal</stringValue>
-            </value>
-        </filters>
-        <filters>
-            <field>SobjectType</field>
-            <operator>EqualTo</operator>
-            <value>
-                <stringValue>Flow__c</stringValue>
-            </value>
-        </filters>
-        <object>RecordType</object>
-        <outputAssignments>
-            <assignToReference>varFlowGoalRT</assignToReference>
-            <field>Id</field>
-        </outputAssignments>
-    </recordLookups>
-    <recordLookups>
-        <name>Get_Step_Goal_RT</name>
-        <label>Get Step Goal RT</label>
-        <locationX>0</locationX>
-        <locationY>0</locationY>
-        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
-        <connector>
-            <targetReference>getFlowLaunchingGoalMaker</targetReference>
-        </connector>
-        <filterLogic>and</filterLogic>
-        <filters>
-            <field>DeveloperName</field>
-            <operator>EqualTo</operator>
-            <value>
-                <stringValue>Goal</stringValue>
-            </value>
-        </filters>
-        <filters>
-            <field>SobjectType</field>
-            <operator>EqualTo</operator>
-            <value>
-                <stringValue>Step__c</stringValue>
-            </value>
-        </filters>
-        <object>RecordType</object>
-        <outputAssignments>
-            <assignToReference>varStepGoalRT</assignToReference>
-            <field>Id</field>
-        </outputAssignments>
-    </recordLookups>
-    <recordLookups>
         <name>getAvgStepTimes</name>
         <label>getAvgStepTimes</label>
         <locationX>0</locationX>
@@ -1149,10 +1110,10 @@ null
         <locationX>0</locationX>
         <locationY>0</locationY>
         <connector>
-            <targetReference>Get_Flow_Goal_RT</targetReference>
+            <targetReference>Get_Record_Type_Ids</targetReference>
         </connector>
     </start>
-    <status>Draft</status>
+    <status>Active</status>
     <variables>
         <name>recordId</name>
         <dataType>String</dataType>

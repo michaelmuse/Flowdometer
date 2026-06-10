@@ -1,9 +1,25 @@
+/**
+ * Utility for runtime metadata operations (lookup field creation, history
+ * tracking, dynamic FLS grants).
+ *
+ * Sharing: `inherited sharing` is the Salesforce-recommended pattern for a
+ * utility called from multiple contexts (LWC `with sharing` controllers,
+ * Queueables, the setup reconciler). It runs in the caller's sharing context
+ * rather than silently elevating. Sharing keywords govern row-level record
+ * sharing only - they do NOT control FLS. The FieldPermissions DML below is a
+ * setup-object operation gated by the running user's "Manage Profiles and
+ * Permission Sets" permission, independent of this declaration.
+ */
 public inherited sharing class MetaDataUtilityCls {
     public static final String HISTORY_ENABLED_HAS_NO_LIMITS = 'HISTORY_ENABLED_HAS_NO_LIMITS';
     public static final String HISTORY_NOT_ENABLED_EARLIER_BUT_ENABLED_NOW = 'HISTORY_NOT_ENABLED_EARLIER_BUT_ENABLED_NOW';
     public static final String HISTORY_ENABLED_ALREADY = 'HISTORY_ENABLED_ALREADY';
     public static final String HISTORY_ENABLED_HAS_LIMITS = 'HISTORY_ENABLED_HAS_LIMITS';
-    private static final String FLOWDOMETER_PERMISSION_SET_NAME = 'Flowdometer_User';
+    // Dynamic FLS lands on the UNMANAGED permission set, never the managed one.
+    // A managed (packaged) permission set rejects FieldPermissions DML in a
+    // subscriber org (CANNOT_MODIFY_MANAGED_OBJECT). The unmanaged PS is
+    // created/reconciled by FlowdometerPermissionReconciler (Build Plan A.0).
+    @TestVisible private static String dynamicFlsPermissionSetName = 'Flowdometer_Dynamic_FLS';
     private static final String FLOWDOMETER_FLOW_OBJECT_LABEL = 'Flow';
     public static Map<String, String> lookUpAPINameMap = new Map<String, String>();
     public static Map<String, String> relatedLookupMap = new Map<String, String>();
@@ -156,139 +172,167 @@ public inherited sharing class MetaDataUtilityCls {
         return keySetList;
     }
 
-    // Helper method to retry operations that might have transient failures
-    private static Object retryOperation(RetryableOperation operation, Integer maxRetries) {
-        Integer retryCount = 0;
-        Exception lastException;
-        
-        while (retryCount < maxRetries) {
-            try {
-                return operation.execute();
-            } catch (CalloutException ce) {
-                lastException = ce;
-                // Only retry on timeout-related errors
-                if (!ce.getMessage().containsIgnoreCase('timed out') && 
-                    !ce.getMessage().containsIgnoreCase('timeout')) {
-                    throw ce;
-                }
-                retryCount++;
-                if (retryCount < maxRetries) {
-                    // Exponential backoff: wait longer between each retry
-                    Integer waitTime = Math.min(2000 * (Integer)Math.pow(2, retryCount), 8000); // Max 8 seconds
-                    System.debug(LoggingLevel.INFO, 'Retrying operation after waiting ' + waitTime + 'ms. Attempt ' + (retryCount + 1) + ' of ' + maxRetries);
-                    wait(waitTime);
-                }
-            }
-        }
-        
-        // If we get here, all retries failed
-        throw lastException;
-    }
-    
-    // Helper method to wait/sleep (simulated in Apex)
-    private static void wait(Integer milliseconds) {
-        Long startTime = System.currentTimeMillis();
-        Long endTime = startTime + milliseconds;
-    }
-    
-    // Interface for operations that can be retried
-    public interface RetryableOperation {
-        Object execute();
-    }
-    
-    public static void grantFieldEditAccess(
+    /**
+     * Grant read/edit FLS for a runtime-created lookup field on the UNMANAGED
+     * Flowdometer_Dynamic_FLS permission set via native FieldPermissions DML
+     * (no Metadata API callout). FieldPermissions is a setup object: it is
+     * governed by the running user's "Manage Profiles and Permission Sets"
+     * permission, not by record sharing - so the `inherited sharing` on this
+     * class does not affect the operation. Called for a single field per
+     * invocation (e.g. from the chained FLSGrantJob), never inside a loop.
+     */
+    public static Boolean grantFieldAccessWithDml(
         String objectApiName,
         String fieldApiName
     ) {
-        //permission set, objectAPINameWLookup, LookupFieldAPIName
-        try {
-            // Check if retry is enabled via feature flag
-            Boolean useRetry = FeatureFlagUtil.isEnabled(FeatureFlagUtil.FEATURE_RETRY_METADATA_OPERATIONS);
-            
-            if (useRetry) {
-                // Use the retry mechanism for this operation
-                retryOperation(new GrantFieldAccessOperation(objectApiName, fieldApiName), 3);
-            } else {
-                // Use the direct method without retry
-                MetadataService.MetadataPort service = MetadataService.createService();
-                service.timeout_x = 180000; // Increase timeout to 3 minutes
-                MetadataService.PermissionSet permissionSet = (MetadataService.PermissionSet) service.readMetadata(
-                        'PermissionSet',
-                        new List<String>{ FLOWDOMETER_PERMISSION_SET_NAME }
-                    )
-                    .getRecords()[0];
-                MetadataService.PermissionSetFieldPermissions fieldPermission = new MetadataService.PermissionSetFieldPermissions();
-                fieldPermission.field = objectApiName + '.' + fieldApiName;
-                fieldPermission.editable = true;
-                fieldPermission.readable = true;
-                permissionSet.fieldPermissions.add(fieldPermission);
-
-                List<MetadataService.SaveResult> results = service.updateMetadata(
-                    new List<MetadataService.Metadata>{ permissionSet }
-                );
-
-                if (results != null && !results.isEmpty()) {
-                    MetadataService.handleSaveResults(results[0]);
-                    if (!permissionSetContainsField(objectApiName + '.' + fieldApiName)) {
-                        System.debug(LoggingLevel.ERROR,
-                            'Field permissions were not found on permission set after update for ' +
-                            objectApiName + '.' + fieldApiName);
-                    }
-                }
-            }
-        } catch (CalloutException ce) {
-            // Specific handling for timeout errors
-            String errorMsg = 'A timeout occurred while updating permissions: ' + ce.getMessage();
-            System.debug(LoggingLevel.ERROR, errorMsg + '\n' + ce.getStackTraceString());
-            // In a production environment, you might want to log this to a custom object or send an email notification
-        } catch (Exception e) {
-            // Log the error but don't throw an exception to allow processing to continue
-            System.debug(LoggingLevel.ERROR, 'Error granting field edit access: ' + e.getMessage() + '\n' + e.getStackTraceString());
-            // In a production environment, you might want to log this to a custom object or send an email notification
+        if (String.isBlank(objectApiName) || String.isBlank(fieldApiName)) {
+            System.debug(LoggingLevel.WARN, 'Cannot grant FLS with blank object or field API name.');
+            return false;
         }
+
+        // The object API name is already correct as supplied by the caller:
+        // standard objects as-is (Opportunity, Contract), the managed Flow__c
+        // object resolved via describe to its namespaced name
+        // (Flowdometer__Flow__c), and subscriber custom objects without any
+        // namespace (e.g. QA_Tracked__c). Do NOT namespace-qualify the OBJECT -
+        // doing so breaks FLS for subscriber custom objects (QA_Tracked__c would
+        // become Flowdometer__QA_Tracked__c, which does not exist). Only the
+        // FIELD portion may need the package namespace (for packaged fields).
+        String qualifiedObjectApiName = objectApiName;
+
+        // Build two candidate Field values: one for dynamic fields (no namespace
+        // on the field portion) and one for packaged fields (namespace-qualified).
+        // Dynamic fields created at runtime via the Tooling API never carry the
+        // namespace prefix. Packaged fields that ship with the package do.
+        // We query for both and let the org tell us which is real.
+        String fieldFullName = qualifiedObjectApiName + '.' + fieldApiName;
+        String qualifiedFieldApiName = qualifyCustomApiNameForSetup(fieldApiName);
+        String qualifiedFieldFullName = qualifiedObjectApiName + '.' + qualifiedFieldApiName;
+
+        List<String> candidateFieldNames = new List<String>{ fieldFullName };
+        if (qualifiedFieldFullName != fieldFullName) {
+            candidateFieldNames.add(qualifiedFieldFullName);
+        }
+
+        System.debug(LoggingLevel.INFO,
+            'grantFieldAccessWithDml: objectApiName=' + objectApiName +
+            ', fieldApiName=' + fieldApiName +
+            ', qualifiedObject=' + qualifiedObjectApiName +
+            ', candidates=' + candidateFieldNames +
+            ', namespace=' + resolveNamespace());
+
+        try {
+            // Resolve by name only: the runtime-created unmanaged PS carries the
+            // org namespace in a namespaced build org but null in a subscriber,
+            // and no packaged PS uses this name.
+            List<PermissionSet> permissionSets = [
+                SELECT Id
+                FROM PermissionSet
+                WHERE Name = :dynamicFlsPermissionSetName
+                LIMIT 1
+            ];
+
+            if (permissionSets.isEmpty()) {
+                System.debug(LoggingLevel.WARN,
+                    'Flowdometer dynamic FLS permission set not found: ' + dynamicFlsPermissionSetName +
+                    '. The setup gate (FlowdometerPermissionReconciler) creates it on entry.');
+                return false;
+            }
+
+            Id permissionSetId = permissionSets[0].Id;
+
+            List<FieldPermissions> existingPermissions = [
+                SELECT Id, PermissionsRead, PermissionsEdit, Field
+                FROM FieldPermissions
+                WHERE ParentId = :permissionSetId
+                  AND SobjectType = :qualifiedObjectApiName
+                  AND Field IN :candidateFieldNames
+                LIMIT 1
+            ];
+
+            if (!existingPermissions.isEmpty()) {
+                FieldPermissions existingPermission = existingPermissions[0];
+                System.debug(LoggingLevel.INFO,
+                    'grantFieldAccessWithDml: found existing permission for ' +
+                    existingPermission.Field);
+
+                if (existingPermission.PermissionsRead && existingPermission.PermissionsEdit) {
+                    return true;
+                }
+
+                existingPermission.PermissionsRead = true;
+                existingPermission.PermissionsEdit = true;
+                update existingPermission;
+                return true;
+            }
+
+            // No existing permission — insert a new one. Try the unqualified
+            // (dynamic-field) name first since that's the primary runtime path.
+            // Fall back to the namespace-qualified name for packaged fields.
+            String insertFieldName = fieldFullName;
+            try {
+                insert new FieldPermissions(
+                    ParentId = permissionSetId,
+                    SobjectType = qualifiedObjectApiName,
+                    Field = insertFieldName,
+                    PermissionsRead = true,
+                    PermissionsEdit = true
+                );
+                System.debug(LoggingLevel.INFO,
+                    'grantFieldAccessWithDml: inserted FLS for ' + insertFieldName);
+                return true;
+            } catch (DmlException dmlEx) {
+                if (qualifiedFieldFullName != fieldFullName) {
+                    System.debug(LoggingLevel.INFO,
+                        'grantFieldAccessWithDml: insert with ' + insertFieldName +
+                        ' failed, retrying with ' + qualifiedFieldFullName);
+                    insert new FieldPermissions(
+                        ParentId = permissionSetId,
+                        SobjectType = qualifiedObjectApiName,
+                        Field = qualifiedFieldFullName,
+                        PermissionsRead = true,
+                        PermissionsEdit = true
+                    );
+                    System.debug(LoggingLevel.INFO,
+                        'grantFieldAccessWithDml: inserted FLS for ' + qualifiedFieldFullName);
+                    return true;
+                }
+                throw dmlEx;
+            }
+        } catch (Exception e) {
+            System.debug(
+                LoggingLevel.ERROR,
+                'Error granting field access with DML for ' + fieldFullName +
+                ' (also tried ' + qualifiedFieldFullName + '): ' +
+                e.getMessage() + '\n' + e.getStackTraceString()
+            );
+            return false;
+        }
+    }
+
+    private static String resolveNamespace() {
+        String className = MetaDataUtilityCls.class.getName();
+        return className.contains('.') ? className.substringBefore('.') : '';
+    }
+
+    private static Boolean isNamespaceQualified(String apiName) {
+        return String.isNotBlank(apiName) &&
+            apiName.endsWith('__c') &&
+            apiName.split('__').size() >= 3;
+    }
+
+    private static String qualifyCustomApiNameForSetup(String apiName) {
+        String namespacePrefix = resolveNamespace();
+        if (String.isBlank(namespacePrefix) ||
+            String.isBlank(apiName) ||
+            !apiName.endsWith('__c') ||
+            isNamespaceQualified(apiName)) {
+            return apiName;
+        }
+
+        return namespacePrefix + '__' + apiName;
     }
     
-    // Implementation of RetryableOperation for granting field access
-    private class GrantFieldAccessOperation implements RetryableOperation {
-        private String objectApiName;
-        private String fieldApiName;
-        
-        public GrantFieldAccessOperation(String objectApiName, String fieldApiName) {
-            this.objectApiName = objectApiName;
-            this.fieldApiName = fieldApiName;
-        }
-        
-        public Object execute() {
-            MetadataService.MetadataPort service = MetadataService.createService();
-            service.timeout_x = 180000; // Increase timeout to 3 minutes (from 2 minutes)
-            MetadataService.PermissionSet permissionSet = (MetadataService.PermissionSet) service.readMetadata(
-                    'PermissionSet',
-                    new List<String>{ FLOWDOMETER_PERMISSION_SET_NAME }
-                )
-                .getRecords()[0];
-            MetadataService.PermissionSetFieldPermissions fieldPermission = new MetadataService.PermissionSetFieldPermissions();
-            fieldPermission.field = objectApiName + '.' + fieldApiName;
-            fieldPermission.editable = true;
-            fieldPermission.readable = true;
-            permissionSet.fieldPermissions.add(fieldPermission);
-
-            List<MetadataService.SaveResult> results = service.updateMetadata(
-                new List<MetadataService.Metadata>{ permissionSet }
-            );
-
-            if (results != null && !results.isEmpty()) {
-                MetadataService.handleSaveResults(results[0]);
-                if (!permissionSetContainsField(objectApiName + '.' + fieldApiName)) {
-                    System.debug(LoggingLevel.ERROR,
-                        'Field permissions were not found on permission set after update (retry path) for ' +
-                        objectApiName + '.' + fieldApiName);
-                }
-            }
-            
-            return null; // No return value needed
-        }
-    }
-
     // Check before creating a new Lookup field
     public static Boolean doesFieldExist(String objName, String fieldName) {
         try {
@@ -742,6 +786,7 @@ public inherited sharing class MetaDataUtilityCls {
             if (doesFieldExist(targetObject, fieldAPIName)) {
                 result.put('success', 'true');
                 result.put('message', 'Lookup field ' + fieldAPIName + ' already exists on ' + targetObject);
+                grantFieldAccessWithDml(targetObject, fieldAPIName);
                 System.debug(LoggingLevel.INFO, result.get('message'));
                 return result;
             }
@@ -770,6 +815,13 @@ public inherited sharing class MetaDataUtilityCls {
                 result.put('success', 'true');
                 result.put('message', 'Successfully created lookup field ' + fieldAPIName + ' on ' + targetObject);
                 result.put('error', '');
+                Boolean grantedAccess = grantFieldAccessWithDml(targetObject, fieldAPIName);
+                if (!grantedAccess) {
+                    result.put(
+                        'message',
+                        result.get('message') + ', but Flowdometer could not grant FLS automatically.'
+                    );
+                }
                 System.debug(LoggingLevel.INFO, result.get('message'));
             } else {
                 result.put('message', 'Failed to create lookup field ' + fieldAPIName + ' on ' + targetObject);
@@ -834,26 +886,4 @@ public inherited sharing class MetaDataUtilityCls {
         }
     }
 
-    @TestVisible
-    private static Boolean permissionSetContainsField(String fieldFullName) {
-        try {
-            MetadataService.MetadataPort service = MetadataService.createService();
-            MetadataService.PermissionSet permissionSet = (MetadataService.PermissionSet) service.readMetadata(
-                    'PermissionSet',
-                    new List<String>{ FLOWDOMETER_PERMISSION_SET_NAME }
-                )
-                .getRecords()[0];
-
-            if (permissionSet.fieldPermissions != null) {
-                for (MetadataService.PermissionSetFieldPermissions fp : permissionSet.fieldPermissions) {
-                    if (fp.field == fieldFullName && fp.editable && fp.readable) {
-                        return true;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            System.debug(LoggingLevel.ERROR, 'Error verifying permission set field permission: ' + e.getMessage());
-        }
-        return false;
-    }
 }

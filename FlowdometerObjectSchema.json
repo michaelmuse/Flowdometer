@@ -1,1428 +1,611 @@
 {
+    "_meta": {
+        "description": "Flowdometer package object schema — designed as LLM context for understanding what fields exist, how objects relate, and what automation is in place.",
+        "namespace": "Flowdometer",
+        "lastUpdated": "2026-06-08",
+        "packageType": "2GP Managed Package (Beta only)"
+    },
+
+    "_architecture": {
+        "summary": "Flowdometer is a Salesforce managed package that tracks how long records spend in each stage of a business process. It polls field-history on a tracked object's field and creates structured time-series data.",
+        "objectHierarchy": "Listener__c → Flow__c → Step__c (one Listener spawns many Flows; each Flow contains an ordered chain of Steps)",
+        "dualRecordTypePattern": "Both Flow__c and Step__c use two record types — 'Tracker' (actual observed data) and 'Goal' (target benchmarks). A Tracker Flow can reference a Goal Flow, and each Tracker Step can reference a Goal Step, enabling vs-goal comparisons.",
+        "dataFlowNarrative": [
+            "1. Admin creates a Listener__c record specifying which object + field to track (e.g. Opportunity.StageName).",
+            "2. A scheduled Flow polls field-history records since the Listener's last check.",
+            "3. For each tracked record, a Flow__c (Tracker) is created or updated.",
+            "4. Each field-value change becomes a Step__c linked to its Flow, forming an ordered chain (Last_Step ← current → Next_Step).",
+            "5. Steps record timestamps (InitialTS__c, EndingTS__c) and calculate handle time in days, hours, weekdays, and business hours.",
+            "6. Goal Flows/Steps define target durations; Tracker Steps compare actual handle time against their Goal Step to compute breach times and progress bars."
+        ]
+    },
+
+    "_relationships": {
+        "Step__c.Flow__c": "Master-Detail to Flow__c (cascade delete, sharing controlled by parent)",
+        "Step__c.Next_Step__c": "Lookup to Step__c — forward link in the step chain",
+        "Step__c.Last_Step__c": "Lookup to Step__c — backward link in the step chain",
+        "Step__c.Step_Goal__c": "Lookup to Step__c (Goal record type) — the benchmark this tracker step is measured against",
+        "Flow__c.Goal__c": "Lookup to Flow__c (Goal record type) — the benchmark this tracker flow is measured against",
+        "Flow__c.Most_Recent_Step__c": "Lookup to Step__c — denormalized pointer to the latest step",
+        "Flow__c.Account__c": "Lookup to Account",
+        "Flow__c.Contact__c": "Lookup to Contact",
+        "Flow__c.Lead__c": "Lookup to Lead",
+        "Flow__c.Opportunity__c": "Lookup to Opportunity",
+        "Flow__c.Case__c": "Lookup to Case"
+    },
+
     "Flow__c": {
-        "Handle_Time_vs_Goal__c": {
-            "fullName": "Handle_Time_vs_Goal__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(\n  AND(\n    NOT(ISBLANK(Total_Handle_Time__c)),\n    (Goal__r.GoalCycleTime__c > 0),\n    NOT(ISBLANK(TEXT(Most_Recent_Step__r.GoalUnit__c)))\n  ),   \n  CASE(TEXT(Most_Recent_Step__r.GoalUnit__c),\n    \"Hours\", (Total_Handle_Time__c * 24),\n    \"Days\", Total_Handle_Time__c,\n    \"Weekdays\",  Cycle_Time_Weekdays__c   ,\n    null\n    )/ Goal__r.GoalCycleTime__c \n  ,null\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Total time spent in this process as compared with the goal for cycle time",
-            "label": "Cycle Time vs Goal",
-            "precision": "18",
-            "required": "false",
-            "scale": "1",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "Progress_Bar_vs_Goal__c": {
-            "fullName": "Progress_Bar_vs_Goal__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(\n  Handle_Time_vs_Goal__c<1,\n  IMAGE(\"/resource/Flowdometer__PrimaryBlue\" ,\"\",10,100*Handle_Time_vs_Goal__c)+IMAGE( \"/resource/Flowdometer__UnusedGray\" ,\"\",10,100*(1-Handle_Time_vs_Goal__c)),\n\"Breached\"\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Progress Bar vs Goal",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
-        },
-        "Case__c": {
-            "fullName": "Case__c",
-            "deleteConstraint": "SetNull",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Case",
-            "referenceTo": "Case",
-            "relationshipName": "Time_Trackers",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Lookup"
-        },
-        "Hours_Since_Created__c": {
-            "fullName": "Hours_Since_Created__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "Days_Open_Since_Creation__c *24",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Hours Open Since Created",
-            "precision": "18",
-            "required": "false",
-            "scale": "1",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "Days_Open_Since_Creation__c": {
-            "fullName": "Days_Open_Since_Creation__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "(Flow_Completion_Date_or_NOW__c -  Flow_Creation_Date_or_CREATED__c )",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Days Open Since Creation",
-            "precision": "18",
-            "required": "false",
-            "scale": "1",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "Asana_Task__c": {
-            "fullName": "Asana_Task__c",
-            "deleteConstraint": "SetNull",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Asana Task",
-            "referenceTo": "Asana_Task_Muse__c",
-            "relationshipLabel": "Flow",
-            "relationshipName": "Asana_Task",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Lookup"
-        },
-        "Flow_Completion_Date__c": {
-            "fullName": "Flow_Completion_Date__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "inlineHelpText": "Latest date a terminal Step was reached",
-            "label": "Flow Completion Date",
-            "summarizedField": "Step__c.InitialTS__c",
-            "summaryFilterItems": "\n        ",
-            "summaryForeignKey": "Step__c.Flow__c",
-            "summaryOperation": "max",
-            "trackTrending": "false",
-            "type": "Summary"
-        },
-        "Steps_in_Flow__c": {
-            "fullName": "Steps_in_Flow__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Steps in Flow",
-            "summaryForeignKey": "Step__c.Flow__c",
-            "summaryOperation": "count",
-            "trackTrending": "false",
-            "type": "Summary"
-        },
-        "Next_Breach_At__c": {
-            "fullName": "Next_Breach_At__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "Most_Recent_Step__r.BreachTime__c",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "The time the current Step will Breach its goal at",
-            "label": "Next Breach At",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "DateTime"
-        },
-        "Days_to_first_Step_Weekdays__c": {
-            "fullName": "Days_to_first_Step_Weekdays__c",
-            "deprecated": "false",
-            "description": "Time from start of process to first Step change (in weekdays). Note that weekday calculations round up to the nearest whole day",
-            "externalId": "false",
-            "formula": "(5 * ( FLOOR( ( DATEVALUE(FirstStepOrNow__c) - DATE( 1900, 1, 8) ) / 7 ) ) + MIN( 5, MOD( DATEVALUE(FirstStepOrNow__c) - DATE( 1900, 1, 8), 7 ) ) )\n-\n(5 * ( FLOOR( ( DATEVALUE(Flow_Creation_Date_or_CREATED__c) - DATE( 1900, 1, 8) ) / 7 ) ) + MIN( 5, MOD( DATEVALUE(Flow_Creation_Date_or_CREATED__c) - DATE( 1900, 1, 8), 7 ) ) )",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Time from start of process to first Step change (in weekdays). Note that weekday calculations round up to the nearest whole day",
-            "label": "Response Time (weekdays)",
-            "precision": "18",
-            "required": "false",
-            "scale": "1",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "Tracked_Object_ID__c": {
-            "fullName": "Tracked_Object_ID__c",
-            "deprecated": "false",
-            "description": "Holds the ID of the specific Salesforce record that the Flow is monitoring. Although the ID is raw, the type of object might be inferred through further lookup.",
-            "externalId": "false",
-            "inlineHelpText": "ID of the Tracked Object instance",
-            "label": "Tracked Object ID",
-            "length": "255",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
-        },
-        "Cycle_Time_Weekdays__c": {
-            "fullName": "Cycle_Time_Weekdays__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF( Most_Recent_Step__r.Terminal_Stage__c ,\n   Handle_Time_To_Current_Step_Weekdays__c ,\n  Handle_Time_To_Current_Step_Weekdays__c +  Most_Recent_Step__r.HandleTimeWeekdays__c  )",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Cycle Time (weekdays)",
-            "precision": "18",
-            "required": "false",
-            "scale": "0",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "Match_Goal_with_Flows__c": {
-            "fullName": "Match_Goal_with_Flows__c",
-            "defaultValue": "false",
-            "deprecated": "false",
-            "externalId": "false",
-            "inlineHelpText": "Use this checkbox to connect this goal to any flows that match (same tracked Object & Field, and if provided, Type).",
-            "label": "Match Goal with Historical Trackers?",
-            "trackTrending": "false",
-            "type": "Checkbox"
-        },
-        "isGoal__c": {
-            "fullName": "isGoal__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "RecordType.Name = \"Goal\"",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Is Goal?",
-            "trackTrending": "false",
-            "type": "Checkbox"
-        },
-        "FirstStepOrNow__c": {
-            "fullName": "FirstStepOrNow__c",
-            "deprecated": "false",
-            "description": "Used in other formulas for error handling",
-            "externalId": "false",
-            "formula": "IF(ISBLANK( First_Step_Taken_at__c ), NOW(), First_Step_Taken_at__c)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "First Step Taken At or NOW",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "DateTime"
-        },
-        "Lead__c": {
-            "fullName": "Lead__c",
-            "deleteConstraint": "SetNull",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Lead",
-            "referenceTo": "Lead",
-            "relationshipName": "Time_Trackers",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Lookup"
-        },
-        "Tracked_Object_Link__c": {
-            "fullName": "Tracked_Object_Link__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "HYPERLINK(\"/lightning/r/\"+Tracked_Object__c+\"/\"+Tracked_Object_ID__c+\"/view\", \"Tracked \"+ Tracked_Object__c)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Tracked Object Link",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
-        },
-        "GoalCycleTime__c": {
-            "fullName": "GoalCycleTime__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "inlineHelpText": "Total time your process should take. This field is expressed in the Units used on the Goal object",
-            "label": "Goal Cycle Time",
-            "summarizedField": "Step__c.GoalHandleTimeHrs__c",
-            "summaryForeignKey": "Step__c.Flow__c",
-            "summaryOperation": "sum",
-            "trackTrending": "false",
-            "type": "Summary"
-        },
-        "Name_of_Tracked_Record__c": {
-            "fullName": "Name_of_Tracked_Record__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Name of Tracked Record",
-            "length": "255",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
-        },
-        "Goal__c": {
-            "fullName": "Goal__c",
-            "deleteConstraint": "SetNull",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Goal Flow",
-            "lookupFilter": "\n        ",
-            "referenceTo": "Flow__c",
-            "relationshipLabel": "Tracker Flows with this Goal Flow",
-            "relationshipName": "Trackers",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Lookup"
-        },
-        "Flow_Completion_Date_or_NOW__c": {
-            "fullName": "Flow_Completion_Date_or_NOW__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(ISBLANK( Flow_Completion_Date__c ), NOW(), Flow_Completion_Date__c)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Flow Completion Date or NOW",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "DateTime"
-        },
-        "Most_Recent_Step__c": {
-            "fullName": "Most_Recent_Step__c",
-            "deleteConstraint": "SetNull",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Most Recent Step",
-            "referenceTo": "Step__c",
-            "relationshipLabel": "Flows",
-            "relationshipName": "Steps4",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Lookup"
-        },
-        "Contact__c": {
-            "fullName": "Contact__c",
-            "deleteConstraint": "SetNull",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Contact",
-            "referenceTo": "Contact",
-            "relationshipName": "Time_Trackers",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Lookup"
-        },
-        "Flow_Creation_Date_or_CREATED__c": {
-            "fullName": "Flow_Creation_Date_or_CREATED__c",
-            "deprecated": "false",
-            "description": "Flow creation date is editable. Created isnt. This favors the former but defaults to the latter.",
-            "externalId": "false",
-            "formula": "IF(ISBLANK(Flow_Creation_Date__c),  CreatedDate, Flow_Creation_Date__c)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Flow Creation Date or CREATED",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "DateTime"
-        },
-        "Total_Handle_Time__c": {
-            "fullName": "Total_Handle_Time__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF( Most_Recent_Step__r.Terminal_Stage__c ,\n  HandleTimeToCurrent__c,\n  HandleTimeToCurrent__c + Most_Recent_Step__r.Step_Handle_Time__c )",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Cycle Time (days)",
-            "precision": "18",
-            "required": "false",
-            "scale": "1",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "Type__c": {
-            "fullName": "Type__c",
-            "deprecated": "false",
-            "description": "Optional field that classifies different flows to support diversified goal setting and tracking modes within the same object.",
-            "externalId": "false",
-            "inlineHelpText": "Used to split different types of processes handled within the same object. If your process was held in an Onboarding object, you might have a Customer and Partner type of process, for example.",
-            "label": "Type",
-            "length": "255",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
-        },
-        "Hours_to_First_Step__c": {
-            "fullName": "Hours_to_First_Step__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "Days_to_first_Step__c * 24",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Response Time (hours)",
-            "precision": "18",
-            "required": "false",
-            "scale": "1",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "Days_to_first_Step__c": {
-            "fullName": "Days_to_first_Step__c",
-            "deprecated": "false",
-            "description": "Time from start of process to first Step change (in days)",
-            "externalId": "false",
-            "formula": "FirstStepOrNow__c - Flow_Creation_Date_or_CREATED__c",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Time from start of process to first Step change (in days)",
-            "label": "Response Time (days)",
-            "precision": "18",
-            "required": "false",
-            "scale": "1",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "Days_since_Completion__c": {
-            "fullName": "Days_since_Completion__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(\n\tNOT(ISBLANK(Flow_Completion_Date__c)),\n\tIF(\n\t\tFlow_Completion_Date__c < NOW(),\n\t\tNOW() - Flow_Completion_Date__c,\n\t\tnull\n\t),\n\tnull\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "If finished, the number of days since it finished. Can be used to clean up old data no longer needed",
-            "label": "Days Since Completion",
-            "precision": "18",
-            "required": "false",
-            "scale": "0",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "First_Step_Taken_at__c": {
-            "fullName": "First_Step_Taken_at__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "First Step Taken At",
-            "summarizedField": "Step__c.EndingTS__c",
-            "summaryForeignKey": "Step__c.Flow__c",
-            "summaryOperation": "min",
-            "trackTrending": "false",
-            "type": "Summary"
+        "Tracked_Object__c": {
+            "label": "Tracked Object",
+            "type": "Text(255)",
+            "description": "API name of the Salesforce object being tracked (e.g. 'Opportunity', 'Case').",
+            "helpText": "API Name of the Object being tracked"
         },
         "Tracked_Field_Name__c": {
-            "fullName": "Tracked_Field_Name__c",
-            "deprecated": "false",
-            "description": "Specifies the field within the tracked object that the Flow is monitoring.",
-            "externalId": "false",
-            "inlineHelpText": "API Name of the field where changes are tracked",
             "label": "Tracked Field Name",
-            "length": "255",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
+            "type": "Text(255)",
+            "description": "API name of the field whose changes are tracked (e.g. 'StageName', 'Status').",
+            "helpText": "API Name of the field where changes are tracked"
         },
-        "Opportunity__c": {
-            "fullName": "Opportunity__c",
-            "deleteConstraint": "SetNull",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Opportunity",
-            "referenceTo": "Opportunity",
-            "relationshipName": "Time_Trackers",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Lookup"
-        },
-        "Created_by_Me__c": {
-            "fullName": "Created_by_Me__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF( CreatedBy.Id = $User.Id , true , false)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Created by Me?",
-            "trackTrending": "false",
-            "type": "Checkbox"
-        },
-        "Tracked_Object__c": {
-            "fullName": "Tracked_Object__c",
-            "deprecated": "false",
-            "description": "Contains the name of the Salesforce object being tracked by the Flow, providing context to the tracked object ID.",
-            "externalId": "false",
-            "inlineHelpText": "API Name of the Object being tracked",
-            "label": "Tracked Object",
-            "length": "255",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
-        },
-        "HandleTimeToCurrent__c": {
-            "fullName": "HandleTimeToCurrent__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Handle Time To Current Step",
-            "summarizedField": "Step__c.Final_Handle_Time__c",
-            "summaryForeignKey": "Step__c.Flow__c",
-            "summaryOperation": "sum",
-            "trackTrending": "false",
-            "type": "Summary"
-        },
-        "Handle_Time_To_Current_Step_Weekdays__c": {
-            "fullName": "Handle_Time_To_Current_Step_Weekdays__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Handle Time To Current Step (weekdays)",
-            "summarizedField": "Step__c.Final_Handle_Time_Weekdays__c",
-            "summaryForeignKey": "Step__c.Flow__c",
-            "summaryOperation": "sum",
-            "trackTrending": "false",
-            "type": "Summary"
-        },
-        "Flow_Creation_Date__c": {
-            "fullName": "Flow_Creation_Date__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Flow Creation Date",
-            "summarizedField": "Step__c.InitialTS__c",
-            "summaryForeignKey": "Step__c.Flow__c",
-            "summaryOperation": "min",
-            "trackTrending": "false",
-            "type": "Summary"
-        },
-        "Account__c": {
-            "fullName": "Account__c",
-            "deleteConstraint": "SetNull",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Account",
-            "referenceTo": "Account",
-            "relationshipName": "Time_Trackers",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Lookup"
-        }
-    },
-    "Step__c": {
-        "TimeSinceBreach__c": {
-            "fullName": "TimeSinceBreach__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(\n\tAND(\n\t\tNOT(Terminal_Stage__c),\n\t\tNOT(isGoal__c)\n\t),\n\tMAX(\n\t\tIF(\n\t\t\tNOT(ISBLANK(BreachTime__c)),\n\t\t\tIF(\n\t\t\t\tNOT(ISBLANK(EndingTS__c)),\n\t\t\t\tEndingTS__c - BreachTime__c,\n\t\t\t\tNOW()-BreachTime__c\n\t\t\t),\n\t\t\tnull\n\t\t),\n\t\t0\n\t),\n\tnull\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Time since breach in days. Stops when the next Step is reached",
-            "label": "Time Since Breach (in days)",
-            "precision": "18",
-            "required": "false",
-            "scale": "2",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "Handle_Time_vs_Goal__c": {
-            "fullName": "Handle_Time_vs_Goal__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(\n  AND(\n    NOT(ISBLANK(Step_Goal__r.GoalHandleTimeHrs__c)),\n    NOT(ISBLANK(Step_Handle_Time__c)),\n    NOT(Step_Goal__r.GoalHandleTimeHrs__c = 0),\n    NOT(ISBLANK(TEXT(Step_Goal__r.GoalUnit__c)))\n  ),   \n  CASE(TEXT(Step_Goal__r.GoalUnit__c),\n    \"Hours\", (Step_Handle_Time__c * 24),\n    \"Days\", Step_Handle_Time__c,\n    \"Weekdays\", HandleTimeWeekdays__c,\n    null\n    )/Step_Goal__r.GoalHandleTimeHrs__c\n  ,null\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "(Deprecated) Handle Time vs Goal",
-            "precision": "18",
-            "required": "false",
-            "scale": "0",
-            "trackTrending": "false",
-            "type": "Percent"
-        },
-        "Final_Handle_Time_Weekdays__c": {
-            "fullName": "Final_Handle_Time_Weekdays__c",
-            "deprecated": "false",
-            "description": "Note this field is rounded up to full days",
-            "externalId": "false",
-            "inlineHelpText": "Note this field is rounded up to full days",
-            "label": "Final Handle Time (weekdays)",
-            "precision": "18",
-            "required": "false",
-            "scale": "0",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "TrackedObjectType__c": {
-            "fullName": "TrackedObjectType__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "Flow__r.Tracked_Object__c",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Tracked Object Type",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
-        },
-        "GoalBreached__c": {
-            "fullName": "GoalBreached__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "HandleTimeVsGoal__c > 1",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Used to flag when something spends more time in a stage than the Goal",
-            "label": "Goal Breached",
-            "trackTrending": "false",
-            "type": "Checkbox"
-        },
-        "TimeUntilBreach__c": {
-            "fullName": "TimeUntilBreach__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(AND(NOT(Terminal_Stage__c),NOT(isGoal__c)),MAX(IF(AND(NOT(ISBLANK(BreachTime__c)), StepActive__c ), BreachTime__c-NOW(),null),0),null)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Time remaining until the goal for completing this Step is surpassed",
-            "label": "Time Until Breach (in days)",
-            "precision": "18",
-            "required": "false",
-            "scale": "1",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "Time_since_breach_in_hrs__c": {
-            "fullName": "Time_since_breach_in_hrs__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(\n\tAND(\n\t\tNOT(Terminal_Stage__c),\n\t\tNOT(isGoal__c)\n\t),\n\tMAX(\n\t\tIF(\n\t\t\tNOT(ISBLANK(BreachTime__c)),\n\t\t\tIF(\n\t\t\t\tNOT(ISBLANK(EndingTS__c)),\n\t\t\t\tEndingTS__c - BreachTime__c,\n\t\t\t\tNOW()-BreachTime__c\n\t\t\t),\n\t\t\tnull\n\t\t),\n\t\t0\n\t),\n\tnull\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Time since breach in days. Stops when the next Step is reached",
-            "label": "(Deprecated) Time Since Breach (in days)",
-            "precision": "18",
-            "required": "false",
-            "scale": "2",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "Next_Step_vs_Goal_Next_Step__c": {
-            "fullName": "Next_Step_vs_Goal_Next_Step__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(\n  NOT(ISBLANK(Step_Goal__r.Field_Value_Ending__c)),\n  IF(Step_Goal__r.Field_Value_Ending__c = Field_Value_Ending__c,\n    \"Matched goal\",\n    \"Deviated from goal\"\n  ),\n  \"Unknown\"\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Describes whether stages were followed in the order prescribed by the Goal",
-            "label": "(Deprecated) Next Step vs Goal Next Step",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
-        },
-        "NextStepVsGoalNextStep__c": {
-            "fullName": "NextStepVsGoalNextStep__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(\n  NOT(ISBLANK(Step_Goal__r.Field_Value_Ending__c)),\n  IF(Step_Goal__r.Field_Value_Ending__c = Field_Value_Ending__c,\n    \"Matched goal\",\n    \"Deviated from goal\"\n  ),\n  \"Unknown\"\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Describes whether stages were followed in the order prescribed by the Goal",
-            "label": "Next Step vs Goal Next Step",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
-        },
-        "InitialTS__c": {
-            "fullName": "InitialTS__c",
-            "deprecated": "false",
-            "description": "Marks the timestamp for the initiation of the tracked Step in the process flow.",
-            "externalId": "false",
-            "label": "Step Started At",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "DateTime"
-        },
-        "EndingTS__c": {
-            "fullName": "EndingTS__c",
-            "deprecated": "false",
-            "description": "Captures the timestamp for the conclusion of the tracked Step in the process flow.",
-            "externalId": "false",
-            "label": "Step Ended At",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "DateTime"
-        },
-        "Sequence_and_Initial_Field_Value__c": {
-            "fullName": "Sequence_and_Initial_Field_Value__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "TEXT(Sequence__c) & \" \"& Field_Value_Initial__c",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "(Deprecated) Step Order and Value",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
-        },
-        "Terminal_Stage__c": {
-            "fullName": "Terminal_Stage__c",
-            "defaultValue": "false",
-            "deprecated": "false",
-            "description": "Indicates when the Step is at its final sequence, signaling that tracking is completed.",
-            "externalId": "false",
-            "label": "Is Final Step?",
-            "trackTrending": "false",
-            "type": "Checkbox"
-        },
-        "BreachTime__c": {
-            "fullName": "BreachTime__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(\n  AND(   \n    NOT(ISBLANK(Step_Goal__r.GoalHandleTimeHrs__c)), \n    NOT(ISBLANK(Step_Goal__c )),\n    NOT(ISBLANK(TEXT(Step_Goal__r.GoalUnit__c))) \n  ), \n  CASE(TEXT(Step_Goal__r.GoalUnit__c),\n    \"Days\", (InitialTS__c + Step_Goal__r.GoalHandleTimeHrs__c),\n    \"Hours\", (InitialTS__c + (Step_Goal__r.GoalHandleTimeHrs__c/24)),\n    \"Weekdays\", \n    DATETIMEVALUE(CASE( \n      MOD(StartDate__c - DATE( 1900, 1, 7 ), 7 ),\n      3, StartDate__c + 2 + Step_Goal__r.GoalHandleTimeHrs__c,\n      4, StartDate__c + 2 + Step_Goal__r.GoalHandleTimeHrs__c,\n      5, StartDate__c + 2 + Step_Goal__r.GoalHandleTimeHrs__c,\n      6, StartDate__c + 1 + Step_Goal__r.GoalHandleTimeHrs__c,\n      StartDate__c + Step_Goal__r.GoalHandleTimeHrs__c\n    )),\n    null\n  ),\n  null\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Based on the goal, when this stage will be breached if not competed by this date/time",
-            "label": "Breach Happens At",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "DateTime"
-        },
-        "Progress_Bar_Elapsed_Color__c": {
-            "fullName": "Progress_Bar_Elapsed_Color__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(\n  StepActive__c,\n  \"/resource/PrimaryBlue\",\n  \"/resource/CompletedGreen\"\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "(Deprecated) Progress Bar Elapsed Color",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
-        },
-        "EndTimestamp__c": {
-            "fullName": "EndTimestamp__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(\n  NOT(ISBLANK(EndingTS__c )),\n  EndingTS__c,\n  NOW()\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Used in formula fields for handle time",
-            "label": "Ending Timestamp or NOW",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "DateTime"
-        },
-        "Handle_Time_Hours_in_this_Step__c": {
-            "fullName": "Handle_Time_Hours_in_this_Step__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "Step_Handle_Time__c *24",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Handle Time (Hours in this Step)",
-            "precision": "18",
-            "required": "false",
-            "scale": "1",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "Breach_happens_at__c": {
-            "fullName": "Breach_happens_at__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(\n  AND(   \n    NOT(ISBLANK(Step_Goal__r.GoalHandleTimeHrs__c)), \n    NOT(ISBLANK(Step_Goal__c )),\n    NOT(ISBLANK(TEXT(Step_Goal__r.GoalUnit__c))) \n  ), \n  CASE(TEXT(Step_Goal__r.GoalUnit__c),\n    \"Days\", (InitialTS__c + Step_Goal__r.GoalHandleTimeHrs__c),\n    \"Hours\", (InitialTS__c + (Step_Goal__r.GoalHandleTimeHrs__c/24)),\n    \"Weekdays\", \n    DATETIMEVALUE(CASE( \n      MOD(StartDate__c - DATE( 1900, 1, 7 ), 7 ),\n      3, StartDate__c + 2 + Step_Goal__r.GoalHandleTimeHrs__c,\n      4, StartDate__c + 2 + Step_Goal__r.GoalHandleTimeHrs__c,\n      5, StartDate__c + 2 + Step_Goal__r.GoalHandleTimeHrs__c,\n      6, StartDate__c + 1 + Step_Goal__r.GoalHandleTimeHrs__c,\n      StartDate__c + Step_Goal__r.GoalHandleTimeHrs__c\n    )),\n    null\n  ),\n  null\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Based on the goal, when this stage will be breached if not competed by this date/time",
-            "label": "(Deprecated) Breach Happens At",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "DateTime"
-        },
-        "FlowGoalID__c": {
-            "fullName": "FlowGoalID__c",
-            "deprecated": "false",
-            "description": "Used by: Assign Step Goal to Steps with matching Flow Goal",
-            "externalId": "false",
-            "formula": "CASESAFEID(Flow__r.Goal__c)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "The ID of thisTrackerStep.TrackerFlow.GoalFlow",
-            "label": "Goal Flow: ID",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
-        },
-        "Success__c": {
-            "fullName": "Success__c",
-            "defaultValue": "false",
-            "deprecated": "false",
-            "description": "Check this if this final step means you've accomplished the intended outcome of your process. For Example: Closed Won, Closed, Converted, Completed, Finished, Approved etc.",
-            "externalId": "false",
-            "inlineHelpText": "Check this if this final step means you've accomplished the intended outcome of your process. For Example: Closed Won, Closed, Converted, Completed, Finished, Approved etc.",
-            "label": "Process Succeeded?",
-            "trackTrending": "false",
-            "type": "Checkbox"
-        },
-        "Goal_Breached__c": {
-            "fullName": "Goal_Breached__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "HandleTimeVsGoal__c > 1",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Used to flag when something spends more time in a stage than the Goal",
-            "label": "(Deprecated) Goal Breached",
-            "trackTrending": "false",
-            "type": "Checkbox"
-        },
-        "Sequence__c": {
-            "fullName": "Sequence__c",
-            "deprecated": "false",
-            "description": "Reflects the order of operations or events being tracked in a Step. Incrementing values signify following steps in the sequence.",
-            "externalId": "false",
-            "label": "Order",
-            "precision": "18",
-            "required": "false",
-            "scale": "0",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "CreatedByMe__c": {
-            "fullName": "CreatedByMe__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF( CreatedBy.Id = $User.Id , true , false)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Created By Me?",
-            "trackTrending": "false",
-            "type": "Checkbox"
-        },
-        "isGoal__c": {
-            "fullName": "isGoal__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "RecordType.Name = \"Goal\"",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Is Goal?",
-            "trackTrending": "false",
-            "type": "Checkbox"
-        },
-        "SequenceInitialFieldValue__c": {
-            "fullName": "SequenceInitialFieldValue__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "TEXT(Sequence__c) & \" \"& Field_Value_Initial__c",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Step Order and Value",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
+        "Tracked_Object_ID__c": {
+            "label": "Tracked Object ID",
+            "type": "Text(255)",
+            "description": "The 18-character Salesforce ID of the specific record this Flow is monitoring."
         },
         "Tracked_Object_Link__c": {
-            "fullName": "Tracked_Object_Link__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "Flow__r.Tracked_Object_Link__c",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "(Deprecated) Tracked Object Link",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
+            "label": "Tracked Object Link",
+            "type": "Formula (Text)",
+            "formula": "HYPERLINK(\"/lightning/r/\" + Tracked_Object__c + \"/\" + Tracked_Object_ID__c + \"/view\", \"Tracked \" + Tracked_Object__c)",
+            "description": "Clickable link to the tracked record."
         },
-        "HandleTimeWeekend__c": {
-            "fullName": "HandleTimeWeekend__c",
-            "deprecated": "false",
-            "description": "Note that this field is imprecise - it is just the total time (a number of days with decimal points) minus the weekdays, which are rounded up to the whole day. It is useful for adjusting time calculations to weekdays.",
-            "externalId": "false",
-            "formula": "MIN(0,(Step_Handle_Time__c -  HandleTimeWeekdays__c))",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Note that this field is imprecise - it is just the total time (a number of days with decimal points) minus the weekdays, which are rounded up to the whole day. It is useful for adjusting time calculations to weekdays.",
-            "label": "Handle Time (over Weekend Days)",
-            "precision": "18",
-            "required": "false",
-            "scale": "1",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "HandleTimeWeekdays__c": {
-            "fullName": "HandleTimeWeekdays__c",
-            "deprecated": "false",
-            "description": "Note that this formula rounds up to whole days",
-            "externalId": "false",
-            "formula": "IF( AND (Terminal_Stage__c, ISBLANK( Next_Step__c )) ,\nnull,\n(5 * ( FLOOR( ( DATEVALUE( EndTimestamp__c ) - DATE( 1900, 1, 8) ) / 7 ) ) + MIN( 5, MOD(\nDATEVALUE(EndTimestamp__c) - DATE( 1900, 1, 8), 7 ) ) )\n-\n(5 * ( FLOOR( ( DATEVALUE( InitialTimestamp__c ) - DATE( 1900, 1, 8) ) / 7 ) ) + MIN( 5, MOD(\nDATEVALUE(InitialTimestamp__c) - DATE( 1900, 1, 8), 7 ) ) )\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Note that this formula rounds up to whole days",
-            "label": "Handle Time (Weekdays in this Step)",
-            "precision": "18",
-            "required": "false",
-            "scale": "0",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "StartDate__c": {
-            "fullName": "StartDate__c",
-            "deprecated": "false",
-            "description": "Used in calculation for Breach Happens At",
-            "externalId": "false",
-            "formula": "DATEVALUE(InitialTS__c)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Step Started Date",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Date"
-        },
-        "HandleTimeVsGoal__c": {
-            "fullName": "HandleTimeVsGoal__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(\n  AND(\n    NOT(ISBLANK(Step_Goal__r.GoalHandleTimeHrs__c)),\n    NOT(ISBLANK(Step_Handle_Time__c)),\n    NOT(Step_Goal__r.GoalHandleTimeHrs__c = 0),\n    NOT(ISBLANK(TEXT(Step_Goal__r.GoalUnit__c)))\n  ),   \n  CASE(TEXT(Step_Goal__r.GoalUnit__c),\n    \"Hours\", (Step_Handle_Time__c * 24),\n    \"Days\", Step_Handle_Time__c,\n    \"Weekdays\", HandleTimeWeekdays__c,\n    null\n    )/Step_Goal__r.GoalHandleTimeHrs__c\n  ,null\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Handle Time vs Goal",
-            "precision": "18",
-            "required": "false",
-            "scale": "0",
-            "trackTrending": "false",
-            "type": "Percent"
-        },
-        "History_Record_ID__c": {
-            "fullName": "History_Record_ID__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "History Record ID",
-            "length": "255",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
-        },
-        "Initial_Timestamp_or_CREATED__c": {
-            "fullName": "Initial_Timestamp_or_CREATED__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(\nNOT(ISBLANK( InitialTS__c  )),\nInitialTS__c,\nCreatedDate\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Used in formula fields for handle time",
-            "label": "(Deprecated) Initial Timestamp orCREATED",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "DateTime"
-        },
-        "Next_Step__c": {
-            "fullName": "Next_Step__c",
-            "deleteConstraint": "SetNull",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Next Step",
-            "referenceTo": "Step__c",
-            "relationshipLabel": "Last Step",
-            "relationshipName": "Steps1",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Lookup"
-        },
-        "Handle_Time_over_Weekend_Days__c": {
-            "fullName": "Handle_Time_over_Weekend_Days__c",
-            "deprecated": "false",
-            "description": "Note that this field is imprecise - it is just the total time (a number of days with decimal points) minus the weekdays, which are rounded up to the whole day. It is useful for adjusting time calculations to weekdays.",
-            "externalId": "false",
-            "formula": "MIN(0,(Step_Handle_Time__c -  HandleTimeWeekdays__c))",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Note that this field is imprecise - it is just the total time (a number of days with decimal points) minus the weekdays, which are rounded up to the whole day. It is useful for adjusting time calculations to weekdays.",
-            "label": "(Deprecated) HandleTime (over Wknd Days)",
-            "precision": "18",
-            "required": "false",
-            "scale": "1",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "Flow_Goal_ID__c": {
-            "fullName": "Flow_Goal_ID__c",
-            "deprecated": "false",
-            "description": "Used by Process Builder: Assign Step Goal to Steps with matching Flow Goal",
-            "externalId": "false",
-            "formula": "CASESAFEID(Flow__r.Goal__c)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "The ID of this Step's Flow's Goal.",
-            "label": "(Deprecated) Flow Goal ID",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
-        },
-        "StepVsTotal__c": {
-            "fullName": "StepVsTotal__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(GoalHandleTimeHrs__c>0,\n(GoalHandleTimeHrs__c/ Flow__r.GoalCycleTime__c),IF(Final_Handle_Time__c > 0,\n(Final_Handle_Time__c /  Flow__r.HandleTimeToCurrent__c ),null)\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Portion this step is out of the total Cycle Time.",
-            "label": "Step % of Cycle Time",
-            "precision": "18",
-            "required": "false",
-            "scale": "1",
-            "trackTrending": "false",
-            "type": "Percent"
-        },
-        "Field_Value_Initial__c": {
-            "fullName": "Field_Value_Initial__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Step",
-            "length": "255",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
-        },
-        "ProgressBarRemainingColor__c": {
-            "fullName": "ProgressBarRemainingColor__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF( OR(Terminal_Stage__c, isGoal__c ),\n  \"/resource/Flowdometer__Blank\",\n  IF( ISBLANK(Next_Step__c ),\n    \"/resource/Flowdometer__LightBlue\",\n    \"/resource/Flowdometer__UnusedGray\"\n  )\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Progress Bar Remaining Color",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
-        },
-        "Tracked_Object_Type__c": {
-            "fullName": "Tracked_Object_Type__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "Flow__r.Tracked_Object__c",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "(Deprecated) Tracked Object Type",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
-        },
-        "Plan_Next_Steps__c": {
-            "fullName": "Plan_Next_Steps__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "inlineHelpText": "How you intend to get to the next field change. What are the blockers? Why might you not get there?",
-            "label": "Plan/Next Steps",
-            "length": "32768",
-            "trackTrending": "false",
-            "type": "Html",
-            "visibleLines": "10"
-        },
-        "Final_Handle_Time__c": {
-            "fullName": "Final_Handle_Time__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Final Handle Time (days)",
-            "precision": "18",
-            "required": "false",
-            "scale": "2",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "Field_Value_Ending__c": {
-            "fullName": "Field_Value_Ending__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Step After This",
-            "length": "255",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
-        },
-        "Start_Date__c": {
-            "fullName": "Start_Date__c",
-            "deprecated": "false",
-            "description": "Used in calculation for Breach Happens At",
-            "externalId": "false",
-            "formula": "DATEVALUE(InitialTS__c)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "(Deprecated) Step Started Date",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Date"
-        },
-        "Tracked_Field_Name_c__c": {
-            "fullName": "Tracked_Field_Name_c__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "Flow__r.Tracked_Field_Name__c",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "(Deprecated) Tracked Field Name",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
-        },
-        "StepActive__c": {
-            "fullName": "StepActive__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(\n  AND(\n    NOT(isGoal__c),\n    NOT(Terminal_Stage__c),\n    ISBLANK(Next_Step__c)\n  ),\n  true,\n  false\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "This flag identifies the steps your team is currently working through.",
-            "label": "Step Is Currently Active?",
-            "trackTrending": "false",
-            "type": "Checkbox"
+        "Name_of_Tracked_Record__c": {
+            "label": "Name of Tracked Record",
+            "type": "Text(255)",
+            "description": "Display name of the tracked record, stored for reporting convenience."
         },
         "Type__c": {
-            "fullName": "Type__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "Flow__r.Type__c",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Used to split different types of processes handled within the same object. If your process was held in an Onboarding object, you might have a Customer and Partner type of process, for example.",
             "label": "Type",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
+            "type": "Text(255)",
+            "description": "Optional classifier for sub-categories within the same object+field combination. E.g. 'New Business' vs 'Renewal' on Opportunity.StageName. Enables separate goal-setting per type.",
+            "helpText": "Used to split different types of processes handled within the same object."
         },
-        "Progress_Bar_Remaining_Color__c": {
-            "fullName": "Progress_Bar_Remaining_Color__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF( OR(Terminal_Stage__c, isGoal__c ),\n  \"/resource/Blank\",\n  IF( ISBLANK(Next_Step__c ),\n    \"/resource/LightBlue\",\n    \"/resource/UnusedGray\"\n  )\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "(Deprecated) ProgressBar Remaining Color",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
+
+        "Account__c": {
+            "label": "Account",
+            "type": "Lookup(Account)",
+            "description": "Optional link to the related Account."
         },
-        "History_Record_ID_for_Last_Step__c": {
-            "fullName": "History_Record_ID_for_Last_Step__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "History Record ID for Last Step",
-            "length": "255",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
+        "Contact__c": {
+            "label": "Contact",
+            "type": "Lookup(Contact)",
+            "description": "Optional link to the related Contact."
         },
-        "ProgressBarElapsedColor__c": {
-            "fullName": "ProgressBarElapsedColor__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(\n  StepActive__c,\n  \"/resource/Flowdometer__PrimaryBlue\",\n  \"/resource/Flowdometer__CompletedGreen\"\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Progress Bar Elapsed Color",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
+        "Lead__c": {
+            "label": "Lead",
+            "type": "Lookup(Lead)",
+            "description": "Optional link to the related Lead."
         },
-        "TrackedObjectLink__c": {
-            "fullName": "TrackedObjectLink__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "Flow__r.Tracked_Object_Link__c",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Tracked Object Link",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
+        "Opportunity__c": {
+            "label": "Opportunity",
+            "type": "Lookup(Opportunity)",
+            "description": "Optional link to the related Opportunity."
         },
-        "ProgressBarVsGoal__c": {
-            "fullName": "ProgressBarVsGoal__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(\n    HandleTimeVsGoal__c<1,\n    IMAGE( ProgressBarElapsedColor__c ,\"Progress\",10,100*HandleTimeVsGoal__c)+IMAGE( ProgressBarRemainingColor__c ,\"Remaining\",10, 100*(1-HandleTimeVsGoal__c)),\n    \"Breached\"\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
+        "Case__c": {
+            "label": "Case",
+            "type": "Lookup(Case)",
+            "description": "Optional link to the related Case."
+        },
+
+        "Goal__c": {
+            "label": "Goal Flow",
+            "type": "Lookup(Flow__c)",
+            "description": "Self-referential lookup pointing to a Goal-record-type Flow. This is the benchmark this Tracker Flow is measured against.",
+            "relationshipLabel": "Tracker Flows with this Goal Flow"
+        },
+        "Most_Recent_Step__c": {
+            "label": "Most Recent Step",
+            "type": "Lookup(Step__c)",
+            "description": "Denormalized pointer to the latest Step in this Flow. Used by many formula fields to surface current-step data at the Flow level."
+        },
+
+        "isGoal__c": {
+            "label": "Is Goal?",
+            "type": "Formula (Checkbox)",
+            "formula": "RecordType.Name = \"Goal\"",
+            "description": "True when this Flow uses the Goal record type."
+        },
+        "Match_Goal_with_Flows__c": {
+            "label": "Match Goal with Historical Trackers?",
+            "type": "Checkbox",
+            "default": false,
+            "description": "When checked on a Goal Flow, triggers automation to connect it to any existing Tracker Flows that match on Object, Field, and (optionally) Type."
+        },
+
+        "Flow_Creation_Date__c": {
+            "label": "Flow Creation Date",
+            "type": "Roll-Up Summary (MIN of Step__c.InitialTS__c)",
+            "description": "Earliest Step start timestamp across all Steps in this Flow — effectively when the tracked record first entered the process."
+        },
+        "FlowCreatedDate__c": {
+            "label": "Flow Creation Date or CREATED",
+            "type": "Formula (DateTime)",
+            "formula": "IF(ISBLANK(Flow_Creation_Date__c), CreatedDate, Flow_Creation_Date__c)",
+            "description": "Favors the roll-up creation date but falls back to the record's CreatedDate. Used as the canonical 'process start' timestamp in time calculations."
+        },
+        "Flow_Completion_Date__c": {
+            "label": "Flow Completion Date",
+            "type": "Roll-Up Summary (MAX of Step__c.InitialTS__c, filtered to terminal steps)",
+            "description": "Latest date a terminal Step was reached — effectively when the process completed."
+        },
+        "Flow_Completion_Date_or_NOW__c": {
+            "label": "Flow Completion Date or NOW",
+            "type": "Formula (DateTime)",
+            "formula": "IF(ISBLANK(Flow_Completion_Date__c), NOW(), Flow_Completion_Date__c)",
+            "description": "Falls back to NOW() for in-progress flows. Used in elapsed-time calculations."
+        },
+        "First_Step_Taken_at__c": {
+            "label": "First Step Taken At",
+            "type": "Roll-Up Summary (MIN of Step__c.EndingTS__c)",
+            "description": "Earliest timestamp any Step ended — marks when the first transition happened."
+        },
+        "FirstStepOrNOW__c": {
+            "label": "First Step Taken At or NOW",
+            "type": "Formula (DateTime)",
+            "formula": "IF(ISBLANK(First_Step_Taken_at__c), NOW(), First_Step_Taken_at__c)",
+            "description": "Falls back to NOW() if no steps have completed yet. Used in response-time calculations."
+        },
+        "Steps_in_Flow__c": {
+            "label": "Steps in Flow",
+            "type": "Roll-Up Summary (COUNT of Step__c)",
+            "description": "Total number of Steps in this Flow."
+        },
+
+        "Days_Open_Since_Creation__c": {
+            "label": "Days Open Since Creation",
+            "type": "Formula (Number)",
+            "formula": "Flow_Completion_Date_or_NOW__c - FlowCreatedDate__c",
+            "description": "Calendar days from process start to completion (or to now if still open)."
+        },
+        "Hours_Since_Created__c": {
+            "label": "Hours Open Since Created",
+            "type": "Formula (Number)",
+            "formula": "Days_Open_Since_Creation__c * 24",
+            "description": "Same as Days_Open_Since_Creation__c expressed in hours."
+        },
+        "Days_to_first_Step__c": {
+            "label": "Response Time (days)",
+            "type": "Formula (Number)",
+            "formula": "FirstStepOrNOW__c - FlowCreatedDate__c",
+            "description": "Calendar days from process start to the first field-value change. Key responsiveness metric."
+        },
+        "Hours_to_First_Step__c": {
+            "label": "Response Time (hours)",
+            "type": "Formula (Number)",
+            "formula": "Days_to_first_Step__c * 24",
+            "description": "Response time expressed in hours."
+        },
+        "Days_to_first_Step_Weekdays__c": {
+            "label": "Response Time (weekdays)",
+            "type": "Formula (Number)",
+            "formula": "NETWORKDAYS(FlowCreatedDate__c, FirstStepOrNOW__c)",
+            "formulaNote": "Uses the standard NETWORKDAYS weekday-counting pattern (floors to whole weekdays).",
+            "description": "Response time excluding weekends."
+        },
+
+        "HandleTimeToCurrent__c": {
+            "label": "Handle Time To Current Step",
+            "type": "Roll-Up Summary (SUM of Step__c.Final_Handle_Time__c)",
+            "description": "Sum of finalized handle times for all completed Steps. Does not include the currently active step."
+        },
+        "Handle_Time_To_Current_Step_Weekdays__c": {
+            "label": "Handle Time To Current Step (weekdays)",
+            "type": "Roll-Up Summary (SUM of Step__c.Final_Handle_Time_Weekdays__c)",
+            "description": "Weekday-only version of HandleTimeToCurrent__c."
+        },
+        "Total_Handle_Time__c": {
+            "label": "Cycle Time (days)",
+            "type": "Formula (Number)",
+            "formula": "IF(Most_Recent_Step__r.Terminal_Stage__c, HandleTimeToCurrent__c, HandleTimeToCurrent__c + Most_Recent_Step__r.Step_Handle_Time__c)",
+            "description": "Total handle time including the current step. If the process is complete (terminal), uses only finalized times; if still in progress, adds the current step's running handle time."
+        },
+        "Cycle_Time_Weekdays__c": {
+            "label": "Cycle Time (weekdays)",
+            "type": "Formula (Number)",
+            "formula": "IF(Most_Recent_Step__r.Terminal_Stage__c, Handle_Time_To_Current_Step_Weekdays__c, Handle_Time_To_Current_Step_Weekdays__c + Most_Recent_Step__r.HandleTimeWeekdays__c)",
+            "description": "Total cycle time counting only weekdays."
+        },
+        "Days_since_Completion__c": {
+            "label": "Days Since Completion",
+            "type": "Formula (Number)",
+            "formula": "IF(NOT(ISBLANK(Flow_Completion_Date__c)), IF(Flow_Completion_Date__c < NOW(), NOW() - Flow_Completion_Date__c, null), null)",
+            "description": "Days elapsed since the process completed. Null if still open. Useful for data-retention policies."
+        },
+
+        "GoalCycleTime__c": {
+            "label": "Goal Cycle Time",
+            "type": "Roll-Up Summary (SUM of Step__c.GoalHandleTimeHrs__c)",
+            "description": "Total target cycle time for the process, summed from all Goal Steps."
+        },
+        "Handle_Time_vs_Goal__c": {
+            "label": "Cycle Time vs Goal",
+            "type": "Formula (Number)",
+            "formula": "Actual cycle time / GoalCycleTime (unit-aware: Hours, Days, or Weekdays based on Goal Step's GoalUnit__c)",
+            "description": "Ratio of actual total handle time to the goal cycle time. Values < 1 mean ahead of goal; >= 1 means breached."
+        },
+        "Progress_Bar_vs_Goal__c": {
             "label": "Progress Bar vs Goal",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
+            "type": "Formula (Text — IMAGE)",
+            "description": "Visual progress bar comparing actual cycle time to goal. Shows colored bar if under goal, 'Breached' text if over."
         },
-        "Step_Goal__c": {
-            "fullName": "Step_Goal__c",
-            "deleteConstraint": "SetNull",
-            "deprecated": "false",
-            "description": "References the optimal time duration for the Step, allowing Step duration to be contrasted with the intended process time.",
-            "externalId": "false",
-            "label": "Goal Step",
-            "lookupFilter": "\n        ",
-            "referenceTo": "Step__c",
-            "relationshipLabel": "Tracker Steps with this Goal Step",
-            "relationshipName": "Steps3",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Lookup"
+        "Next_Breach_At__c": {
+            "label": "Next Breach At",
+            "type": "Formula (DateTime)",
+            "formula": "Most_Recent_Step__r.BreachTime__c",
+            "description": "Surfaces the current step's breach deadline at the Flow level for list views and reports."
         },
-        "GoalUnit__c": {
-            "fullName": "GoalUnit__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Goal: Handle Time Measured In (units)",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Picklist",
-            "valueSet": "\n        "
-        },
-        "Step_Handle_Time__c": {
-            "fullName": "Step_Handle_Time__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF( AND (Terminal_Stage__c, ISBLANK( Next_Step__c )) ,\nnull,\nIF(NOT(ISBLANK(EndingTS__c )),\n\tEndingTS__c - InitialTS__c,\n\tIF(NOT(ISBLANK(InitialTS__c)),\n\t\tNOW() - InitialTS__c,\n\t\tNOW() - CreatedDate\n\t)\n))",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Handle Time (Days in this Step)",
-            "precision": "18",
-            "required": "false",
-            "scale": "1",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "Ending_Timestamp_or_NOW__c": {
-            "fullName": "Ending_Timestamp_or_NOW__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(\n  NOT(ISBLANK(EndingTS__c )),\n  EndingTS__c,\n  NOW()\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Used in formula fields for handle time",
-            "label": "(Deprecated) Ending Timestamp or NOW",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "DateTime"
-        },
-        "GoalHandleTimeHrs__c": {
-            "fullName": "GoalHandleTimeHrs__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Goal: Handle Time",
-            "precision": "18",
-            "required": "false",
-            "scale": "1",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
+
         "Created_by_Me__c": {
-            "fullName": "Created_by_Me__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF( CreatedBy.Id = $User.Id , true , false)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "(Deprecated) Created By Me?",
-            "trackTrending": "false",
-            "type": "Checkbox"
-        },
-        "InitialTimestamp__c": {
-            "fullName": "InitialTimestamp__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(\nNOT(ISBLANK( InitialTS__c  )),\nInitialTS__c,\nCreatedDate\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Used in formula fields for handle time",
-            "label": "Initial Timestamp or CREATED",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "DateTime"
-        },
-        "Step_is_currently_active__c": {
-            "fullName": "Step_is_currently_active__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(\n  AND(\n    NOT(isGoal__c),\n    NOT(Terminal_Stage__c),\n    ISBLANK(Next_Step__c)\n  ),\n  true,\n  false\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "This flag identifies the steps your team is currently working through.",
-            "label": "(Deprecated) Step Is Currently Active?",
-            "trackTrending": "false",
-            "type": "Checkbox"
-        },
-        "Flow__c": {
-            "fullName": "Flow__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Flow",
-            "referenceTo": "Flow__c",
-            "relationshipLabel": "Steps in this Flow",
-            "relationshipName": "Steps2",
-            "relationshipOrder": "0",
-            "reparentableMasterDetail": "false",
-            "trackTrending": "false",
-            "type": "MasterDetail",
-            "writeRequiresMasterRead": "false"
-        },
-        "Handle_Time_Weekdays__c": {
-            "fullName": "Handle_Time_Weekdays__c",
-            "deprecated": "false",
-            "description": "Note that this formula rounds up to whole days",
-            "externalId": "false",
-            "formula": "IF( AND (Terminal_Stage__c, ISBLANK( Next_Step__c )) ,\nnull,\n(5 * ( FLOOR( ( DATEVALUE( EndTimestamp__c ) - DATE( 1900, 1, 8) ) / 7 ) ) + MIN( 5, MOD(\nDATEVALUE(EndTimestamp__c) - DATE( 1900, 1, 8), 7 ) ) )\n-\n(5 * ( FLOOR( ( DATEVALUE( InitialTimestamp__c ) - DATE( 1900, 1, 8) ) / 7 ) ) + MIN( 5, MOD(\nDATEVALUE(InitialTimestamp__c) - DATE( 1900, 1, 8), 7 ) ) )\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "inlineHelpText": "Note that this formula rounds up to whole days",
-            "label": "(Deprecated) HandleTime (Wkdays in Step)",
-            "precision": "18",
-            "required": "false",
-            "scale": "0",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "Handle_Time_Business_Hours__c": {
-            "fullName": "Handle_Time_Business_Hours__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "inlineHelpText": "This field will be blank until you set up Business Hours and Activate the Flow called \"Flowdometer - Autocalculate Business Hours\"",
-            "label": "Handle Time (Business Hours)",
-            "precision": "18",
-            "required": "false",
-            "scale": "2",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
-        },
-        "Last_Step__c": {
-            "fullName": "Last_Step__c",
-            "deleteConstraint": "SetNull",
-            "deprecated": "false",
-            "externalId": "false",
-            "inlineHelpText": "The Step Object that preceded this one",
-            "label": "Last Step",
-            "referenceTo": "Step__c",
-            "relationshipLabel": "Next Step",
-            "relationshipName": "Steps",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Lookup"
-        },
-        "TrackedFieldName__c": {
-            "fullName": "TrackedFieldName__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "Flow__r.Tracked_Field_Name__c",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Tracked Field Name",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
+            "label": "Created by Me?",
+            "type": "Formula (Checkbox)",
+            "formula": "CreatedBy.Id = $User.Id",
+            "description": "True when the running user created this Flow. Useful for personal list-view filters."
         }
     },
-    "Listener__c": {
-        "Field_To_Track__c": {
-            "fullName": "Field_To_Track__c",
-            "deprecated": "false",
-            "description": "A designated field within the monitored object whose alterations are tracked by Flowdometer.",
-            "externalId": "false",
-            "inlineHelpText": "Choose Field (eg: Status or Stage) you'd like to track changes on",
-            "label": "Field To Track",
-            "length": "40",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
+
+    "Step__c": {
+        "Flow__c": {
+            "label": "Flow",
+            "type": "Master-Detail(Flow__c)",
+            "description": "Parent Flow. Cascade-delete applies. Sharing is controlled by the parent Flow."
         },
-        "Error_Message__c": {
-            "fullName": "Error_Message__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Latest Apex Error Message",
-            "length": "131072",
-            "trackTrending": "false",
-            "type": "LongTextArea",
-            "visibleLines": "5"
+        "Next_Step__c": {
+            "label": "Next Step",
+            "type": "Lookup(Step__c)",
+            "description": "Forward link to the Step that followed this one. Null if this is the most recent (active) step."
         },
-        "Object_Name__c": {
-            "fullName": "Object_Name__c",
-            "deprecated": "false",
-            "description": "The Salesforce object that is monitored by the Flowdometer listener.",
-            "externalId": "false",
-            "inlineHelpText": "Choose Object that has the field you'd like Tracked",
-            "label": "Object To Track",
-            "length": "40",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
+        "Last_Step__c": {
+            "label": "Last Step",
+            "type": "Lookup(Step__c)",
+            "description": "Backward link to the Step that preceded this one."
         },
-        "Last_Check__c": {
-            "fullName": "Last_Check__c",
-            "defaultValue": "NOW()",
-            "deprecated": "false",
-            "description": "Records the moment of the latest inspection for History records related to the monitored field within the Salesforce object.",
-            "externalId": "false",
-            "label": "Last Check",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "DateTime"
+        "Step_Goal__c": {
+            "label": "Goal Step",
+            "type": "Lookup(Step__c — Goal record type)",
+            "description": "The Goal Step this Tracker Step is measured against. Filtered to only show Goal-record-type Steps.",
+            "relationshipLabel": "Tracker Steps with this Goal Step"
         },
-        "isActive__c": {
-            "fullName": "isActive__c",
-            "defaultValue": "true",
-            "deprecated": "false",
-            "description": "A feature that allows toggling the listener record state. When inactive, the tracking gets put on hold without having to erase the record.",
-            "externalId": "false",
-            "label": "isActive",
-            "trackTrending": "false",
-            "type": "Checkbox"
+
+        "Field_Value_Initial__c": {
+            "label": "Step",
+            "type": "Text(255)",
+            "description": "The field value when this Step started (e.g. 'Prospecting', 'New'). This is the value the record was in during this step."
         },
-        "Frequency__c": {
-            "fullName": "Frequency__c",
-            "defaultValue": "0.1388888888888889",
-            "deprecated": "false",
-            "description": "Frequency to run the job",
-            "externalId": "false",
-            "label": "Frequency(Minutes)",
-            "precision": "18",
-            "required": "false",
-            "scale": "16",
-            "trackTrending": "false",
-            "type": "Number",
-            "unique": "false"
+        "Field_Value_Ending__c": {
+            "label": "Step After This",
+            "type": "Text(255)",
+            "description": "The field value this Step transitioned TO. Matches the next Step's Field_Value_Initial__c."
         },
-        "Latest_Flow_Error_Message__c": {
-            "fullName": "Latest_Flow_Error_Message__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "label": "Latest Flow Error Message",
-            "length": "131072",
-            "trackTrending": "false",
-            "type": "LongTextArea",
-            "visibleLines": "3"
+        "Sequence__c": {
+            "label": "Order",
+            "type": "Number(18,0)",
+            "description": "Ordinal position in the Flow's step sequence. Incrementing values reflect the chronological order of field changes."
         },
-        "Enable_History__c": {
-            "fullName": "Enable_History__c",
-            "defaultValue": "false",
-            "deprecated": "false",
-            "description": "Denotes whether historical querying of records is enabled for this Listener",
-            "externalId": "false",
-            "inlineHelpText": "Enable historical querying of records for this Listener",
-            "label": "Enable History",
-            "trackTrending": "false",
-            "type": "Checkbox"
+        "SequenceInitialFieldValue__c": {
+            "label": "Step Order and Value",
+            "type": "Formula (Text)",
+            "formula": "TEXT(Sequence__c) & \" \" & Field_Value_Initial__c",
+            "description": "Concatenation of sequence number and step value — useful for sorted list views."
+        },
+
+        "InitialTS__c": {
+            "label": "Step Started At",
+            "type": "DateTime",
+            "description": "Timestamp when the tracked record entered this field value."
+        },
+        "EndingTS__c": {
+            "label": "Step Ended At",
+            "type": "DateTime",
+            "description": "Timestamp when the tracked record left this field value (transitioned to the next step). Null if step is currently active."
+        },
+        "InitialTimestamp__c": {
+            "label": "Initial Timestamp or CREATED",
+            "type": "Formula (DateTime)",
+            "formula": "IF(NOT(ISBLANK(InitialTS__c)), InitialTS__c, CreatedDate)",
+            "description": "Favors InitialTS__c but falls back to CreatedDate. Used internally in handle-time formulas."
+        },
+        "EndTimestamp__c": {
+            "label": "Ending Timestamp or NOW",
+            "type": "Formula (DateTime)",
+            "formula": "IF(NOT(ISBLANK(EndingTS__c)), EndingTS__c, NOW())",
+            "description": "Favors EndingTS__c but falls back to NOW() for active steps. Used internally in handle-time formulas."
+        },
+        "StartDate__c": {
+            "label": "Step Started Date",
+            "type": "Formula (Date)",
+            "formula": "DATEVALUE(InitialTS__c)",
+            "description": "Date-only version of InitialTS__c. Used in weekday/breach calculations."
+        },
+
+        "Terminal_Stage__c": {
+            "label": "Is Final Step?",
+            "type": "Checkbox",
+            "default": false,
+            "description": "True when this is the final step in the process (e.g. Closed Won, Converted). Terminal steps stop the handle-time clock."
+        },
+        "Success__c": {
+            "label": "Process Succeeded?",
+            "type": "Checkbox",
+            "default": false,
+            "description": "On terminal steps: true if the outcome represents success (Closed Won, Completed, Approved). False for failures (Closed Lost, Cancelled)."
+        },
+        "StepActive__c": {
+            "label": "Step Is Currently Active?",
+            "type": "Formula (Checkbox)",
+            "formula": "NOT(isGoal__c) AND NOT(Terminal_Stage__c) AND ISBLANK(Next_Step__c)",
+            "description": "True when this step is the current active step — not a goal, not terminal, and no next step yet."
+        },
+        "isGoal__c": {
+            "label": "Is Goal?",
+            "type": "Formula (Checkbox)",
+            "formula": "RecordType.Name = \"Goal\"",
+            "description": "True when this Step uses the Goal record type."
+        },
+
+        "Step_Handle_Time__c": {
+            "label": "Handle Time (Days in this Step)",
+            "type": "Formula (Number)",
+            "formula": "EndingTS__c - InitialTS__c (or NOW() - InitialTS__c if still active; null if terminal with no next step)",
+            "description": "Running or final handle time in calendar days. Null for terminal steps without successors (process is complete)."
+        },
+        "Handle_Time_Hours_in_this_Step__c": {
+            "label": "Handle Time (Hours in this Step)",
+            "type": "Formula (Number)",
+            "formula": "Step_Handle_Time__c * 24",
+            "description": "Handle time expressed in hours."
+        },
+        "HandleTimeWeekdays__c": {
+            "label": "Handle Time (Weekdays in this Step)",
+            "type": "Formula (Number)",
+            "formula": "NETWORKDAYS(InitialTimestamp__c, EndTimestamp__c)",
+            "formulaNote": "Rounds up to whole weekdays.",
+            "description": "Handle time counting only weekdays."
+        },
+        "HandleTimeWeekend__c": {
+            "label": "Handle Time (over Weekend Days)",
+            "type": "Formula (Number)",
+            "formula": "MIN(0, Step_Handle_Time__c - HandleTimeWeekdays__c)",
+            "description": "The weekend portion of handle time (always <= 0 as an adjustment factor)."
+        },
+        "Final_Handle_Time__c": {
+            "label": "Final Handle Time (days)",
+            "type": "Number(18,2)",
+            "description": "Snapshot of handle time frozen when the step completes. Used in the parent Flow's roll-up summaries. Writable (set by automation)."
+        },
+        "Final_Handle_Time_Weekdays__c": {
+            "label": "Final Handle Time (weekdays)",
+            "type": "Number(18,0)",
+            "description": "Weekday-only version of Final_Handle_Time__c. Rounded to whole days."
+        },
+        "Handle_Time_Business_Hours__c": {
+            "label": "Handle Time (Business Hours)",
+            "type": "Number(18,2)",
+            "description": "Handle time calculated using Salesforce Business Hours. Populated by the 'Flowdometer - Autocalculate Business Hours' Flow. Blank until that Flow is activated."
+        },
+
+        "GoalHandleTimeHrs__c": {
+            "label": "Goal: Handle Time",
+            "type": "Number(18,1)",
+            "description": "On Goal Steps: the target handle time for this stage, expressed in the units specified by GoalUnit__c."
+        },
+        "GoalUnit__c": {
+            "label": "Goal: Handle Time Measured In (units)",
+            "type": "Picklist",
+            "values": ["Hours (default)", "Days", "Weekdays"],
+            "description": "On Goal Steps: the unit of measure for GoalHandleTimeHrs__c."
+        },
+        "HandleTimeVsGoal__c": {
+            "label": "Handle Time vs Goal",
+            "type": "Formula (Percent)",
+            "formula": "Actual handle time / Goal handle time (unit-aware conversion)",
+            "description": "Ratio of actual step handle time to the goal. Values > 100% indicate a breach."
+        },
+        "GoalBreached__c": {
+            "label": "Goal Breached",
+            "type": "Formula (Checkbox)",
+            "formula": "HandleTimeVsGoal__c > 1",
+            "description": "True when actual handle time exceeds the goal for this step."
+        },
+        "BreachTime__c": {
+            "label": "Breach Happens At",
+            "type": "Formula (DateTime)",
+            "formula": "InitialTS__c + GoalHandleTimeHrs__c (converted from goal units; weekday-aware)",
+            "description": "The calculated deadline — the DateTime at which this step will breach its goal if not completed."
+        },
+        "TimeSinceBreach__c": {
+            "label": "Time Since Breach (in days)",
+            "type": "Formula (Number)",
+            "formula": "MAX(0, (EndingTS__c or NOW()) - BreachTime__c)",
+            "description": "Days elapsed since the breach deadline. Null for terminal/goal steps. Stops counting when the next step is reached."
+        },
+        "TimeUntilBreach__c": {
+            "label": "Time Until Breach (in days)",
+            "type": "Formula (Number)",
+            "formula": "MAX(0, BreachTime__c - NOW())",
+            "description": "Days remaining before the breach deadline. Only meaningful for active, non-terminal steps."
+        },
+        "StepVsTotal__c": {
+            "label": "Step % of Cycle Time",
+            "type": "Formula (Percent)",
+            "formula": "GoalHandleTimeHrs__c / Flow.GoalCycleTime__c (for goals) or Final_Handle_Time__c / Flow.HandleTimeToCurrent__c (for trackers)",
+            "description": "What proportion of total cycle time this step represents — useful for identifying bottleneck stages."
+        },
+        "NextStepVsGoalNextStep__c": {
+            "label": "Next Step vs Goal Next Step",
+            "type": "Formula (Text)",
+            "formula": "Compares this step's Field_Value_Ending__c against the Goal Step's Field_Value_Ending__c",
+            "description": "Reports 'Matched goal' or 'Deviated from goal' — tracks whether the process followed the prescribed sequence."
+        },
+
+        "ProgressBarElapsedColor__c": {
+            "label": "Progress Bar Elapsed Color",
+            "type": "Formula (Text)",
+            "formula": "IF(StepActive__c, '/resource/Flowdometer__PrimaryBlue', '/resource/Flowdometer__CompletedGreen')",
+            "description": "Dynamic color resource URL for the elapsed portion of the progress bar."
+        },
+        "ProgressBarRemainingColor__c": {
+            "label": "Progress Bar Remaining Color",
+            "type": "Formula (Text)",
+            "formula": "Blank for terminal/goal, LightBlue for active, UnusedGray for completed",
+            "description": "Dynamic color resource URL for the remaining portion of the progress bar."
+        },
+        "ProgressBarVsGoal__c": {
+            "label": "Progress Bar vs Goal",
+            "type": "Formula (Text — IMAGE)",
+            "description": "Visual progress bar showing handle time vs goal. Displays colored bar or 'Breached' text."
+        },
+
+        "TrackedObjectType__c": {
+            "label": "Tracked Object Type",
+            "type": "Formula (Text)",
+            "formula": "Flow__r.Tracked_Object__c",
+            "description": "Cross-object formula surfacing the parent Flow's tracked object name."
+        },
+        "TrackedFieldName__c": {
+            "label": "Tracked Field Name",
+            "type": "Formula (Text)",
+            "formula": "Flow__r.Tracked_Field_Name__c",
+            "description": "Cross-object formula surfacing the parent Flow's tracked field name."
+        },
+        "TrackedObjectLink__c": {
+            "label": "Tracked Object Link",
+            "type": "Formula (Text)",
+            "formula": "Flow__r.Tracked_Object_Link__c",
+            "description": "Cross-object formula surfacing the parent Flow's tracked-record hyperlink."
         },
         "Type__c": {
-            "fullName": "Type__c",
-            "deprecated": "false",
-            "description": "A classification attribute that enables sorting object-field trackers into subtypes to facilitate differentiated goal assignment.",
-            "externalId": "false",
-            "inlineHelpText": "OPTIONAL: Type should be blank unless you plan on having different goal times for different Types of this object (eg: New Business vs Renewal Opportunities may expect different sales cycle times). \n\nIf so, put the API Name of the field you\u2019re using to identify these types here in the Type field. If you need to combine two or more fields to get all Type permutations, you can build a formula field to concatenate them, and pass that in here. Use API Name here, so for custom fields, it should end with \"__c\"",
             "label": "Type",
-            "length": "30",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "Text",
-            "unique": "false"
+            "type": "Formula (Text)",
+            "formula": "Flow__r.Type__c",
+            "description": "Cross-object formula surfacing the parent Flow's Type."
         },
-        "Last_Execution_On__c": {
-            "fullName": "Last_Execution_On__c",
-            "deprecated": "false",
-            "description": "Keeps track of the instance of the last execution conducted by the Flowdometer code relevant to the listener record.",
-            "externalId": "false",
-            "label": "Last Execution On",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "DateTime"
+        "FlowGoalID__c": {
+            "label": "Goal Flow: ID",
+            "type": "Formula (Text)",
+            "formula": "CASESAFEID(Flow__r.Goal__c)",
+            "description": "18-char ID of this Step's parent Flow's Goal Flow. Used by automation to match tracker steps to goal steps."
         },
-        "Next_Check__c": {
-            "fullName": "Next_Check__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "formula": "IF(\nOR(ISBLANK(Frequency__c), Frequency__c = 0), Last_Check__c,\nLast_Check__c + ( Frequency__c / 60 )\n)",
-            "formulaTreatBlanksAs": "BlankAsZero",
-            "label": "Next Check",
-            "required": "false",
-            "trackTrending": "false",
-            "type": "DateTime"
+
+        "History_Record_ID__c": {
+            "label": "History Record ID",
+            "type": "Text(255)",
+            "description": "ID of the FieldHistory record that created this Step. Used for deduplication."
         },
-        "Unprocessed_History_Records__c": {
-            "fullName": "Unprocessed_History_Records__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "inlineHelpText": "This field saves unprocessed History Records in order to batch our processing",
-            "label": "Unprocessed History Records",
-            "length": "131072",
-            "trackTrending": "false",
-            "type": "LongTextArea",
-            "visibleLines": "3"
+        "History_Record_ID_for_Last_Step__c": {
+            "label": "History Record ID for Last Step",
+            "type": "Text(255)",
+            "description": "History record ID of the preceding Step. Used during step-chain construction."
+        },
+        "Plan_Next_Steps__c": {
+            "label": "Plan/Next Steps",
+            "type": "Html(32768)",
+            "description": "Rich-text field for users to document their plan for progressing to the next stage."
+        },
+        "CreatedByMe__c": {
+            "label": "Created By Me?",
+            "type": "Formula (Checkbox)",
+            "formula": "CreatedBy.Id = $User.Id",
+            "description": "True when the running user created this Step."
+        }
+    },
+
+    "Listener__c": {
+        "Object_Name__c": {
+            "label": "Object To Track",
+            "type": "Text(40)",
+            "description": "API name of the Salesforce object to monitor (e.g. 'Opportunity', 'Lead').",
+            "helpText": "Choose Object that has the field you'd like Tracked"
+        },
+        "Field_To_Track__c": {
+            "label": "Field To Track",
+            "type": "Text(40)",
+            "description": "API name of the field on the tracked object whose changes create Steps (e.g. 'StageName').",
+            "helpText": "Choose Field (eg: Status or Stage) you'd like to track changes on"
+        },
+        "Type__c": {
+            "label": "Type",
+            "type": "Text(30)",
+            "description": "Optional: API name of a field used to sub-classify tracked records into types for differentiated goal-setting. Use when you need different goals for different categories (e.g. 'RecordTypeId' or a formula field).",
+            "helpText": "OPTIONAL: Type should be blank unless you plan on having different goal times for different Types of this object."
         },
         "TerminalStage__c": {
-            "fullName": "TerminalStage__c",
-            "deprecated": "false",
-            "externalId": "false",
-            "inlineHelpText": "OPTIONAL: (do this more easily by setting a goal)\nHides final stages from overwheliming your reports (since they stay there indefinitely).\n\nCreate (or find) a formula field on the tracked object that returns true if your tracked field is in last step of your process. For example, for Leads there is a Standard Field called IsConverted, for Opportunities and Cases, IsClosed. Add all final stage options, such as Cancelled, Lost, etc. \n\nSpecify this field with the API Name, here in Terminal Stage.",
             "label": "Terminal Stage",
-            "length": "40",
-            "required": "false",
-            "trackTrending": "false",
+            "type": "Text(40)",
+            "description": "Optional: API name of a Boolean formula field on the tracked object that returns true when the record is in its final state (e.g. 'IsClosed', 'IsConverted'). Used to mark Steps as terminal.",
+            "helpText": "Create a formula field that returns true when tracked field is in the last step of your process."
+        },
+
+        "isActive__c": {
+            "label": "isActive",
+            "type": "Checkbox",
+            "default": true,
+            "description": "Toggle for pausing/resuming the listener without deleting the configuration."
+        },
+        "Frequency__c": {
+            "label": "Frequency (Minutes)",
+            "type": "Number(18,16)",
+            "default": 0.1388888888888889,
+            "description": "How often (in fractional hours stored as a decimal) the scheduled batch should poll for changes. Default ~8.3 minutes."
+        },
+        "Last_Check__c": {
+            "label": "Last Check",
+            "type": "DateTime",
+            "default": "NOW()",
+            "description": "Timestamp of the most recent poll. The next poll queries history records created after this timestamp."
+        },
+        "Next_Check__c": {
+            "label": "Next Check",
+            "type": "Formula (DateTime)",
+            "formula": "IF(OR(ISBLANK(Frequency__c), Frequency__c = 0), Last_Check__c, Last_Check__c + (Frequency__c / 60))",
+            "description": "Calculated next-poll time based on Last_Check + Frequency."
+        },
+        "Last_Execution_On__c": {
+            "label": "Last Execution On",
+            "type": "DateTime",
+            "description": "Timestamp of the last time the Apex/Flow processing code ran for this Listener."
+        },
+        "Enable_History__c": {
+            "label": "Enable History",
+            "type": "Checkbox",
+            "default": false,
+            "description": "When true, the Listener will query historical field-change records (backfill). When false, only tracks changes going forward."
+        },
+        "Unprocessed_History_Records__c": {
+            "label": "Unprocessed History Records",
+            "type": "LongTextArea(131072)",
+            "description": "JSON buffer for history records that haven't been processed yet, enabling batched processing."
+        },
+        "Error_Message__c": {
+            "label": "Latest Apex Error Message",
+            "type": "LongTextArea(131072)",
+            "description": "Captures the most recent Apex error for troubleshooting."
+        },
+        "Latest_Flow_Error_Message__c": {
+            "label": "Latest Flow Error Message",
+            "type": "LongTextArea(131072)",
+            "description": "Captures the most recent Flow error for troubleshooting."
+        }
+    },
+
+    "Feature_Flag__mdt": {
+        "Is_Enabled__c": {
+            "label": "Is Enabled",
+            "type": "Checkbox",
+            "description": "Whether this feature is currently active."
+        },
+        "Description__c": {
+            "label": "Description",
             "type": "Text",
-            "unique": "false"
+            "description": "Human-readable description of what this feature flag controls."
         }
     }
 }

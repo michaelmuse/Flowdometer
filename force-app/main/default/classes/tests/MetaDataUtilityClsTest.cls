@@ -59,16 +59,66 @@ public class MetaDataUtilityClsTest {
     }
 
     @IsTest
-    static void testGrantFieldEditAccessWithMockResponse() {
-        // Null Web Service mock implementation
-        System.Test.setMock(WebServiceMock.class, new MetadataServiceMock());
-
+    static void testGrantFieldAccessWithDmlMissingPermissionSet() {
+        // The Metadata API FLS callout path was retired (Build Plan A.2).
+        // FLS now lands on the unmanaged Flowdometer_Dynamic_FLS permission set
+        // via native DML. When that PS is absent (as in a bare test context),
+        // the method returns false gracefully without throwing.
         Test.startTest();
-        MetaDataUtilityCls.grantFieldEditAccess(
+        Boolean result = MetaDataUtilityCls.grantFieldAccessWithDml(
             'Test_Object__c',
             'Test_Field__c'
         );
         Test.stopTest();
+
+        System.assertEquals(false, result,
+            'Grant should fail gracefully when the dynamic FLS permission set is absent');
+    }
+
+    @IsTest
+    static void testGrantFieldAccessWithDmlRejectsBlankInput() {
+        Test.startTest();
+        Boolean blankObjectResult = MetaDataUtilityCls.grantFieldAccessWithDml('', 'Opportunity__c');
+        Boolean blankFieldResult = MetaDataUtilityCls.grantFieldAccessWithDml('Flow__c', '');
+        Test.stopTest();
+
+        System.assertEquals(false, blankObjectResult, 'Blank object names should not attempt setup DML');
+        System.assertEquals(false, blankFieldResult, 'Blank field names should not attempt setup DML');
+    }
+
+    @IsTest
+    static void testGrantFieldAccessWithDmlOnUnmanagedPermissionSet() {
+        // FLS now lands on the unmanaged Flowdometer_Dynamic_FLS permission set
+        // (Build Plan A). Create it, then grant an existing packaged field on the
+        // managed Flow__c object - the grant should succeed via native DML.
+        //
+        // Pass the OBJECT api name exactly as real callers do: via describe
+        // (Flow__c.SObjectType.getDescribe().getName()), which yields the
+        // namespaced name in a namespaced org. grantFieldAccessWithDml must NOT
+        // re-namespace the object itself; doing so previously broke FLS for
+        // subscriber custom objects (QA_Tracked__c -> Flowdometer__QA_Tracked__c).
+        PermissionSet ps = new PermissionSet(
+            Name = 'Flowdometer_Dynamic_FLS',
+            Label = 'Flowdometer Dynamic FLS'
+        );
+        insert ps;
+
+        String flowObjectApi = Flow__c.SObjectType.getDescribe().getName();
+
+        Test.startTest();
+        Boolean result = MetaDataUtilityCls.grantFieldAccessWithDml(flowObjectApi, 'Opportunity__c');
+        Test.stopTest();
+
+        System.assertEquals(true, result,
+            'Granting an existing field on the unmanaged permission set should succeed');
+
+        List<FieldPermissions> fps = [
+            SELECT Id, SobjectType FROM FieldPermissions WHERE ParentId = :ps.Id
+        ];
+        System.assert(!fps.isEmpty(),
+            'A FieldPermissions record should exist on the unmanaged permission set');
+        System.assertEquals(flowObjectApi, fps[0].SobjectType,
+            'FieldPermissions must use the object api name as supplied by the caller (not re-namespaced)');
     }
 
     @IsTest
@@ -189,5 +239,32 @@ public class MetaDataUtilityClsTest {
         // Should return an error message for invalid field
         System.assertNotEquals(null, result, 'Result should not be null');
         System.assert(result.contains('ERROR'), 'Should return error for invalid field');
+    }
+
+    // ========== Label -> API Name Sanitization Tests ==========
+
+    @IsTest
+    static void testConvertLabeltoAPIName() {
+        Test.startTest();
+
+        // Spaces and punctuation collapse to underscores, with __c appended
+        System.assertEquals(
+            'Stage_Name__c',
+            MetaDataUtilityCls.convertLabeltoAPIName('Stage Name'),
+            'Spaces should become underscores and __c appended'
+        );
+        System.assertEquals(
+            'Close_Date__2_0___c',
+            MetaDataUtilityCls.convertLabeltoAPIName('Close-Date (2.0)'),
+            'Each non-alphanumeric character becomes its own underscore'
+        );
+        // Already-clean alphanumeric label just gets the suffix
+        System.assertEquals(
+            'Amount__c',
+            MetaDataUtilityCls.convertLabeltoAPIName('Amount'),
+            'Clean label should simply receive the __c suffix'
+        );
+
+        Test.stopTest();
     }
 }

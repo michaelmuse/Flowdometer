@@ -487,18 +487,15 @@ public with sharing class ListenerMasterConfigurationController {
             String errorMessage = null;
             
             try {
-                // Check if field already exists
                 String fieldAPIName = MetaDataUtilityCls.convertLabeltoAPIName(fieldLabel);
                 if (MetaDataUtilityCls.doesFieldExist(targetObject, fieldAPIName)) {
-                    // If field exists, just log it and return
+                    MetaDataUtilityCls.grantFieldAccessWithDml(targetObject, fieldAPIName);
                     System.debug(LoggingLevel.INFO, 'Field ' + fieldAPIName + ' already exists on ' + targetObject + ', skipping creation');
                     return;
                 }
                 
-                // Only call createLookupField if the field doesn't exist
                 Map<String, String> result = MetaDataUtilityCls.createLookupField(targetObject, fieldLabel, referenceTo, listenerId);
                 
-                // Check if creation was successful
                 if (result != null && result.get('success') != 'true') {
                     errorMessage = 'Failed to create lookup field ' + fieldAPIName + ' on ' + targetObject + 
                                  ': ' + (result.get('message') != null && result.get('message') != ''
@@ -507,6 +504,15 @@ public with sharing class ListenerMasterConfigurationController {
                     System.debug(LoggingLevel.ERROR, errorMessage);
                 } else {
                     System.debug(LoggingLevel.INFO, 'Successfully created lookup field ' + fieldAPIName + ' on ' + targetObject);
+
+                    // Chain a separate Queueable to grant FLS. The Tooling API field
+                    // creation completes via HTTP but the field metadata hasn't propagated
+                    // to the FieldPermissions subsystem yet in this transaction. Running
+                    // the FLS grant in a chained Queueable gives the platform time to
+                    // commit the field before the FieldPermissions DML runs.
+                    if (!Test.isRunningTest()) {
+                        System.enqueueJob(new FLSGrantJob(targetObject, fieldAPIName));
+                    }
                 }
             } catch (Exception e) {
                 errorMessage = 'Exception creating lookup field ' + fieldLabel + ' on ' + targetObject + 
@@ -515,7 +521,6 @@ public with sharing class ListenerMasterConfigurationController {
                 System.debug(LoggingLevel.ERROR, 'Stack trace: ' + e.getStackTraceString());
             }
             
-            // Update the Listener record with any errors
             if (errorMessage != null && listenerId != null) {
                 try {
                     if (Schema.sObjectType.Listener__c.fields.Error_Message__c.isUpdateable()) {
@@ -530,6 +535,21 @@ public with sharing class ListenerMasterConfigurationController {
                     System.debug(LoggingLevel.ERROR, 'Failed to update Listener record with error message: ' + updateEx.getMessage());
                 }
             }
+        }
+    }
+
+    public inherited sharing class FLSGrantJob implements Queueable {
+        String objectApiName;
+        String fieldApiName;
+        public FLSGrantJob(String obj, String fld) {
+            objectApiName = obj;
+            fieldApiName = fld;
+        }
+        public void execute(QueueableContext qc) {
+            Boolean granted = MetaDataUtilityCls.grantFieldAccessWithDml(objectApiName, fieldApiName);
+            System.debug(LoggingLevel.INFO,
+                'FLSGrantJob: grantFieldAccessWithDml(' + objectApiName + ', ' + fieldApiName +
+                ') returned ' + granted);
         }
     }
 }

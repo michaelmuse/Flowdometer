@@ -9,6 +9,7 @@ import getSObjectFields from "@salesforce/apex/ListenerMasterConfigurationContro
 import checkFieldHistoryStatus from "@salesforce/apex/ListenerMasterConfigurationController.checkFieldHistoryStatus";
 import createListenerRecord from "@salesforce/apex/ListenerMasterConfigurationController.createListenerRecord";
 import checkConnectionStatus from "@salesforce/apex/FlowdometerAuthService.checkConnectionStatus";
+import reconcilePermissions from "@salesforce/apex/FlowdometerPermissionReconciler.reconcile";
 
 export default class ListenerMasterConfiguration extends NavigationMixin(
     LightningElement
@@ -388,7 +389,29 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
     async connectedCallback() {
         // Reset form fields when component is loaded
         this.resetForm();
+        // Setup-Gate Reconciler (Build Plan A.0): runs on every entry to the
+        // listener screen - connected or not - so the unmanaged permission set,
+        // the permission set group, and the PSG-to-admin assignment self-heal
+        // (the auth component only mounts pre-connection, so it can't be the
+        // sole trigger). Fire-and-forget: never block the form on it.
+        this.reconcilePermissionInfrastructure();
         await this.checkAuthStatus();
+    }
+
+    async reconcilePermissionInfrastructure() {
+        try {
+            const result = await reconcilePermissions();
+            if (result && !result.success && result.adminActionRequired) {
+                this.dispatchEvent(new ShowToastEvent({
+                    title: "Setup Action Needed",
+                    message: result.message,
+                    variant: "warning"
+                }));
+            }
+        } catch (error) {
+            // Best-effort: never block listener setup on reconcile failure.
+            console.error("Flowdometer permission reconcile failed", error);
+        }
     }
 
     async checkAuthStatus() {

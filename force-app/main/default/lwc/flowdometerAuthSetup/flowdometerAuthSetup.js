@@ -14,6 +14,9 @@ export default class FlowdometerAuthSetup extends LightningElement {
     }
 
     connectedCallback() {
+        // Permission reconciliation (Build Plan A.0) is triggered by the parent
+        // listenerMasterConfiguration on every setup entry, so it is intentionally
+        // NOT called here (this component mounts only while disconnected).
         this.checkConnection(true);
     }
 

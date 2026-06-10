@@ -33,18 +33,15 @@ private class MetadataServiceTest {
    * Dummy Metadata API web service mock class (see MetadataCreateJobTest.cls for a better example)
    **/
   @IsTest
-  static void testGrantFieldEditAccessWithMockResponse() {
+  static void coverGeneratedCodeMetadataPort() {
     // Null Web Service mock implementation
     System.Test.setMock(WebServiceMock.class, new MetadataServiceMock());
     // Only required to workaround a current code coverage bug in the platform
     MetadataService metaDataService = new MetadataService();
-    // Invoke operations
+    // Invoke operations (the FLS callout path via MetaDataUtilityCls was retired,
+    // Build Plan A.2; this method now only covers the generated MetadataPort).
     Test.startTest();
     MetadataService.MetadataPort metaDataPort = new MetadataService.MetadataPort();
-    MetaDataUtilityCls.grantFieldEditAccess(
-      'Test_Object__c',
-      'Test_Field__c'
-    );
     Test.stopTest();
   }
 

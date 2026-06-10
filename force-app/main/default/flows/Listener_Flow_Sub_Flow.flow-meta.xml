@@ -35,6 +35,12 @@
                 <elementReference>varFlowTrackerRecord.Id</elementReference>
             </value>
         </inputParameters>
+        <inputParameters>
+            <name>varTrackedFieldLabel</name>
+            <value>
+                <elementReference>varCurrentFieldTracked</elementReference>
+            </value>
+        </inputParameters>
         <nameSegment>ListenerUpdateFlowController</nameSegment>
         <outputParameters>
             <assignToReference>hasRecords</assignToReference>
@@ -1003,7 +1009,7 @@
             <targetReference>Find_ALL_Flows</targetReference>
         </connector>
     </start>
-    <status>Draft</status>
+    <status>Active</status>
     <variables>
         <name>checkSuccess</name>
         <dataType>Boolean</dataType>
