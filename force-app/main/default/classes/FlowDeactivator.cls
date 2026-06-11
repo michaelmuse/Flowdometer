@@ -7,10 +7,6 @@ public with sharing class FlowDeactivator implements Queueable, Database.AllowsC
     }
 
     public void execute(QueueableContext qc){
-        if(!FeatureFlagUtil.isEnabled(FeatureFlagUtil.FEATURE_UNINSTALL_HELPER)){
-            return;
-        }
-
         FlowdometerTokenService.TokenResult tokenResult = FlowdometerTokenService.getToken();
         if(!tokenResult.success){
             System.debug(LoggingLevel.ERROR, 'FlowDeactivator: token acquisition failed – ' + tokenResult.errorMessage);
@@ -22,7 +18,7 @@ public with sharing class FlowDeactivator implements Queueable, Database.AllowsC
 
         for(String apiName : apiNames){
             try{
-                String soql = 'SELECT ActiveVersionId FROM FlowDefinition WHERE DeveloperName = \'' + apiName + '\'';
+                String soql = 'SELECT Id, ActiveVersionId FROM FlowDefinition WHERE DeveloperName = \'' + apiName + '\'';
                 HttpRequest q = new HttpRequest();
                 q.setEndpoint(toolingBase + '/query?q=' + EncodingUtil.urlEncode(soql,'UTF-8'));
                 q.setMethod('GET');
@@ -40,17 +36,25 @@ public with sharing class FlowDeactivator implements Queueable, Database.AllowsC
                     continue;
                 }
 
-                String flowId = (String) ((Map<String,Object>) recs[0]).get('ActiveVersionId');
-                if(flowId == null){
-                    continue;
+                Map<String,Object> flowDef = (Map<String,Object>) recs[0];
+                if(flowDef.get('ActiveVersionId') == null){
+                    continue; // already inactive
                 }
+                String flowDefinitionId = (String) flowDef.get('Id');
 
+                // Deactivate by PATCHing the FlowDefinition's Metadata with
+                // activeVersionNumber = 0 - the inverse of the activation
+                // mechanism, confirmed working via Tooling. PATCHing the Flow
+                // version record with {"Status":"Obsolete"} is REJECTED by the
+                // platform (HTTP 400 REQUIRED_FIELD_MISSING: "You must provide
+                // a valid Metadata field for InteractionDefinitionVersion" -
+                // confirmed 2026-06-10).
                 HttpRequest req = new HttpRequest();
-                req.setEndpoint(toolingBase + '/sobjects/Flow/' + flowId);
+                req.setEndpoint(toolingBase + '/sobjects/FlowDefinition/' + flowDefinitionId);
                 req.setMethod('PATCH');
                 req.setHeader('Content-Type', 'application/json');
                 req.setHeader('Authorization', 'Bearer ' + tokenResult.accessToken);
-                req.setBody('{"Status":"Obsolete"}');
+                req.setBody('{"Metadata":{"activeVersionNumber":0}}');
 
                 HttpResponse resp = new Http().send(req);
                 if(resp.getStatusCode() >= 300){

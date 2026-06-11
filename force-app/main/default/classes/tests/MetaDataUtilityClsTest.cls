@@ -267,4 +267,71 @@ public class MetaDataUtilityClsTest {
 
         Test.stopTest();
     }
+
+    /**
+     * doesFieldExist must recognize the package's own shipped fields by their
+     * UNQUALIFIED name: in an installed org the field is namespace-qualified
+     * (Flowdometer__Opportunity__c), and missing it made the product create an
+     * unmanaged duplicate of its own lookup (confirmed 2026-06-10). The
+     * unqualified name must resolve in both the packaging org (where the field
+     * is literally Opportunity__c) and namespaced contexts (via the qualified
+     * candidate).
+     */
+    @IsTest
+    static void testDoesFieldExistResolvesNamespacedShippedField() {
+        String flowApi = Flow__c.SObjectType.getDescribe().getName();
+
+        System.assert(
+            MetaDataUtilityCls.doesFieldExist(flowApi, 'Opportunity__c'),
+            'Shipped Flow__c Opportunity lookup must be found by its unqualified name'
+        );
+        System.assert(
+            MetaDataUtilityCls.doesFieldExist(flowApi, 'Goal__c'),
+            'Shipped Flow__c.Goal__c must be found by its unqualified name'
+        );
+        System.assert(
+            !MetaDataUtilityCls.doesFieldExist(flowApi, 'No_Such_Field__c'),
+            'A field that exists in neither form must not be found'
+        );
+    }
+
+    /**
+     * Relationship names for dynamic lookups must be unique on the referenced
+     * object (Flow__c for all forward lookups), so they are qualified with the
+     * target object. Same-labeled tracked fields on different objects must
+     * yield DIFFERENT relationship names (the same-label collision bug).
+     */
+    @IsTest
+    static void testBuildRelationshipName() {
+        Test.startTest();
+
+        String onCase = MetaDataUtilityCls.buildRelationshipName('Case', 'Status_Flow__c');
+        String onCustom = MetaDataUtilityCls.buildRelationshipName('QA_Tracked__c', 'Status_Flow__c');
+
+        System.assertEquals('Case_Status_Flow', onCase,
+            'Relationship name should be object-qualified with the __c suffix stripped');
+        System.assertEquals('QA_Tracked_Status_Flow', onCustom,
+            'Custom-object __c suffix should be stripped and underscores collapsed');
+        System.assertNotEquals(onCase, onCustom,
+            'Same-labeled fields on different objects must not collide');
+
+        // Namespaced object (package build org): no consecutive underscores
+        String onNamespaced = MetaDataUtilityCls.buildRelationshipName(
+            'Flowdometer__Flow__c', 'QA_Tracked__c');
+        System.assertEquals('Flowdometer_Flow_QA_Tracked', onNamespaced,
+            'Namespace separator should collapse to a single underscore');
+
+        // Length cap: never exceed 40 chars, never end with an underscore
+        String longName = MetaDataUtilityCls.buildRelationshipName(
+            'A_Very_Long_Custom_Object_Name_Here__c',
+            'An_Equally_Long_Field_Name_Flow__c');
+        System.assert(longName.length() <= 40,
+            'Relationship name must be capped at 40 chars, got: ' + longName);
+        System.assert(!longName.endsWith('_'),
+            'Relationship name must not end with an underscore: ' + longName);
+        System.assert(!longName.contains('__'),
+            'Relationship name must not contain consecutive underscores: ' + longName);
+
+        Test.stopTest();
+    }
 }

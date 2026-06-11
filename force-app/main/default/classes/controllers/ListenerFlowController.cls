@@ -299,22 +299,31 @@ global with sharing class ListenerFlowController {
         }
     }
     
-    // Called by: getLatestHistoryValues
-    // Gets the appropriate name field for different object types
+    // Gets the appropriate name field for the tracked object. Describe-driven
+    // (isNameField) so number-named standard objects resolve correctly:
+    // Case -> CaseNumber, Contract -> ContractNumber, Order -> OrderNumber,
+    // Solution -> SolutionNumber, everything else (incl. custom) -> Name.
+    // Hardcoding 'Name' broke processing for any object without a Name field
+    // (Contract listeners failed every run - confirmed 2026-06-10).
+    private static Map<String, String> nameFieldCache = new Map<String, String>();
     @TestVisible
     private static String getParentName(String objectName) {
-        Map<String, String> objectToNameFieldMap = new Map<String, String>{
-            'Case' => 'CaseNumber',
-            'Solution' => 'SolutionNumber',
-            'Contract' => 'ContractNumber'
-        };
-        
-        if (objectToNameFieldMap.containsKey(objectName)) {
-            return objectToNameFieldMap.get(objectName);
+        if (nameFieldCache.containsKey(objectName)) {
+            return nameFieldCache.get(objectName);
         }
-        
-        // Return 'Name' by default, because it's used by majority of standard objects and all custom objects
-        return 'Name';
+        String result = 'Name';
+        Schema.SObjectType objType = Schema.getGlobalDescribe().get(objectName);
+        if (objType != null) {
+            for (Schema.SObjectField fld : objType.getDescribe().fields.getMap().values()) {
+                Schema.DescribeFieldResult dfr = fld.getDescribe();
+                if (dfr.isNameField()) {
+                    result = dfr.getName();
+                    break;
+                }
+            }
+        }
+        nameFieldCache.put(objectName, result);
+        return result;
     }
     
     // Called by: getLatestHistoryValues
@@ -470,12 +479,9 @@ global with sharing class ListenerFlowController {
                 }
             }
         } else {
-            // Ensure we only select valid field names that cannot be manipulated
-            if (listenerConfig.Object_Name__c == 'Case') {
-                selectFields.add('CaseNumber');
-            } else {
-                selectFields.add('Name');
-            }
+            // Ensure we only select valid field names that cannot be manipulated.
+            // Describe-driven: objects like Contract/Order have no Name field.
+            selectFields.add(getParentName(listenerConfig.Object_Name__c));
             
             // Validate field name to track before adding it to the query
             if (String.isNotBlank(trackedFieldName)) {
@@ -1037,7 +1043,9 @@ global with sharing class ListenerFlowController {
 
                         Map<Id, SObject> sObjectMap = new Map<Id, SObject>();
                         if (!parentIds.isEmpty()) {
-                            String parentNameField = (listenerConfig.Object_Name__c == 'Case') ? 'CaseNumber' : 'Name';
+                            // Describe-driven: objects like Contract/Order have no
+                            // Name field; querying 'Name' on them fails every run.
+                            String parentNameField = getParentName(listenerConfig.Object_Name__c);
                             // Dynamically build the query to include Type__c field if specified and valid
                             List<String> selectFields = new List<String>{ 'Id', parentNameField };
                             
@@ -1216,7 +1224,7 @@ global with sharing class ListenerFlowController {
                 listenerFlow.varCurrentFieldTracked = fieldLabel;
                 listenerFlow.varCurrentFieldValue = (String) historyRecord.get('NewValue');
                 listenerFlow.varCurrentObjectID = parentId;
-                String nameField = (listenerConfig.Object_Name__c == 'Case') ? 'CaseNumber' : 'Name';
+                String nameField = getParentName(listenerConfig.Object_Name__c);
                 // Safely get the parent record name - handle case where parent was deleted
                 if (sObjectMap.containsKey(parentId) && sObjectMap.get(parentId) != null) {
                     SObject parentRecord = sObjectMap.get(parentId);

@@ -77,6 +77,45 @@ private class FlowdometerPermissionReconcilerTest {
         System.assertEquals(1, psg.size(), 'No duplicate PSG on re-entry');
     }
 
+    /**
+     * Single-visit safety (2026-06-10): when the first reconcile pass cannot
+     * complete the PSG assignment (a freshly created PSG is recalculating and
+     * rejects assignments - the deterministic state in test context), a
+     * delayed unattended retry must be scheduled, because a one-visit admin
+     * never re-enters the gate to self-heal. enqueueJob is skipped in tests;
+     * the psgAssignmentRetryScheduled seam records the decision.
+     */
+    @IsTest
+    static void reconcileSchedulesAssignmentRetryWhenPsgRecalculating() {
+        FlowdometerPermissionReconciler.psgAssignmentRetryScheduled = false;
+        FlowdometerPermissionReconciler.ReconcileResult result;
+
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            Test.startTest();
+            result = FlowdometerPermissionReconciler.reconcile();
+            Test.stopTest();
+        }
+
+        System.assertEquals(true, result.success,
+            'Reconcile should succeed overall: ' + result.message);
+
+        List<PermissionSetAssignment> assignments = [
+            SELECT Id FROM PermissionSetAssignment
+            WHERE PermissionSetGroup.DeveloperName = :FlowdometerPermissionReconciler.PSG_DEVNAME
+        ];
+        if (assignments.isEmpty()) {
+            // Assignment deferred (PSG recalculating) - the retry MUST be queued.
+            System.assertEquals(true,
+                FlowdometerPermissionReconciler.psgAssignmentRetryScheduled,
+                'An incomplete first-pass assignment must schedule a delayed retry');
+        } else {
+            // Assignment landed first pass - no retry needed.
+            System.assertEquals(false,
+                FlowdometerPermissionReconciler.psgAssignmentRetryScheduled,
+                'A complete assignment must not schedule a retry');
+        }
+    }
+
     @IsTest
     static void reconcileRestrictedUserHandledGracefully() {
         // Whether a restricted user can perform setup-object DML is

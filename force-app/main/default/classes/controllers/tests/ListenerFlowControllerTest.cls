@@ -375,10 +375,13 @@ public class ListenerFlowControllerTest {
             ListenerFlowController.getParentName('Case'),
             'Should return CaseNumber for Case'
         );
+        // Note: Solution's NAME field is SolutionName (SolutionNumber is a
+        // separate auto-number field). The old hardcoded map said
+        // SolutionNumber - the describe-driven resolution corrects it.
         System.assertEquals(
-            'SolutionNumber',
+            'SolutionName',
             ListenerFlowController.getParentName('Solution'),
-            'Should return SolutionNumber for Solution'
+            'Should return SolutionName for Solution'
         );
         System.assertEquals(
             'ContractNumber',
@@ -399,6 +402,29 @@ public class ListenerFlowControllerTest {
             ListenerFlowController.getParentName('CustomObject__c'),
             'Should return Name for custom objects'
         );
+
+        // Order is number-named too - the describe-driven resolution must catch
+        // it without a hardcoded map entry
+        System.assertEquals(
+            'OrderNumber',
+            ListenerFlowController.getParentName('Order'),
+            'Should return OrderNumber for Order'
+        );
+
+        // Regression (2026-06-10): the resolved name field must be QUERYABLE on
+        // the object. Hardcoding 'Name' made every Contract parent-record query
+        // throw (Contract has no Name field), failing all Contract listener runs.
+        for (String objName : new List<String>{ 'Contract', 'Order', 'Case', 'Opportunity' }) {
+            String nameField = ListenerFlowController.getParentName(objName);
+            String probe = 'SELECT Id, ' + nameField + ' FROM ' + objName + ' LIMIT 1';
+            try {
+                Database.query(probe);
+            } catch (System.QueryException qe) {
+                System.assert(false,
+                    'Resolved name field ' + nameField + ' must be queryable on ' +
+                    objName + ' but query threw: ' + qe.getMessage());
+            }
+        }
     }
 
     @IsTest

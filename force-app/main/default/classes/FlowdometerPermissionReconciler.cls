@@ -42,6 +42,17 @@ public with sharing class FlowdometerPermissionReconciler {
     @TestVisible private static final String PSG_LABEL = 'Flowdometer Access';
     @TestVisible private static final String MANAGED_PS_NAME = 'Flowdometer_User';
 
+    // PSG assignment retry knobs. A freshly created/re-componentized PSG is
+    // 'Updating' (async recalculation) and rejects assignments; on a first
+    // setup-gate entry the assignment therefore defers - fatal for an admin
+    // who creates one listener and never revisits the screen (confirmed
+    // 2026-06-10, org flowdometer-qa-28). PSG recalculation can take a few
+    // minutes, so allow more attempts than the FLS-grant retry.
+    @TestVisible private static final Integer PSG_ASSIGN_MAX_ATTEMPTS = 5;
+    private static final Integer PSG_ASSIGN_RETRY_DELAY_MINUTES = 1;
+    // Test seam: enqueueJob is skipped in tests, this records the decision.
+    @TestVisible private static Boolean psgAssignmentRetryScheduled = false;
+
     public class ReconcileResult {
         @AuraEnabled public Boolean success = false;
         @AuraEnabled public Boolean adminActionRequired = false;
@@ -63,10 +74,14 @@ public with sharing class FlowdometerPermissionReconciler {
             // FieldPermissions on a PSG component flips the PSG to 'Updating'
             // (async recalculation), which blocks PSG assignment in the same
             // pass. Assigning first lets the assignment land whenever the PSG
-            // is already 'Updated'; on a first entry (component inserts above
-            // also trigger recalculation) it stays best-effort and lands on
-            // the next entry.
-            assignGroupToAdmins(psgId);
+            // is already 'Updated'. On a first entry (component inserts above
+            // also trigger recalculation) the assignment defers - and a
+            // single-visit admin would never return to heal it - so an
+            // incomplete pass schedules a delayed unattended retry.
+            Boolean allAdminsAssigned = assignGroupToAdmins(psgId);
+            if (!allAdminsAssigned) {
+                scheduleAssignmentRetry(psgId, 1);
+            }
             reconcileFieldPermissions(unmanagedPsId);
 
             result.success = true;
@@ -253,18 +268,21 @@ public with sharing class FlowdometerPermissionReconciler {
      * Assign the PSG to all active administrators. Capability-based detection
      * (PermissionsModifyAllData) avoids hard-coding a profile name, which varies
      * by locale and fails Checkmarx. Best-effort: assignment of a PSG that is
-     * still recalculating may fail and is retried on the next gate entry.
+     * still recalculating fails per-row; the caller schedules a delayed retry
+     * (and any later gate entry also re-attempts).
+     *
+     * @return true when every active admin holds an assignment after this pass.
      */
     @TestVisible
-    private static void assignGroupToAdmins(Id psgId) {
+    private static Boolean assignGroupToAdmins(Id psgId) {
         if (psgId == null) {
-            return;
+            return true;
         }
         Set<Id> adminProfileIds = new Map<Id, Profile>([
             SELECT Id FROM Profile WHERE PermissionsModifyAllData = true
         ]).keySet();
         if (adminProfileIds.isEmpty()) {
-            return;
+            return true;
         }
 
         Set<Id> alreadyAssigned = new Set<Id>();
@@ -286,8 +304,60 @@ public with sharing class FlowdometerPermissionReconciler {
                 ));
             }
         }
-        if (!toAssign.isEmpty()) {
-            Database.insert(toAssign, false);
+        if (toAssign.isEmpty()) {
+            return true;
+        }
+        Boolean allSucceeded = true;
+        for (Database.SaveResult sr : Database.insert(toAssign, false)) {
+            if (!sr.isSuccess()) {
+                allSucceeded = false;
+                System.debug(LoggingLevel.WARN,
+                    'PSG assignment deferred (PSG likely recalculating): ' + sr.getErrors());
+            }
+        }
+        return allSucceeded;
+    }
+
+    /**
+     * Schedule a delayed unattended re-attempt of the PSG assignment.
+     * Idempotent in effect: each retry pass only inserts missing assignments,
+     * and the chain ends as soon as every admin is assigned or attempts are
+     * exhausted (any later setup-gate entry still re-attempts as before).
+     */
+    private static void scheduleAssignmentRetry(Id psgId, Integer attempt) {
+        if (attempt > PSG_ASSIGN_MAX_ATTEMPTS) {
+            return;
+        }
+        psgAssignmentRetryScheduled = true;
+        if (!Test.isRunningTest()) {
+            System.enqueueJob(
+                new PsgAssignmentRetryJob(psgId, attempt),
+                PSG_ASSIGN_RETRY_DELAY_MINUTES
+            );
+        }
+    }
+
+    /**
+     * Delayed retry worker for the PSG assignment (same pattern as the
+     * FLSGrantJob retry). Runs as the user who entered the setup gate, who
+     * already held "Manage Profiles and Permission Sets" for the original
+     * reconcile pass.
+     */
+    public with sharing class PsgAssignmentRetryJob implements Queueable {
+        Id psgId;
+        Integer attempt;
+        public PsgAssignmentRetryJob(Id groupId, Integer attemptNumber) {
+            psgId = groupId;
+            attempt = attemptNumber;
+        }
+        public void execute(QueueableContext qc) {
+            Boolean allAssigned = assignGroupToAdmins(psgId);
+            System.debug(LoggingLevel.INFO,
+                'PsgAssignmentRetryJob: attempt ' + attempt + ' of ' + PSG_ASSIGN_MAX_ATTEMPTS +
+                ', allAssigned=' + allAssigned);
+            if (!allAssigned) {
+                scheduleAssignmentRetry(psgId, attempt + 1);
+            }
         }
     }
 

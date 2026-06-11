@@ -186,7 +186,7 @@
         </scheduledPaths>
         <triggerType>RecordAfterSave</triggerType>
     </start>
-    <status>Draft</status>
+    <status>Active</status>
     <subflows>
         <name>Listener_Config_Main_Flow</name>
         <label>Listener Config Main Flow</label>

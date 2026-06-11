@@ -30,6 +30,27 @@ private class ListenerMasterConfigControllerTest {
         Assert.isTrue(result.containsKey('Name'));
     }
 
+    /**
+     * Long text areas (incl. rich text) carry no old/new values in field
+     * history, so a listener on one can never produce Steps. They must not be
+     * offered in the Create Listener field picklist. Plain short fields stay.
+     */
+    @IsTest
+    static void testGetSObjectFieldsExcludesLongTextAreas() {
+        Map<String, String> result;
+
+        Test.startTest();
+        {
+            result = ListenerMasterConfigurationController.getSObjectFields('Opportunity');
+        }
+        Test.stopTest();
+
+        Assert.isTrue(result.containsKey('StageName'),
+            'Trackable picklist fields must remain available');
+        Assert.isFalse(result.containsKey('Description'),
+            'Long text areas must be hidden: field history stores no values for them');
+    }
+
     @IsTest
     static void testCheckFieldHistoryStatus() {
         String result;
@@ -313,5 +334,43 @@ private class ListenerMasterConfigControllerTest {
             System.assertNotEquals(null, createdListener, 'Listener should exist');
         }
         Test.stopTest();
+    }
+
+    /**
+     * FLSGrantJob retry (2026-06-10): when the grant fails (e.g. the
+     * Tooling-created field hasn't propagated to the FieldPermissions
+     * subsystem yet - Lesson #6 race), the job must schedule a delayed retry
+     * until MAX_GRANT_ATTEMPTS, so FLS lands unattended without requiring a
+     * later setup-screen reconciler pass. enqueueJob itself is skipped in
+     * test context; the retryScheduled seam records the decision.
+     */
+    @IsTest
+    static void testFLSGrantJobSchedulesRetryOnFailedGrant() {
+        // No Flowdometer_Dynamic_FLS permission set exists in the test org,
+        // so the grant deterministically returns false.
+        ListenerMasterConfigurationController.flsGrantRetryScheduled = false;
+
+        Test.startTest();
+        new ListenerMasterConfigurationController.FLSGrantJob('Account', 'No_Such_Field__c')
+            .execute(null);
+        Test.stopTest();
+
+        Assert.isTrue(ListenerMasterConfigurationController.flsGrantRetryScheduled,
+            'A failed grant below the attempt cap must schedule a delayed retry');
+    }
+
+    @IsTest
+    static void testFLSGrantJobStopsRetryingAtAttemptCap() {
+        ListenerMasterConfigurationController.flsGrantRetryScheduled = false;
+
+        Test.startTest();
+        new ListenerMasterConfigurationController.FLSGrantJob(
+            'Account', 'No_Such_Field__c',
+            ListenerMasterConfigurationController.FLS_GRANT_MAX_ATTEMPTS
+        ).execute(null);
+        Test.stopTest();
+
+        Assert.isFalse(ListenerMasterConfigurationController.flsGrantRetryScheduled,
+            'The final attempt must not schedule another retry');
     }
 }

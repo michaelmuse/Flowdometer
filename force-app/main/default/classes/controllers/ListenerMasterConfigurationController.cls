@@ -4,6 +4,12 @@
 public with sharing class ListenerMasterConfigurationController {
     // Constants for email sender name
     private static final String FLOWDOMETER_SUPPORT = 'Flowdometer Support';
+
+    // FLSGrantJob retry knobs (statics must live on the top-level type).
+    @TestVisible private static final Integer FLS_GRANT_MAX_ATTEMPTS = 3;
+    private static final Integer FLS_GRANT_RETRY_DELAY_MINUTES = 1;
+    // Test seam: enqueueJob is skipped in tests, this records the decision.
+    @TestVisible private static Boolean flsGrantRetryScheduled = false;
     
     // New method for lightweight error logging via Platform Events
     private static void logError(String errorType, String errorMessage, String details) {
@@ -84,11 +90,21 @@ public with sharing class ListenerMasterConfigurationController {
             if (fieldsMap != null) {
                 for (Schema.SObjectField field : fieldsMap.values()) {
                     Schema.DescribeFieldResult fieldDescribe = field.getDescribe();
-                    
+
+                    // Exclude long text areas (incl. rich text): Salesforce
+                    // field history stores no old/new values for them, so a
+                    // listener on one can never produce Steps. Don't offer
+                    // fields that can't work. (Plain TextArea <= 255 chars
+                    // does carry history values and stays available.)
+                    Boolean isLongTextArea =
+                        fieldDescribe.getType() == Schema.DisplayType.TEXTAREA &&
+                        fieldDescribe.getLength() > 255;
+
                     // Exclude calculated fields (formulas), auto-number fields, and read-only fields
                     if (!fieldDescribe.isCalculated() && 
                         !fieldDescribe.isAutoNumber() && 
-                        fieldDescribe.isUpdateable()) {
+                        fieldDescribe.isUpdateable() &&
+                        !isLongTextArea) {
                         
                         validFields.put(fieldDescribe.getName(), fieldDescribe.getLabel());
                     }
@@ -539,17 +555,39 @@ public with sharing class ListenerMasterConfigurationController {
     }
 
     public inherited sharing class FLSGrantJob implements Queueable {
+        // A Tooling-created field can take longer than one queueable hop to
+        // propagate to the FieldPermissions subsystem; when that race is lost
+        // the grant fails silently and the field stays FLS-invisible until the
+        // setup-screen reconciler next runs - which a user who creates one
+        // listener and never returns would never trigger. Retry with a delay
+        // so the grant lands unattended. The grant is idempotent, so retrying
+        // is safe.
         String objectApiName;
         String fieldApiName;
+        Integer attempt;
         public FLSGrantJob(String obj, String fld) {
+            this(obj, fld, 1);
+        }
+        @TestVisible
+        private FLSGrantJob(String obj, String fld, Integer attemptNumber) {
             objectApiName = obj;
             fieldApiName = fld;
+            attempt = attemptNumber;
         }
         public void execute(QueueableContext qc) {
             Boolean granted = MetaDataUtilityCls.grantFieldAccessWithDml(objectApiName, fieldApiName);
             System.debug(LoggingLevel.INFO,
                 'FLSGrantJob: grantFieldAccessWithDml(' + objectApiName + ', ' + fieldApiName +
-                ') returned ' + granted);
+                ') returned ' + granted + ' (attempt ' + attempt + ' of ' + FLS_GRANT_MAX_ATTEMPTS + ')');
+            if (!granted && attempt < FLS_GRANT_MAX_ATTEMPTS) {
+                flsGrantRetryScheduled = true;
+                if (!Test.isRunningTest()) {
+                    System.enqueueJob(
+                        new FLSGrantJob(objectApiName, fieldApiName, attempt + 1),
+                        FLS_GRANT_RETRY_DELAY_MINUTES
+                    );
+                }
+            }
         }
     }
 }

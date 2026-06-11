@@ -10,6 +10,9 @@ global with sharing class ListenerUpdateFlowController {
     // Test seam: lets unit tests target a packaged lookup-to-Flow__c field,
     // since the dynamically created fields don't exist in a test org.
     @TestVisible private static String reverseFieldApiNameOverride;
+    // Test seam for the Flow-side direction (dynamic lookup ON Flow__c that
+    // points at the tracked object), same rationale as above.
+    @TestVisible private static String flowSideFieldApiNameOverride;
 
     //This method is called from the flow to update the flow records with the current object id and name
     @InvocableMethod(
@@ -59,16 +62,41 @@ global with sharing class ListenerUpdateFlowController {
                 System.debug('fieldToUpdate - ' + fieldToUpdate);
 
                 if (fieldToUpdate != null) {
-                    // Check field-level security before updating
-                    try {
-                        Schema.SObjectField field = Schema.sObjectType.Flow__c.fields.getMap().get(fieldToUpdate);
-                        if (field != null && field.getDescribe().isUpdateable()) {
-                    listenerFlow.put(fieldToUpdate, req.varCurrentObjectID);
-                        } else {
-                            System.debug(LoggingLevel.WARN, 'Field ' + fieldToUpdate + ' is not updateable');
-                        }
-                    } catch (Exception e) {
-                        System.debug(LoggingLevel.ERROR, 'Error checking field permissions: ' + e.getMessage());
+                    // SYSTEM-CONTEXT bookkeeping write of the package's own
+                    // lookup on its own Flow__c object. Deliberately NO
+                    // isUpdateable()/FLS guard (Build Plan: population is
+                    // FLS-independent — the triggering user may lack FLS on
+                    // the field, e.g. a dynamic lookup granted only via the
+                    // unmanaged Flowdometer_Dynamic_FLS PS, and that must not
+                    // skip the write). Field existence is schema-verified;
+                    // the DML is performed by the calling flow in its
+                    // (system-mode) run context.
+                    Schema.SObjectField field = Schema.sObjectType.Flow__c.fields.getMap().get(fieldToUpdate);
+                    if (field != null) {
+                        listenerFlow.put(fieldToUpdate, req.varCurrentObjectID);
+                    } else {
+                        System.debug(LoggingLevel.WARN, 'Field ' + fieldToUpdate + ' not found on Flow__c');
+                    }
+                } else {
+                    // Dynamic Flow-side lookup (Flow__c -> tracked record).
+                    // lookUpAPINameMap is keyed by field LABEL and the lookup
+                    // key above is the object API NAME, so it only matches
+                    // when the two are equal (standard objects). Dynamically
+                    // created lookups on Flow__c are labeled with the tracked
+                    // object's LABEL ("QA Tracked"), so custom objects never
+                    // match — resolve by describe instead.
+                    String dynamicFieldApi = resolveFlowSideLookupFieldApi(req.varCurrentObjectName);
+                    if (dynamicFieldApi != null) {
+                        // SYSTEM-CONTEXT bookkeeping write of the package's own
+                        // dynamically created field on its own Flow__c object.
+                        // Deliberately NO isUpdateable()/FLS guard: the user
+                        // whose change triggered processing may lack FLS on the
+                        // dynamic field, and that must not block the write.
+                        // Visibility is governed by the unmanaged
+                        // Flowdometer_Dynamic_FLS permission set. The DML is
+                        // performed by the calling flow in its (system-mode)
+                        // run context — same as the packaged-lookup path above.
+                        listenerFlow.put(dynamicFieldApi, req.varCurrentObjectID);
                     }
                 }
 
@@ -259,6 +287,57 @@ global with sharing class ListenerUpdateFlowController {
             }
             for (Schema.SObjectType refTo : dfr.getReferenceTo()) {
                 if (refTo == Flow__c.SObjectType) {
+                    return dfr.getName();
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Resolve the dynamic lookup field ON Flow__c that points at the tracked
+     * object (the Flow-side direction). LookupFieldCreator created it with
+     * label = the tracked object's LABEL (e.g. "QA Tracked" ->
+     * QA_Tracked__c on Flow__c). Two candidates are checked for the same
+     * namespace reason as resolveReverseLookupFieldApi. The referenceTo check
+     * guarantees we never write to a same-named field that points at a
+     * different object (e.g. a shipped or subscriber field that happens to
+     * collide on name). Returns the schema-confirmed API name, or null if the
+     * field doesn't exist (not created/propagated yet — graceful no-op) or is
+     * not a lookup to the tracked object.
+     */
+    @TestVisible
+    private static String resolveFlowSideLookupFieldApi(String objectName) {
+        if (String.isBlank(objectName)) {
+            return null;
+        }
+        Schema.SObjectType trackedType = Schema.getGlobalDescribe().get(objectName);
+        if (trackedType == null) {
+            return null;
+        }
+        String baseApi = (flowSideFieldApiNameOverride != null)
+            ? flowSideFieldApiNameOverride
+            : MetaDataUtilityCls.convertLabeltoAPIName(trackedType.getDescribe().getLabel());
+
+        List<String> candidates = new List<String>{ baseApi };
+        String ns = resolveNamespace();
+        if (String.isNotBlank(ns)) {
+            candidates.add(ns + '__' + baseApi);
+        }
+
+        Map<String, Schema.SObjectField> flowFieldMap =
+            Flow__c.SObjectType.getDescribe().fields.getMap();
+        for (String candidate : candidates) {
+            Schema.SObjectField fld = flowFieldMap.get(candidate.toLowerCase());
+            if (fld == null) {
+                continue;
+            }
+            Schema.DescribeFieldResult dfr = fld.getDescribe();
+            if (dfr.getType() != Schema.DisplayType.REFERENCE) {
+                continue;
+            }
+            for (Schema.SObjectType refTo : dfr.getReferenceTo()) {
+                if (refTo == trackedType) {
                     return dfr.getName();
                 }
             }

@@ -369,11 +369,20 @@ public inherited sharing class MetaDataUtilityCls {
 
             // In managed packages, fields created via Metadata API automatically get the namespace prefix (e.g., Flowdometer__Name_Flow__c)
             // The fieldMap contains field names exactly as they exist in the schema, including namespace prefixes
-            // We should check for the field name as-is (with namespace prefix if it's a Flowdometer field)
-            // Perform a case-insensitive comparison so we don't miss matches that differ only by letter-case
+            // Perform a case-insensitive comparison so we don't miss matches that differ only by letter-case.
+            // Two candidates: the name as supplied AND the namespace-qualified
+            // form. Packaged fields carry the namespace in installed orgs
+            // (Flowdometer__Opportunity__c), so checking only the unqualified
+            // name missed them and the product created unmanaged DUPLICATES of
+            // its own shipped lookups on Flow__c (confirmed 2026-06-10). The
+            // qualified candidate is harmless for subscriber objects - no
+            // subscriber field can carry this package's namespace.
             String needle = fieldName.toLowerCase();
+            String qualifiedNeedle = qualifyCustomApiNameForSetup(fieldName).toLowerCase();
             for(String existingName : fieldMap.keySet()) {
-                if(existingName != null && existingName.toLowerCase() == needle) {
+                if(existingName != null &&
+                   (existingName.toLowerCase() == needle ||
+                    existingName.toLowerCase() == qualifiedNeedle)) {
                     return true;
                 }
             }
@@ -386,6 +395,38 @@ public inherited sharing class MetaDataUtilityCls {
             // Assume field doesn't exist if we encounter an error
             return false;
         }
+    }
+
+    /**
+     * Build an org-unique child relationship name for a dynamically created
+     * lookup: "<objectBase>_<fieldBase>", sanitized to Salesforce developer
+     * name rules (no consecutive/leading/trailing underscores, max 40 chars).
+     * Examples: (Case, Status_Flow__c) -> Case_Status_Flow;
+     * (QA_Tracked__c, Status_Flow__c) -> QA_Tracked_Status_Flow.
+     */
+    @TestVisible
+    private static String buildRelationshipName(String targetObject, String fieldApiName) {
+        String objectBase = stripApiSuffix(targetObject);
+        String fieldBase = stripApiSuffix(fieldApiName);
+        String combined = (objectBase + '_' + fieldBase)
+            .replaceAll('_+', '_')
+            .removeStart('_')
+            .removeEnd('_');
+        if (combined.length() > 40) {
+            combined = combined.substring(0, 40).removeEnd('_');
+        }
+        return combined;
+    }
+
+    private static String stripApiSuffix(String apiName) {
+        if (String.isBlank(apiName)) {
+            return '';
+        }
+        String base = apiName;
+        if (base.endsWithIgnoreCase('__c')) {
+            base = base.substring(0, base.length() - 3);
+        }
+        return base;
     }
 
     // Sanitize the field name to adhere to Salesforce's naming conventions
@@ -723,7 +764,17 @@ public inherited sharing class MetaDataUtilityCls {
                     'type' => 'Lookup',
                     'referenceTo' => referenceTo,
                     'relationshipLabel' => fieldLabel,
-                    'relationshipName' => fieldApiName.replace('__c', ''),
+                    // Child relationship names live on the REFERENCED object
+                    // and must be unique there. All forward lookups reference
+                    // Flow__c, so deriving the relationship name from the
+                    // field name alone collides when two listeners track
+                    // same-labeled fields on different objects (e.g.
+                    // Case.Status_Flow__c + QA_Tracked__c.Status_Flow__c both
+                    // -> "Status_Flow" on Flow__c -> DUPLICATE_DEVELOPER_NAME).
+                    // Qualify with the target object to de-collide. The FIELD
+                    // API name is unchanged, so reverse-population resolution
+                    // and existing orgs are unaffected.
+                    'relationshipName' => buildRelationshipName(targetObject, fieldApiName),
                     'deleteConstraint' => 'SetNull'
                 }
             };
