@@ -789,14 +789,17 @@ global with sharing class ListenerFlowController {
                 '\nfieldName: ' + fieldName + 
                 '\ntargetRecordIds size: ' + (targetRecordIds != null ? targetRecordIds.size() : 0));
             
-            // Add more detailed error message and stack trace
-            String detailedError = 'Error querying history records: ' + e.getMessage() + 
-                                   '\nStack trace: ' + e.getStackTraceString() +
-                                   '\nQuery: ' + queryStr;
-            
-            // Log error but continue with empty results
+            // Full diagnostics (stack trace + query) go to the debug log only —
+            // never to the persisted, user-readable Error_Message__c field, to
+            // avoid disclosing internal implementation details / query structure.
+            System.debug(LoggingLevel.ERROR, 'History query failure diagnostics: '
+                + e.getMessage() + '\nStack trace: ' + e.getStackTraceString()
+                + '\nQuery: ' + queryStr);
+
+            // Persist only a user-safe summary; details are in the debug log above.
             if (Schema.sObjectType.Listener__c.fields.Error_Message__c.isUpdateable()) {
-                listenerConfig.Error_Message__c = detailedError;
+                listenerConfig.Error_Message__c =
+                    'Error querying history records. Please contact your administrator or check debug logs.';
             }
             
             // Update retry count for this listener if we have an ID

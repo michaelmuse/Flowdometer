@@ -12,7 +12,7 @@
   "name": "Flowdometer",
   "namespace": "",
   "sfdcLoginUrl": "https://login.salesforce.com",
-  "sourceApiVersion": "62.0",
+  "sourceApiVersion": "65.0",
   "packageAliases": {
     "Flowdometer": "0HoRo0000000LsTKAU",
     "Flowdometer@3.0.0-1": "04tRo000000hFrpIAE",

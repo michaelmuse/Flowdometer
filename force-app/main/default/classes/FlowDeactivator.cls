@@ -1,5 +1,5 @@
 public with sharing class FlowDeactivator implements Queueable, Database.AllowsCallouts {
-    private static final String API_VERSION = 'v62.0';
+    private static final String API_VERSION = 'v65.0';
 
     private Set<String> apiNames;
     public FlowDeactivator(Set<String> apiNames){

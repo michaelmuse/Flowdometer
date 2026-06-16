@@ -17,7 +17,7 @@
  */
 public with sharing class FlowdometerAuthService {
 
-    private static final String API_VERSION = 'v62.0';
+    private static final String API_VERSION = 'v65.0';
 
     public class ConnectionStatus {
         @AuraEnabled public Boolean connected   { get; set; }

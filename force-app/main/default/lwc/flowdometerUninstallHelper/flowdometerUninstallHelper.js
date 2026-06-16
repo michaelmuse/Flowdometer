@@ -1,6 +1,7 @@
 import { LightningElement } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import prepareForUninstall from '@salesforce/apex/FlowdometerUninstallHelper.prepareForUninstall';
+import canPrepareForUninstall from '@salesforce/apex/FlowdometerUninstallHelper.canPrepareForUninstall';
 
 export default class FlowdometerUninstallHelper extends LightningElement {
     isLoading = false;
@@ -8,9 +9,32 @@ export default class FlowdometerUninstallHelper extends LightningElement {
     success = false;
     resultMessage = '';
     manualEraseRequired = false;
+    isAuthorized = true;
+    authChecked = false;
+
+    // Read-only check: disable the action and explain the requirement up front
+    // for users who lack the administrator (Customize Application) permission.
+    // No state change here, so it is safe to run on load.
+    connectedCallback() {
+        this.checkAuthorization();
+    }
+
+    async checkAuthorization() {
+        try {
+            this.isAuthorized = await canPrepareForUninstall();
+        } catch (error) {
+            this.isAuthorized = false;
+        } finally {
+            this.authChecked = true;
+        }
+    }
+
+    get showNotAuthorized() {
+        return this.authChecked && !this.isAuthorized;
+    }
 
     get buttonDisabled() {
-        return this.isLoading || (this.showResult && this.success);
+        return this.isLoading || !this.isAuthorized || (this.showResult && this.success);
     }
 
     get resultClass() {

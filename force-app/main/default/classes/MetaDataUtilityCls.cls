@@ -437,7 +437,7 @@ public inherited sharing class MetaDataUtilityCls {
         return sanitized;
     }
 
-    private static final String TOOLING_API_VERSION = 'v62.0';
+    private static final String TOOLING_API_VERSION = 'v65.0';
 
     /**
      * Enable field history tracking for standard objects using Tooling API REST calls.

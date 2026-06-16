@@ -114,9 +114,18 @@ global with sharing class FlowdometerUninstallHelper {
 
     // ── Legacy flow-only deactivation (REST + backward compatibility) ─
 
-    @HttpGet
+    // POST (not GET): deactivating flows is a state-changing operation, so it
+    // must not be reachable via an idempotent/CSRF-prone GET. Authorization is
+    // enforced (Customize Application) before any state change.
+    @HttpPost
     global static UninstallResponse deactivateFlowsREST() {
         UninstallResponse resp = new UninstallResponse();
+        if (!hasCustomizeApplication()) {
+            resp.success = false;
+            resp.message = 'Only administrators with the Customize Application permission '
+                + 'can deactivate Flowdometer flows.';
+            return resp;
+        }
         try {
             resp.deactivatedCount = deactivateFlows();
             resp.success = true;
@@ -132,8 +141,23 @@ global with sharing class FlowdometerUninstallHelper {
 
     @AuraEnabled
     public static Integer deactivateFlows() {
+        if (!hasCustomizeApplication()) {
+            throw buildAuraException(
+                'Only administrators with the Customize Application permission can deactivate Flowdometer flows.');
+        }
         System.enqueueJob(new FlowDeactivator(FLOWDOMETER_FLOWS));
         return FLOWDOMETER_FLOWS.size();
+    }
+
+    /**
+     * Read-only authorization check for the Uninstall LWC. Lets the UI disable
+     * the action and explain the requirement before the user clicks, mirroring
+     * the server-side Customize Application gate on prepareForUninstall().
+     * Cacheable + side-effect-free, so it is safe to call from connectedCallback.
+     */
+    @AuraEnabled(cacheable=true)
+    public static Boolean canPrepareForUninstall() {
+        return hasCustomizeApplication();
     }
 
     // ── Discovery ───────────────────────────────────────────────────
@@ -172,7 +196,7 @@ global with sharing class FlowdometerUninstallHelper {
     @TestVisible
     private static Integer deleteMetadataItems(String type_x, List<String> fullNames, String sessionId) {
         Integer removed = 0;
-        String endpoint = URL.getOrgDomainUrl().toExternalForm() + '/services/Soap/m/62.0';
+        String endpoint = URL.getOrgDomainUrl().toExternalForm() + '/services/Soap/m/65.0';
         for (Integer i = 0; i < fullNames.size(); i += 10) {
             List<String> chunk = new List<String>();
             for (Integer j = i; j < Math.min(i + 10, fullNames.size()); j++) {

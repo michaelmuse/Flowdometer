@@ -140,4 +140,45 @@ private class FlowdometerUninstallHelperTest {
         System.assertEquals(true, rest.success, 'REST entry point succeeds');
         System.assertEquals(9, rest.deactivatedCount, 'REST reports flow count');
     }
+
+    private static User newStandardUser() {
+        Profile std = [SELECT Id FROM Profile WHERE Name = 'Standard User' LIMIT 1];
+        User u = new User(
+            Alias = 'stdu',
+            Email = 'flowdometer.deact.test@example.com.invalid',
+            EmailEncodingKey = 'UTF-8',
+            LastName = 'NonAdmin',
+            LanguageLocaleKey = 'en_US',
+            LocaleSidKey = 'en_US',
+            ProfileId = std.Id,
+            TimeZoneSidKey = 'America/New_York',
+            UserName = 'flowdometer.deact.' + System.now().getTime() + '@example.com.invalid');
+        insert u;
+        return u;
+    }
+
+    @isTest
+    static void deactivateFlows_nonAdminRejected() {
+        User u = newStandardUser();
+        Boolean threw = false;
+        System.runAs(u) {
+            try {
+                FlowdometerUninstallHelper.deactivateFlows();
+            } catch (AuraHandledException e) {
+                threw = true;
+            }
+        }
+        System.assertEquals(true, threw, 'Non-admin must not be able to deactivate flows');
+    }
+
+    @isTest
+    static void deactivateFlowsRest_nonAdminReturnsFailure() {
+        User u = newStandardUser();
+        FlowdometerUninstallHelper.UninstallResponse rest;
+        System.runAs(u) {
+            rest = FlowdometerUninstallHelper.deactivateFlowsREST();
+        }
+        System.assertEquals(false, rest.success, 'Non-admin REST call must be rejected');
+        System.assertEquals(0, rest.deactivatedCount, 'No flows queued for a non-admin caller');
+    }
 }

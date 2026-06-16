@@ -2,54 +2,19 @@
  * @description Controller for listenerMasterConfiguration component
  */
 public with sharing class ListenerMasterConfigurationController {
-    // Constants for email sender name
-    private static final String FLOWDOMETER_SUPPORT = 'Flowdometer Support';
-
     // FLSGrantJob retry knobs (statics must live on the top-level type).
     @TestVisible private static final Integer FLS_GRANT_MAX_ATTEMPTS = 3;
     private static final Integer FLS_GRANT_RETRY_DELAY_MINUTES = 1;
     // Test seam: enqueueJob is skipped in tests, this records the decision.
     @TestVisible private static Boolean flsGrantRetryScheduled = false;
     
-    // New method for lightweight error logging via Platform Events
+    // Lightweight diagnostics to the debug log only. (An earlier design emailed
+    // admins on CRITICAL errors via a placeholder recipient; that default-off,
+    // non-functional path was removed to avoid shipping a hardcoded address and
+    // an unnecessary OrgWideEmailAddress read.)
     private static void logError(String errorType, String errorMessage, String details) {
-        try {
-            // Use standard System.debug for logging that doesn't require custom objects
-            System.debug(LoggingLevel.ERROR, 'Flowdometer Error (' + errorType + '): ' + errorMessage);
-            System.debug(LoggingLevel.ERROR, 'Details: ' + details);
-            
-            // Only send emails if the admin notification feature is enabled
-            Boolean adminNotificationsEnabled = FeatureFlagUtil.isEnabled(FeatureFlagUtil.FEATURE_ADMIN_NOTIFICATIONS);
-            
-            // You could optionally send an email to admins for critical errors
-            if (errorType == 'CRITICAL' && adminNotificationsEnabled) {
-                // This only executes for truly critical errors that need immediate attention
-                Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
-                
-                // Get the org-wide email address to use as the sender - use bind variable to prevent SOQL injection
-                String senderName = FLOWDOMETER_SUPPORT; // Use constant instead of hardcoded string
-                OrgWideEmailAddress[] owea = [SELECT Id FROM OrgWideEmailAddress WHERE DisplayName = :senderName LIMIT 1];
-                if (!owea.isEmpty()) {
-                    mail.setOrgWideEmailAddressId(owea[0].Id);
-                }
-                
-                // Set email properties - this can be improved to use Custom Settings/Metadata for admin emails
-                String[] toAddresses = new String[]{'admin@example.com'};
-                mail.setToAddresses(toAddresses);
-                mail.setSubject('Flowdometer Critical Error: ' + errorType);
-                mail.setPlainTextBody('Error: ' + errorMessage + '\n\nDetails: ' + details);
-                
-                // Attempt to send the email
-                try {
-                    Messaging.sendEmail(new Messaging.SingleEmailMessage[] { mail });
-                } catch(Exception e) {
-                    System.debug(LoggingLevel.WARN, 'Could not send notification email: ' + e.getMessage());
-                }
-            }
-        } catch (Exception e) {
-            // Fail silently - don't let logging errors affect functionality
-            System.debug(LoggingLevel.ERROR, 'Error in error logging: ' + e.getMessage());
-        }
+        System.debug(LoggingLevel.ERROR, 'Flowdometer Error (' + errorType + '): ' + errorMessage);
+        System.debug(LoggingLevel.ERROR, 'Details: ' + details);
     }
 
     @AuraEnabled(Cacheable=true)
@@ -64,7 +29,7 @@ public with sharing class ListenerMasterConfigurationController {
         } catch (Exception e) {
             logError('GENERAL', 'Error getting SObjects', e.getMessage() + '\n' + e.getStackTraceString());
             System.debug(LoggingLevel.ERROR, 'Error getting objects: ' + e.getMessage() + '\n' + e.getStackTraceString());
-            throw new AuraHandledException(e.getMessage());
+            throw new AuraHandledException('Unable to load objects. Please try again or contact your administrator.');
         }
     }
 
@@ -115,9 +80,12 @@ public with sharing class ListenerMasterConfigurationController {
         } catch (CalloutException ce) {
             System.debug(LoggingLevel.ERROR, 'Callout error: ' + ce.getMessage() + '\n' + ce.getStackTraceString());
             throw new AuraHandledException('The request timed out. Please try again later.');
+        } catch (AuraHandledException ahe) {
+            // Preserve intentional user-facing validation messages.
+            throw ahe;
         } catch (Exception e) {
             System.debug(LoggingLevel.ERROR, 'Error getting fields: ' + e.getMessage() + '\n' + e.getStackTraceString());
-            throw new AuraHandledException(e.getMessage());
+            throw new AuraHandledException('Unable to load fields for the selected object. Please try again or contact your administrator.');
         }
     }
 

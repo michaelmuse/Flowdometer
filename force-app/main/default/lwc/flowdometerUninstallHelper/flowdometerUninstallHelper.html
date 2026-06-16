@@ -10,6 +10,14 @@
                 </p>
             </div>
 
+            <template if:true={showNotAuthorized}>
+                <div class="slds-box slds-theme_warning slds-m-bottom_medium">
+                    You must be a Salesforce administrator (with the
+                    <strong>Customize Application</strong> permission) to prepare Flowdometer
+                    for uninstall. Please ask your system administrator to run this step.
+                </div>
+            </template>
+
             <lightning-button
                 label="Prepare for Uninstall"
                 variant="brand"
