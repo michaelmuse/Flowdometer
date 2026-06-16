@@ -1,4 +1,5 @@
 import { LightningElement } from 'lwc';
+import { NavigationMixin } from 'lightning/navigation';
 import checkConnectionStatus from '@salesforce/apex/FlowdometerAuthService.checkConnectionStatus';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
@@ -10,19 +11,20 @@ const ECA_MANAGER_URL = '/lightning/setup/ManageExternalClientApplication/home';
 // events are missed. The focus + visibilitychange listeners are the primary path.
 const POLL_INTERVAL_MS = 5000;
 
-export default class FlowdometerAuthSetup extends LightningElement {
+export default class FlowdometerAuthSetup extends NavigationMixin(LightningElement) {
     isLoading = true;
     isConnected = false;
     errorDetails = '';
     manualCheckFailed = false;
+    // LWS blocks a raw window.open() to a /lightning/setup/ endpoint
+    // ("Cannot open disallowed endpoint"). Rendering NavigationMixin's generated
+    // URL into a native anchor navigates without that restriction. Seeded with the
+    // relative Setup URL as a fallback until GenerateUrl resolves.
+    ecaManagerUrl = ECA_MANAGER_URL;
 
     _pollId;
     _onWindowFocus;
     _onVisibilityChange;
-
-    get ecaManagerUrl() {
-        return ECA_MANAGER_URL;
-    }
 
     get showTroubleshooting() {
         return this.manualCheckFailed && !this.isConnected && this.errorDetails;
@@ -32,8 +34,24 @@ export default class FlowdometerAuthSetup extends LightningElement {
         // Permission reconciliation (Build Plan A.0) is triggered by the parent
         // listenerMasterConfiguration on every setup entry, so it is intentionally
         // NOT called here (this component mounts only while disconnected).
+        this.resolveEcaManagerUrl();
         this.checkConnection({ initial: true });
         this.startAutoDetect();
+    }
+
+    resolveEcaManagerUrl() {
+        this[NavigationMixin.GenerateUrl]({
+            type: 'standard__webPage',
+            attributes: { url: ECA_MANAGER_URL }
+        })
+            .then((url) => {
+                if (url) {
+                    this.ecaManagerUrl = url;
+                }
+            })
+            .catch(() => {
+                // Keep the relative Setup URL fallback set above.
+            });
     }
 
     disconnectedCallback() {
@@ -108,10 +126,6 @@ export default class FlowdometerAuthSetup extends LightningElement {
 
     handleValidate = () => {
         this.checkConnection({ manual: true });
-    };
-
-    handleOpenEcaManager = () => {
-        window.open(this.ecaManagerUrl, '_blank', 'noopener');
     };
 
     showToast(title, message, variant) {

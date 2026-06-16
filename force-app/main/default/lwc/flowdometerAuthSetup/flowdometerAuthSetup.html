@@ -47,14 +47,20 @@
 
                     <!-- Setup Actions -->
                     <div class="slds-text-align_center slds-m-bottom_medium">
-                        <lightning-button
-                            variant="brand"
-                            label="Open External Client App Manager"
+                        <a
+                            href={ecaManagerUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             title="Opens the External Client App Manager in a new tab"
-                            onclick={handleOpenEcaManager}
-                            icon-name="utility:new_window"
-                            class="slds-m-right_small">
-                        </lightning-button>
+                            class="slds-button slds-button_brand slds-m-right_small">
+                            Open External Client App Manager
+                            <lightning-icon
+                                icon-name="utility:new_window"
+                                size="xx-small"
+                                variant="inverse"
+                                class="slds-m-left_x-small">
+                            </lightning-icon>
+                        </a>
                         <lightning-button
                             variant="neutral"
                             label="Check Connection"

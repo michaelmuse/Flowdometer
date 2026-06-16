@@ -24,7 +24,7 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
     @track selectedRadio;
     @track configName;
     @track type;
-    @track enableHistory;
+    @track enableHistory = false;
     fieldHistoryStatus;
     @api error;
     @track itemList = [
@@ -248,12 +248,8 @@ export default class ListenerMasterConfiguration extends NavigationMixin(
         this.sObjectFieldsOptions = [];
         this.typeFieldOptions = [];
         this.fieldHistoryStatus = undefined;
-        
-        // Reset any UI elements that need to be refreshed
-        const toggleElement = this.template.querySelector('lightning-input[name="enableHistory"]');
-        if (toggleElement) {
-            toggleElement.checked = false;
-        }
+        // The toggle is bound to enableHistory (checked={enableHistory}), so setting
+        // the property above resets its rendered state — no imperative DOM reset needed.
     }
 
     createListenerRec() {
