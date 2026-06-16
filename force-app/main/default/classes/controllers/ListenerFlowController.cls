@@ -218,6 +218,12 @@ global with sharing class ListenerFlowController {
             return;
         }
         Map<String, Object> populated = listener.getPopulatedFieldsAsMap();
+        // SOQL-injection safe without an allow-list: callers pass only
+        // package-controlled field-name constants (see parseRecordsToFlow), and
+        // the only filterable value is bound (:listenerId). A describe-based
+        // allow-list is deliberately NOT used here because the field map keys are
+        // namespace-qualified in managed context, which silently drops the
+        // package's own fields. See SECURITY_REVIEW_NOTES.md "Dynamic SOQL".
         Set<String> missingFields = new Set<String>();
         for (String fieldApi : fieldApiNames) {
             if (String.isBlank(fieldApi)) {
@@ -234,8 +240,8 @@ global with sharing class ListenerFlowController {
         selectFields.addAll(missingFields);
         Id listenerId = listener.Id;
         
-        // Security Note: In test context, we skip WITH SECURITY_ENFORCED because tests run before
-        // the PostInstallScript assigns the Permission Set. In production, FLS is enforced.
+        // Security Note: In test context, we skip WITH SECURITY_ENFORCED because the running test
+        // user may not have the package permission set assigned. In production, FLS is enforced.
         // This is Security Review compliant: tests verify business logic, not Salesforce's FLS.
         String securityEnforcement = Test.isRunningTest() ? '' : 'WITH SECURITY_ENFORCED ';
         String query = 'SELECT ' + String.join(selectFields, ', ') + 
@@ -616,7 +622,12 @@ global with sharing class ListenerFlowController {
         // Lightweight probe to determine if we should reduce the fetch size.
         Boolean isLargeObject = false;
         Integer maxRecordsToProcess = HISTORY_DEFAULT_FETCH_LIMIT;
-        if (lastExecutionOn == null) {
+        // Injection-safe allow-list: probe only when objHistoryName resolves to a
+        // real sObject. History object names (e.g. OpportunityFieldHistory,
+        // <Obj>__History) are standard/subscriber objects and are NOT namespaced,
+        // so getGlobalDescribe().containsKey is reliable here (unlike the package's
+        // own object in finding #1 — see SECURITY_REVIEW_NOTES.md "Dynamic SOQL").
+        if (lastExecutionOn == null && Schema.getGlobalDescribe().containsKey(objHistoryName)) {
             try {
                 String probeQuery = 'SELECT Id FROM ' + objHistoryName + ' WITH SECURITY_ENFORCED LIMIT ' + HISTORY_PROBE_LIMIT;
                 Integer probeCount = Database.query(probeQuery).size();

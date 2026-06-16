@@ -6,7 +6,6 @@
       "path": "force-app",
       "default": true,
       "package": "Flowdometer",
-      "postInstallScript": "PostInstallScript",
       "versionDescription": ""
     }
   ],
@@ -44,6 +43,8 @@
     "Flowdometer@3.0.0-26": "04tRo000000z4zZIAQ",
     "Flowdometer@3.0.0-27": "04tRo000000z5fVIAQ",
     "Flowdometer@3.0.0-28": "04tRo000000z7e5IAA",
-    "Flowdometer@3.0.0-29": "04tRo000000z7hJIAQ"
+    "Flowdometer@3.0.0-29": "04tRo000000z7hJIAQ",
+    "Flowdometer@3.0.0-30": "04tRo000000zQ5dIAE",
+    "Flowdometer@3.0.0-31": "04tRo000000zQf7IAE"
   }
 }

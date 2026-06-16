@@ -1,77 +1,71 @@
-import { LightningElement, track } from 'lwc';
+import { LightningElement } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
-import deactivateFlows from '@salesforce/apex/FlowdometerUninstallHelper.deactivateFlows';
+import prepareForUninstall from '@salesforce/apex/FlowdometerUninstallHelper.prepareForUninstall';
 
 export default class FlowdometerUninstallHelper extends LightningElement {
-    @track isLoading = false;
-    @track deactivationStatus = {
-        success: false,
-        message: '',
-        deactivatedCount: 0,
-        showMessage: false
-    };
+    isLoading = false;
+    showResult = false;
+    success = false;
+    resultMessage = '';
+    manualEraseRequired = false;
 
-    // Handle click on the deactivate flows button
-    async handleDeactivateFlows() {
+    get buttonDisabled() {
+        return this.isLoading || (this.showResult && this.success);
+    }
+
+    get resultClass() {
+        return this.success
+            ? 'slds-text-color_success slds-text-body_regular'
+            : 'slds-text-color_error slds-text-body_regular';
+    }
+
+    // Fetch a Metadata-API-scoped session from the Flowdometer VF page
+    // (Lightning sessions lack Metadata API scope), same approach as the
+    // Connection Setup component.
+    async fetchApiSession() {
+        const urls = ['/apex/FlowdometerSession', '/apex/Flowdometer__FlowdometerSession'];
+        for (const url of urls) {
+            try {
+                const res = await fetch(url, { credentials: 'same-origin' });
+                if (!res.ok) continue;
+                const text = await res.text();
+                const data = JSON.parse(text.trim());
+                if (data.sid) return data.sid;
+            } catch (_) { /* try next URL */ }
+        }
+        return null;
+    }
+
+    handlePrepare = async () => {
         this.isLoading = true;
-        this.deactivationStatus.showMessage = false;
-        
+        this.showResult = false;
         try {
-            // Call the Apex method to deactivate flows
-            const deactivatedCount = await deactivateFlows();
-            
-            this.deactivationStatus = {
-                success: true,
-                message: `Successfully deactivated ${deactivatedCount} flows. You can now uninstall the package.`,
-                deactivatedCount: deactivatedCount,
-                showMessage: true
-            };
-            
-            // Show success toast
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Success',
-                    message: this.deactivationStatus.message,
-                    variant: 'success'
-                })
-            );
+            const apiSession = await this.fetchApiSession();
+            const result = await prepareForUninstall({ apiSessionId: apiSession });
+
+            this.success = !!result.success;
+            this.resultMessage = result.message;
+            this.manualEraseRequired = !!result.manualEraseRequired;
+            this.showResult = true;
+
+            this.dispatchEvent(new ShowToastEvent({
+                title: 'Uninstall Preparation Complete',
+                message: 'Flowdometer has been prepared for uninstall. Review the next steps below.',
+                variant: 'success'
+            }));
         } catch (error) {
-            // Handle errors
-            const errorMessage = error.body?.message || 'Unknown error occurred while deactivating flows';
-            
-            this.deactivationStatus = {
-                success: false,
-                message: `Error: ${errorMessage}`,
-                deactivatedCount: 0,
-                showMessage: true
-            };
-            
-            // Show error toast
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: 'Error',
-                    message: errorMessage,
-                    variant: 'error',
-                    mode: 'sticky'
-                })
-            );
+            this.success = false;
+            this.resultMessage = error?.body?.message || error?.message
+                || 'Unknown error while preparing for uninstall.';
+            this.showResult = true;
+            this.dispatchEvent(new ShowToastEvent({
+                title: 'Error',
+                message: this.resultMessage,
+                variant: 'error',
+                mode: 'sticky'
+            }));
         } finally {
             this.isLoading = false;
         }
-    }
-    
-    get statusVariant() {
-        return this.deactivationStatus.success ? 'success' : 'error';
-    }
-    
-    get buttonDisabled() {
-        return this.isLoading || (this.deactivationStatus.success && this.deactivationStatus.deactivatedCount > 0);
-    }
-    
-    // Handle click on the Open Flows button
-    handleOpenFlows() {
-        // Navigate to the Flows page
-        const url = '/lightning/setup/Flows/home';
-        window.open(url, '_blank');
-    }
+    };
 }

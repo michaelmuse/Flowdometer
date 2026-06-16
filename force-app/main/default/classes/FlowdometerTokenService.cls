@@ -124,7 +124,7 @@ public with sharing class FlowdometerTokenService {
             }
             String oauthError = (String) parsed.get('error_description');
             if (String.isNotBlank(oauthError) && oauthError.containsIgnoreCase('no client credentials user')) {
-                result.errorMessage = 'Client Credentials flow is not enabled. Run Complete Setup first.';
+                result.errorMessage = 'Client Credentials flow is not enabled. In Setup, open External Client App Manager, edit the Flowdometer ECA policies, and enable the Client Credentials Flow with a Run-As user.';
             } else {
                 result.errorMessage = 'Token exchange failed (HTTP ' + res.getStatusCode() + ').';
             }

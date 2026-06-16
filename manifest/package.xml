@@ -28,14 +28,11 @@
         <members>ListenerMasterConfigControllerTest</members>
         <members>ListenerUpdateFlowController</members>
         <members>ListenerUpdateFlowControllerTest</members>
-        <members>LookupFieldCleaner</members>
         <members>MetadataService</members>
         <members>MetadataServiceMock</members>
         <members>MetadataServiceTest</members>
         <members>MetaDataUtilityCls</members>
         <members>MetaDataUtilityClsTest</members>
-        <members>PostInstallScript</members>
-        <members>PostInstallScriptTest</members>
         <members>TestDataFactory</members>
         <members>TestDataFactoryTest</members>
         <members>ToolingAPIMock</members>

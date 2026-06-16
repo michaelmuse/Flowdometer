@@ -1,4 +1,5 @@
-public class TestDataFactory {
+@isTest
+public with sharing class TestDataFactory {
     public static List<Opportunity> createAndUpdateOpportunities(
         Id parentId,
         String field,

@@ -26,18 +26,21 @@
                                 <lightning-icon icon-name="utility:setup" size="medium"></lightning-icon>
                             </div>
                             <div class="slds-media__body">
-                                <h3 class="slds-text-heading_small slds-m-bottom_x-small">Almost ready!</h3>
-                                <p class="slds-text-body_regular">
-                                    One quick step so Flowdometer can connect to your org.
-                                    Click <strong>Complete Setup</strong> — it only takes a moment.
+                                <h3 class="slds-text-heading_small slds-m-bottom_x-small">One-time connection setup</h3>
+                                <p class="slds-text-body_regular slds-m-bottom_small">
+                                    Flowdometer connects to your org through its packaged External Client App.
+                                    An administrator enables it once with these steps:
                                 </p>
-                                <details class="slds-m-top_x-small slds-text-body_small slds-text-color_weak">
-                                    <summary style="cursor: pointer;">What does this do?</summary>
-                                    <p class="slds-m-top_xx-small">
-                                        Authorizes Flowdometer to create lookup fields and enable
-                                        history tracking on the objects you choose to monitor.
-                                    </p>
-                                </details>
+                                <ol class="slds-list_ordered slds-m-left_medium slds-text-body_regular">
+                                    <li class="slds-m-bottom_xx-small">Open the <strong>External Client App Manager</strong> (button below — opens in a new tab).</li>
+                                    <li class="slds-m-bottom_xx-small">On the <strong>Flowdometer ECA</strong> row, open the dropdown and choose <strong>Edit Policies</strong>.</li>
+                                    <li class="slds-m-bottom_xx-small">Expand <strong>OAuth Policies</strong> and check <strong>Enable Client Credentials Flow</strong>.</li>
+                                    <li class="slds-m-bottom_xx-small">For <strong>Run As (Username)</strong>, enter a dedicated integration user (recommended) or an admin user.</li>
+                                    <li>Click <strong>Save</strong>, then switch back to this tab.</li>
+                                </ol>
+                                <p class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">
+                                    This screen detects the connection automatically once you save — no need to refresh.
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -46,30 +49,31 @@
                     <div class="slds-text-align_center slds-m-bottom_medium">
                         <lightning-button
                             variant="brand"
-                            label="Complete Setup"
-                            title="Authorize Flowdometer to connect to your org"
-                            onclick={handleCompleteSetup}
-                            icon-name="utility:setup"
+                            label="Open External Client App Manager"
+                            title="Opens the External Client App Manager in a new tab"
+                            onclick={handleOpenEcaManager}
+                            icon-name="utility:new_window"
                             class="slds-m-right_small">
                         </lightning-button>
                         <lightning-button
                             variant="neutral"
                             label="Check Connection"
-                            title="Recheck connection status"
+                            title="Recheck connection status now"
                             onclick={handleValidate}
                             icon-name="utility:refresh">
                         </lightning-button>
                     </div>
 
-                    <!-- Troubleshooting (only after a failed setup attempt) -->
+                    <!-- Troubleshooting (only after a manual check that still shows disconnected) -->
                     <template if:true={showTroubleshooting}>
                         <div class="slds-box slds-theme_default slds-m-top_medium" style="border-left: 3px solid #c23934;">
                             <p class="slds-text-body_small slds-m-bottom_x-small">
-                                <strong>Setup didn&#39;t complete</strong>
+                                <strong>Not connected yet</strong>
                             </p>
                             <p class="slds-text-body_small slds-text-color_weak">{errorDetails}</p>
                             <p class="slds-text-body_small slds-text-color_weak slds-m-top_small">
-                                Try running setup again. If this persists, contact help@flowdometer.com.
+                                Confirm the Client Credentials Flow is enabled with a Run-As user on the
+                                Flowdometer ECA, then try again. If this persists, contact help@flowdometer.com.
                             </p>
                         </div>
                     </template>

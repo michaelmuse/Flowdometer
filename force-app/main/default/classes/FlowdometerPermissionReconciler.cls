@@ -15,8 +15,8 @@
  *     (dynamic FLS). The PSG is the single unit end users are assigned.
  *
  * Invoked from the post-auth setup gate on every entry, so deleted or
- * admin-edited infrastructure self-heals. PostInstallScript is unsuitable: it
- * runs only at install/upgrade, and InstallHandler runs before auth exists.
+ * admin-edited infrastructure self-heals. A post-install InstallHandler is
+ * unsuitable: it runs only at install/upgrade, before auth exists.
  *
  * Resolution strategy: the unmanaged PS and PSG are resolved by their fixed
  * developer names. No NamespacePrefix filter is applied, because a

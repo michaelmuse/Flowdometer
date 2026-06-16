@@ -210,8 +210,8 @@ public with sharing class ListenerMasterConfigurationController {
             }
             
             // Check if the fields are accessible and createable before attempting to use them
-            // Note: In test context, we skip this check because tests run before the Permission Set
-            // is assigned by PostInstallScript. The running user (system admin) has access to all fields.
+            // Note: In test context, we skip this check because the running test user may not have
+            // the package permission set assigned. The running user (system admin) has access to all fields.
             if (!Test.isRunningTest()) {
                 if (!Schema.sObjectType.Listener__c.fields.Object_Name__c.isAccessible() ||
                     !Schema.sObjectType.Listener__c.fields.Field_To_Track__c.isAccessible() ||

@@ -1,57 +1,56 @@
 <template>
-    <lightning-card title="Flowdometer Uninstall Helper" icon-name="utility:flow">
+    <lightning-card title="Prepare Flowdometer for Uninstall" icon-name="utility:delete">
         <div class="slds-p-around_medium">
             <div class="slds-text-body_regular slds-m-bottom_medium">
                 <p class="slds-m-bottom_small">
-                    Before uninstalling the Flowdometer package, you need to deactivate all active flows to avoid 
-                    "Flow is still active" errors.
-                </p>
-                <p class="slds-m-bottom_small">
-                    Click the button below to automatically deactivate all Flowdometer flows.
-                </p>
-                <p class="slds-m-bottom_small">
-                    You can also open the Flows page to manually review and deactivate flows if needed.
+                    Run this <strong>before</strong> uninstalling the Flowdometer managed package. It
+                    deactivates Flowdometer flows, removes the dynamic lookup fields Flowdometer created
+                    on your objects, and clears Flowdometer permission assignments &mdash; all of which
+                    would otherwise block the uninstall.
                 </p>
             </div>
-            
-            <div class="slds-grid slds-gutters slds-m-bottom_medium">
-                <div class="slds-col">
-                    <lightning-button 
-                        label="Deactivate All Flowdometer Flows" 
-                        variant="brand" 
-                        onclick={handleDeactivateFlows}
-                        disabled={buttonDisabled}>
-                    </lightning-button>
-                </div>
-                <div class="slds-col">
-                    <lightning-button 
-                        label="Open Flows" 
-                        variant="neutral" 
-                        onclick={handleOpenFlows}
-                        icon-name="utility:flow">
-                    </lightning-button>
-                </div>
+
+            <lightning-button
+                label="Prepare for Uninstall"
+                variant="brand"
+                onclick={handlePrepare}
+                disabled={buttonDisabled}
+                class="slds-m-right_small">
+            </lightning-button>
+
+            <div if:true={isLoading} class="slds-is-relative slds-m-top_medium slds-p-vertical_medium">
+                <lightning-spinner alternative-text="Preparing for uninstall..." size="small"></lightning-spinner>
             </div>
-            
-            <div if:true={isLoading} class="slds-is-relative slds-m-top_medium">
-                <lightning-spinner alternative-text="Deactivating flows..." size="small"></lightning-spinner>
-            </div>
-            
-            <div if:true={deactivationStatus.showMessage} class="slds-m-top_medium">
-                <lightning-formatted-text 
-                    value={deactivationStatus.message} 
-                    class={statusVariant}>
-                </lightning-formatted-text>
-                
-                <template if:true={deactivationStatus.success}>
-                    <div class="slds-text-body_regular slds-m-top_medium">
-                        <p>You can now proceed with uninstalling the package from:</p>
-                        <p class="slds-m-top_x-small">
-                            <a href="/lightning/setup/ImportedPackage/home" target="_blank">
-                                Setup > Installed Packages
-                            </a>
+
+            <div if:true={showResult} class="slds-m-top_medium">
+                <p class={resultClass}>{resultMessage}</p>
+
+                <template if:true={manualEraseRequired}>
+                    <div class="slds-box slds-theme_warning slds-m-top_medium">
+                        <h3 class="slds-text-heading_small slds-m-bottom_x-small">
+                            Required next steps before uninstalling
+                        </h3>
+                        <ol class="slds-list_ordered slds-p-left_large">
+                            <li>
+                                The deleted lookup fields are now in each tracked object's <strong>Deleted Fields</strong> list.
+                                Open <strong>Setup &gt; Object Manager &gt; [object] &gt; Fields &amp; Relationships &gt; Deleted Fields</strong>,
+                                then click <strong>Erase</strong> on each Flowdometer field.
+                                (Salesforce does not allow programmatic permanent deletion of fields in production orgs.)
+                            </li>
+                            <li>
+                                Once the fields are erased, uninstall the package from <strong>Setup &gt; Installed Packages</strong>.
+                            </li>
+                        </ol>
+                        <p class="slds-m-top_small">
+                            <a href="/lightning/setup/ObjectManager/home" target="_blank">Open Object Manager</a>
                         </p>
                     </div>
+                </template>
+
+                <template if:true={success}>
+                    <p class="slds-text-body_regular slds-m-top_medium">
+                        Uninstall from <a href="/lightning/setup/ImportedPackage/home" target="_blank">Setup &gt; Installed Packages</a>.
+                    </p>
                 </template>
             </div>
         </div>

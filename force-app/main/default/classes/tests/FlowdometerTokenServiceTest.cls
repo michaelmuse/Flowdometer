@@ -76,8 +76,8 @@ private class FlowdometerTokenServiceTest {
         Test.stopTest();
 
         System.assertEquals(false, result.success);
-        System.assert(result.errorMessage.contains('Complete Setup'),
-            'Should advise running Complete Setup: ' + result.errorMessage);
+        System.assert(result.errorMessage.contains('Client Credentials'),
+            'Should advise enabling the Client Credentials Flow: ' + result.errorMessage);
     }
 
     // ── Generic non-200 error ───────────────────────────────────
