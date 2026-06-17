@@ -240,12 +240,14 @@ global with sharing class ListenerFlowController {
         selectFields.addAll(missingFields);
         Id listenerId = listener.Id;
         
-        // Security Note: In test context, we skip WITH SECURITY_ENFORCED because the running test
-        // user may not have the package permission set assigned. In production, FLS is enforced.
-        // This is Security Review compliant: tests verify business logic, not Salesforce's FLS.
-        String securityEnforcement = Test.isRunningTest() ? '' : 'WITH SECURITY_ENFORCED ';
-        String query = 'SELECT ' + String.join(selectFields, ', ') + 
-                       ' FROM Listener__c WHERE Id = :listenerId ' + securityEnforcement + 'LIMIT 1';
+        // System-context read of the package's own Listener__c config from inside
+        // the automated tracking pipeline (parseRecordsToFlow runs from the
+        // scheduled / record-triggered Listener flow, not an interactive user).
+        // Explicit WITH SYSTEM_MODE replaces the now-deprecated WITH SECURITY_ENFORCED
+        // (no longer allowed for AppExchange; non-compiling at API v67+). See
+        // SECURITY_REVIEW_NOTES.md "Tracking pipeline runs in system mode".
+        String query = 'SELECT ' + String.join(selectFields, ', ') +
+                       ' FROM Listener__c WHERE Id = :listenerId WITH SYSTEM_MODE LIMIT 1';
         Listener__c refreshed = Database.query(query);
         for (String missingField : missingFields) {
             listener.put(missingField, refreshed.get(missingField));
@@ -414,7 +416,7 @@ global with sharing class ListenerFlowController {
             SELECT History_Record_ID__c
             FROM Step__c
             WHERE History_Record_ID__c != NULL
-            WITH SECURITY_ENFORCED
+            WITH SYSTEM_MODE
             ORDER BY CreatedDate DESC
             LIMIT 1000
         ]) {
@@ -556,7 +558,7 @@ global with sharing class ListenerFlowController {
         if (!whereConditions.isEmpty()) {
             queryStr += ' WHERE ' + String.join(whereConditions, ' AND ');
         }
-        queryStr += ' WITH SECURITY_ENFORCED';
+        queryStr += ' WITH SYSTEM_MODE';
         
         // Common query modifiers
         if ((Boolean) queryModifiers.get('includeOrderBy')) {
@@ -629,7 +631,7 @@ global with sharing class ListenerFlowController {
         // own object in finding #1 — see SECURITY_REVIEW_NOTES.md "Dynamic SOQL").
         if (lastExecutionOn == null && Schema.getGlobalDescribe().containsKey(objHistoryName)) {
             try {
-                String probeQuery = 'SELECT Id FROM ' + objHistoryName + ' WITH SECURITY_ENFORCED LIMIT ' + HISTORY_PROBE_LIMIT;
+                String probeQuery = 'SELECT Id FROM ' + objHistoryName + ' WITH SYSTEM_MODE LIMIT ' + HISTORY_PROBE_LIMIT;
                 Integer probeCount = Database.query(probeQuery).size();
                 if (probeCount == HISTORY_PROBE_LIMIT) {
                     isLargeObject = true;
@@ -1090,7 +1092,7 @@ global with sharing class ListenerFlowController {
                             
                             String parentQuery = 'SELECT ' + String.join(selectFields, ', ') + 
                                                ' FROM ' + listenerConfig.Object_Name__c + 
-                                               ' WHERE Id IN :parentIds WITH SECURITY_ENFORCED';
+                                               ' WHERE Id IN :parentIds WITH SYSTEM_MODE';
                             for (SObject sob : Database.query(parentQuery)) {
                                 Id sobId = (Id)sob.get('Id');
                                 sObjectMap.put(sobId, sob);

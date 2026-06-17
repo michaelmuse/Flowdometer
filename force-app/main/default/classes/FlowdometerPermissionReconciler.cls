@@ -41,6 +41,11 @@ public with sharing class FlowdometerPermissionReconciler {
     @TestVisible private static final String PSG_DEVNAME = 'Flowdometer_Access';
     @TestVisible private static final String PSG_LABEL = 'Flowdometer Access';
     @TestVisible private static final String MANAGED_PS_NAME = 'Flowdometer_User';
+    // Read-only reporting half of the access model (view cross-team data without
+    // the elevated create-Listener capability). Bundled into the PSG alongside
+    // Flowdometer_User so the group still confers full access, while admins can
+    // assign Flowdometer_Reporting on its own for view-only users.
+    @TestVisible private static final String MANAGED_REPORTING_PS_NAME = 'Flowdometer_Reporting';
 
     // PSG assignment retry knobs. A freshly created/re-componentized PSG is
     // 'Updating' (async recalculation) and rejects assignments; on a first
@@ -147,7 +152,10 @@ public with sharing class FlowdometerPermissionReconciler {
 
     @TestVisible
     private static void ensureComponents(Id psgId, Id unmanagedPsId) {
-        Id managedPsId = resolveManagedPsId();
+        // Both managed halves of the access model belong in the group: the full
+        // Flowdometer_User set and the read-only Flowdometer_Reporting set.
+        Id managedPsId = resolveManagedPsId(MANAGED_PS_NAME);
+        Id reportingPsId = resolveManagedPsId(MANAGED_REPORTING_PS_NAME);
 
         Set<Id> existing = new Set<Id>();
         for (PermissionSetGroupComponent comp : [
@@ -158,25 +166,23 @@ public with sharing class FlowdometerPermissionReconciler {
         }
 
         List<PermissionSetGroupComponent> toAdd = new List<PermissionSetGroupComponent>();
-        if (unmanagedPsId != null && !existing.contains(unmanagedPsId)) {
-            toAdd.add(new PermissionSetGroupComponent(
-                PermissionSetGroupId = psgId, PermissionSetId = unmanagedPsId
-            ));
-        }
-        if (managedPsId != null && !existing.contains(managedPsId)) {
-            toAdd.add(new PermissionSetGroupComponent(
-                PermissionSetGroupId = psgId, PermissionSetId = managedPsId
-            ));
+        for (Id psId : new List<Id>{ unmanagedPsId, managedPsId, reportingPsId }) {
+            if (psId != null && !existing.contains(psId)) {
+                toAdd.add(new PermissionSetGroupComponent(
+                    PermissionSetGroupId = psgId, PermissionSetId = psId
+                ));
+                existing.add(psId);
+            }
         }
         if (!toAdd.isEmpty()) {
             insert toAdd;
         }
     }
 
-    private static Id resolveManagedPsId() {
+    private static Id resolveManagedPsId(String psName) {
         String ns = resolveNamespace();
         List<PermissionSet> psList = [
-            SELECT Id, NamespacePrefix FROM PermissionSet WHERE Name = :MANAGED_PS_NAME
+            SELECT Id, NamespacePrefix FROM PermissionSet WHERE Name = :psName
         ];
         for (PermissionSet ps : psList) {
             if (String.isBlank(ns) || ps.NamespacePrefix == ns) {

@@ -51,6 +51,55 @@ private class FlowdometerPermissionReconcilerTest {
             'PSG should bundle at least the unmanaged permission set component');
     }
 
+    /**
+     * The access model is split into two managed permission sets
+     * (Flowdometer_User + Flowdometer_Reporting); the runtime PSG must bundle
+     * BOTH so the group still confers full access while Flowdometer_Reporting
+     * stays individually assignable for view-only users.
+     */
+    @IsTest
+    static void reconcileBundlesBothManagedPermissionSets() {
+        System.runAs(new User(Id = UserInfo.getUserId())) {
+            Test.startTest();
+            FlowdometerPermissionReconciler.reconcile();
+            Test.stopTest();
+        }
+
+        Id psgId = [
+            SELECT Id FROM PermissionSetGroup
+            WHERE DeveloperName = :FlowdometerPermissionReconciler.PSG_DEVNAME
+            LIMIT 1
+        ].Id;
+
+        Set<Id> componentPsIds = new Set<Id>();
+        for (PermissionSetGroupComponent comp : [
+            SELECT PermissionSetId FROM PermissionSetGroupComponent
+            WHERE PermissionSetGroupId = :psgId
+        ]) {
+            componentPsIds.add(comp.PermissionSetId);
+        }
+
+        for (String psName : new List<String>{
+            FlowdometerPermissionReconciler.MANAGED_PS_NAME,
+            FlowdometerPermissionReconciler.MANAGED_REPORTING_PS_NAME
+        }) {
+            List<PermissionSet> managed = [
+                SELECT Id FROM PermissionSet WHERE Name = :psName
+            ];
+            System.assert(!managed.isEmpty(),
+                'Managed permission set should exist: ' + psName);
+            Boolean bundled = false;
+            for (PermissionSet m : managed) {
+                if (componentPsIds.contains(m.Id)) {
+                    bundled = true;
+                    break;
+                }
+            }
+            System.assert(bundled,
+                'PSG should bundle the managed permission set ' + psName);
+        }
+    }
+
     @IsTest
     static void reconcileIsIdempotent() {
         System.runAs(new User(Id = UserInfo.getUserId())) {

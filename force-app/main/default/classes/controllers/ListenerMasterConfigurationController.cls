@@ -374,7 +374,7 @@ public with sharing class ListenerMasterConfigurationController {
                        Error_Message__c, Enable_History__c
                 FROM Listener__c 
                 WHERE Id = :listenerId
-                WITH SECURITY_ENFORCED
+                WITH USER_MODE
                 LIMIT 1
             ];
             
@@ -399,7 +399,7 @@ public with sharing class ListenerMasterConfigurationController {
                 SELECT Id, Name, Tracked_Object__c 
                 FROM Flow__c 
                 WHERE Tracked_Object__c = :listener.Object_Name__c
-                WITH SECURITY_ENFORCED
+                WITH USER_MODE
                 ORDER BY CreatedDate DESC
                 LIMIT 10
             ];

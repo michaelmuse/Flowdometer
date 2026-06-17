@@ -701,7 +701,7 @@ public class ListenerFlowControllerTest {
                 queriedListenerConfig.Field_To_Track__c +
                 ', ' +
                 queriedListenerConfig.Type__c +
-                ' FROM Opportunity WITH SECURITY_ENFORCED ORDER BY Id, CreatedDate ASC LIMIT 1500';
+                ' FROM Opportunity WITH SYSTEM_MODE ORDER BY Id, CreatedDate ASC LIMIT 1500';
 
             // Assert: Check if the actual query string matches the expected one
             System.assertEquals(
@@ -773,7 +773,7 @@ public class ListenerFlowControllerTest {
             parentIdField +
             ' IN :targetRecordIds AND CreatedDate > :lastExecutionOn';
         expectedQuery +=
-            ' WITH SECURITY_ENFORCED ORDER BY ' +
+            ' WITH SYSTEM_MODE ORDER BY ' +
             parentIdField +
             ', CreatedDate ASC LIMIT 1500';
 
@@ -843,7 +843,7 @@ public class ListenerFlowControllerTest {
             queriedListenerConfig.Type__c +
             ' FROM ' +
             objName +
-            ' WITH SECURITY_ENFORCED';
+            ' WITH SYSTEM_MODE';
         expectedQuery += ' ORDER BY Id, CreatedDate ASC LIMIT 1500';
 
         // Assert: Check if the actual query string matches the expected one

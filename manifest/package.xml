@@ -176,6 +176,7 @@
         <name>Report</name>
     </types>
     <types>
+        <members>Flowdometer_Reporting</members>
         <members>Flowdometer_User</members>
         <name>PermissionSet</name>
     </types>

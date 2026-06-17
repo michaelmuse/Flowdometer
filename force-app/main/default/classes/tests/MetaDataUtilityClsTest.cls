@@ -97,11 +97,23 @@ public class MetaDataUtilityClsTest {
         // namespaced name in a namespaced org. grantFieldAccessWithDml must NOT
         // re-namespace the object itself; doing so previously broke FLS for
         // subscriber custom objects (QA_Tracked__c -> Flowdometer__QA_Tracked__c).
-        PermissionSet ps = new PermissionSet(
-            Name = 'Flowdometer_Dynamic_FLS',
-            Label = 'Flowdometer Dynamic FLS'
-        );
-        insert ps;
+        // Resolve-by-name (mirrors the reconciler's ensureUnmanagedPermissionSet):
+        // the runtime unmanaged PS can survive a prior test's rollback in the
+        // packaging org via async PSG recalculation, so a blind insert would hit
+        // DUPLICATE_MASTER_LABEL. Reuse it if present, otherwise create it.
+        List<PermissionSet> existingPs = [
+            SELECT Id FROM PermissionSet WHERE Name = 'Flowdometer_Dynamic_FLS' LIMIT 1
+        ];
+        PermissionSet ps;
+        if (existingPs.isEmpty()) {
+            ps = new PermissionSet(
+                Name = 'Flowdometer_Dynamic_FLS',
+                Label = 'Flowdometer Dynamic FLS'
+            );
+            insert ps;
+        } else {
+            ps = existingPs[0];
+        }
 
         String flowObjectApi = Flow__c.SObjectType.getDescribe().getName();
 
