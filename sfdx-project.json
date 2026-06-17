@@ -1,8 +1,8 @@
 {
   "packageDirectories": [
     {
-      "versionName": "ver 3.0",
-      "versionNumber": "3.0.0.NEXT",
+      "versionName": "ver 3.1",
+      "versionNumber": "3.1.0.NEXT",
       "path": "force-app",
       "default": true,
       "package": "Flowdometer",
@@ -47,6 +47,7 @@
     "Flowdometer@3.0.0-30": "04tRo000000zQ5dIAE",
     "Flowdometer@3.0.0-31": "04tRo000000zQf7IAE",
     "Flowdometer@3.0.0-32": "04tRo000000zdajIAA",
-    "Flowdometer@3.0.0-33": "04tRo000000zewbIAA"
+    "Flowdometer@3.0.0-33": "04tRo000000zewbIAA",
+    "Flowdometer@3.1.0-1": "04tRo000000zmMHIAY"
   }
 }
