@@ -1,5 +1,5 @@
 Description:
-Flowdometer is anSLA engine that bolts onto any standard or custom object in Salesforce. 
+Flowdometer is an SLA engine that bolts onto any standard or custom object in Salesforce. 
 Instead of relying on the Case-only Entitlements/Milestones framework, it watches whichever fields you 
 already have history-tracking enabled for—stage, status picklists, owner look-ups, even custom references—and 
 records each transition as a "Step" tied to a parent "Flow." 
@@ -20,6 +20,87 @@ benchmark teams, and prove SLA compliance alongside core CRM data.
 In short, Flowdometer gives you Milestones-style tracking for every object, minus the setup drag and 
 object restrictions.
 
+================================================================================
+SECURITY REVIEW ORIENTATION (2GP managed package, namespace: Flowdometer)
+================================================================================
+This section answers: information flow, authentication, encryption on data
+transfer, data touchpoints, and basic usage. Flowdometer is a same-org solution:
+it contacts NO external services or endpoints. All processing stays inside the
+subscriber's own Salesforce org.
+
+--- INFORMATION FLOW -----------------------------------------------------------
+1. Admin installs the managed package and assigns the Flowdometer permission set
+   (group) to the users who should have access.
+2. One-time auth setup (admin, manual in Setup): the admin enables the packaged
+   External Client App's OAuth Client Credentials flow and designates a Run-As
+   user. Flowdometer does not modify the External Client App programmatically.
+3. The admin creates a "Listener" (an object + field to track) in the Flowdometer
+   setup UI. On submit, Flowdometer:
+     - creates a dynamic lookup field on the tracked object (Tooling API,
+       same-org), and
+     - enables Salesforce Field History tracking on the chosen field (Metadata
+       API, same-org).
+4. At runtime, packaged record-triggered/scheduled Flows + an Apex service layer
+   read the tracked object's native Field History and create a parent Flow__c
+   record plus one Step__c per transition, computing timestamps, business-hour
+   math, and goal variance.
+5. The bundled dashboards/reports read those native custom objects. No data is
+   transmitted outside the org at any point.
+
+--- AUTHENTICATION -------------------------------------------------------------
+- Same-org API calls (REST, Tooling, Metadata) are authenticated with the OAuth
+  2.0 client_credentials flow issued by a packaged External Client App
+  ("Flowdometer ECA"). Requested scope is "Api" only (no refresh_token /
+  offline_access).
+- The ECA consumer key/secret are stored in a Protected Custom Metadata Type
+  (Eca_Secret__mdt, record protected=true) readable only by Apex inside the
+  package namespace; subscriber admins/code cannot view or query them.
+- Access tokens are minted on demand and held only in a transaction-scoped,
+  in-memory Apex variable. No access or refresh tokens are persisted anywhere
+  (no Custom Object/Setting/Metadata, Platform Cache, or external store), and
+  tokens are never logged.
+- No external identity provider and no external authentication are involved.
+- UserInfo.getSessionId() is not used for runtime API calls. A Visualforce-sourced
+  API session is used transiently only within a single admin-initiated
+  "Prepare for Uninstall" Metadata API request (Lightning sessions lack Metadata
+  API scope); it is never persisted or logged.
+
+--- ENCRYPTION ON DATA TRANSFER ------------------------------------------------
+- Every callout is HTTPS/TLS to the subscriber org's own My Domain, built from
+  URL.getOrgDomainUrl(). There are no hardcoded URLs and no external endpoints.
+- There is no cross-org or off-platform network traffic; data never transits
+  outside Salesforce.
+- Data at rest lives in native Salesforce custom objects, governed by standard
+  Salesforce security (FLS, sharing, and any org-level Shield Platform Encryption
+  the subscriber has enabled). Credentials live only in the protected CMDT.
+
+--- DATA TOUCHPOINTS -----------------------------------------------------------
+- Writes: Flow__c (parent tracker), Step__c (per-transition), Listener__c
+  (configuration), and dynamic lookup fields Flowdometer creates on the tracked
+  objects to correlate records to their Flow__c.
+- Reads: the tracked object's standard Field History (e.g.,
+  OpportunityFieldHistory), plus schema/describe metadata.
+- Flowdometer collects no new PII beyond what already exists on the subscriber's
+  own tracked records; it stores timing/correlation data and record references.
+- No external data storage or third-party processors.
+
+--- BASIC USAGE INSTRUCTIONS ---------------------------------------------------
+1. Install the managed package into the org.
+2. Assign the "Flowdometer Access" permission set group to admins/users.
+3. One-time: in Setup -> External Client App Manager -> Flowdometer ECA ->
+   Policies, enable the Client Credentials Flow and set a Run-As user.
+4. Open the Flowdometer app -> Setup -> "Create a Listener": choose an object and
+   the field to track, enable history, and Submit.
+5. Flowdometer creates the tracking field, enables Field History on it, and begins
+   recording Flow/Step records as that field changes.
+6. Review cycle-time, first-response, idle-time, and breach analytics in the
+   bundled dashboards and reports.
+7. To remove: an admin runs "Prepare for Uninstall" (Customize Application
+   permission required), erases the deleted lookup fields from each object's
+   Deleted Fields list, then uninstalls the package from Installed Packages.
+
+================================================================================
+
 Marketing Site: 
   https://www.flowdometer.com/
 
@@ -36,6 +117,38 @@ Data Model
   https://gist.githubusercontent.com/michaelmuse/ef3ccbd0692b0c633f5428168442dd9f/raw/6307d878ee2af66961616bc658f25d1fbce03520/gist_content.json
 
 Apex
+  Current Apex classes in the released 2GP package (3.0.0) and their roles:
+    - FlowdometerTokenService    : mints same-org OAuth client_credentials access
+                                   tokens (reads the protected Eca_Secret__mdt);
+                                   transaction-scoped in-memory cache only.
+    - FlowdometerAuthService     : session-free connection health check
+                                   (checkConnectionStatus) backing the setup LWC.
+    - MetaDataUtilityCls         : creates the dynamic lookup field (Tooling REST)
+                                   and enables Field History (Metadata API),
+                                   same-org; dynamic-FLS helpers.
+    - FlowdometerPermissionReconciler : creates/reconciles the unmanaged FLS
+                                   permission set + permission set group and FLS
+                                   for the dynamic fields; admin-gated DML.
+    - ListenerFlowController     : invocable - queries & parses field history into
+                                   Flow/Step data (used by the processing Flow).
+    - ListenerUpdateFlowController : invocable - populates the correlation lookups
+                                   on Flow__c and the tracked record.
+    - ListenerMasterConfigurationController : controller for the Listener setup LWC
+                                   (object/field pickers, listener creation).
+    - FlowdometerRecordTypeProvider : resolves packaged RecordType Ids by describe.
+    - FlowdometerUninstallHelper / FlowDeactivator : admin-initiated pre-uninstall
+                                   cleanup (deactivate flows, delete dynamic fields,
+                                   remove permission assignments); Customize
+                                   Application-gated.
+    - CalculateBusinessHoursDiff, FeatureFlagUtil : business-hours math; CMDT
+                                   feature-flag read.
+    - MetadataService (apex-mdapi): third-party WSDL2Apex Metadata API client used
+                                   by enableFieldHistoryTracking (same-org SOAP).
+    - Test-only: *Test classes, TestDataFactory (@isTest), MetadataServiceMock,
+                                   ToolingAPIMock - not part of the runtime surface.
+
+  NOTE: the per-file gist links below are an earlier snapshot for orientation; the
+  authoritative source is the released managed package version (3.0.0). 
   All Method signatures in my apex files:
     https://gist.githubusercontent.com/michaelmuse/c29b1571124939fa60fc0b26df14bba2/raw/acfd932c08c7eaa82cad03f44088426977e1649b/FlowdometerApexMethodSignatures.json
   ListenerFlowController.cls

@@ -1,75 +1,131 @@
 Flowdometer Security Measures
 ============================
 
-This document outlines the security measures implemented in the Flowdometer managed package to address common security concerns.
+This document outlines the security measures implemented in the Flowdometer 2GP
+managed package (namespace: Flowdometer). Flowdometer is a SAME-ORG solution: it
+contacts no external services or endpoints. All processing stays inside the
+subscriber's own Salesforce org. This document is kept in sync with the code and
+with SECURITY_REVIEW_NOTES.md.
 
-1. CRUD/FLS Checks
-------------------
-- The main controller class `ListenerFlowController` uses `with sharing` to enforce organization-wide sharing rules
-- All field access is done through Schema.Describe calls to validate field existence and accessibility
-- The `buildQuery` method validates field names against the Schema before including them in queries
-- Field-level security is enforced by using Schema.Describe to check field accessibility before querying
+1. Same-Org Architecture / No External Services
+-----------------------------------------------
+- All HTTP callouts target the subscriber org's OWN My Domain, constructed from
+  URL.getOrgDomainUrl(). There are NO hardcoded URLs and NO external endpoints.
+- Endpoints called are same-org Salesforce APIs only: the OAuth token endpoint
+  (/services/oauth2/token), the REST API, the Tooling API, and the Metadata API
+  (SOAP). No cross-org or off-platform traffic; customer data never leaves the org.
 
-2. SOQL Injection Prevention
----------------------------
-- All SOQL queries are constructed using parameterized queries with bind variables
-- The `buildQuery` method includes validation checks to prevent injection:
-  * Validates object names against Schema.getGlobalDescribe()
-  * Validates field names against Schema.Describe
-  * Prevents DML operations in queries
-  * Checks for suspicious characters or patterns
-- Query strings are validated before execution to ensure they start with 'SELECT' and don't contain DML keywords
-
-3. Sharing and Access Control
-----------------------------
-- All classes use `with sharing` to enforce organization-wide sharing rules
-- The main controller is marked as `global with sharing` to ensure proper access control
-- Parent record access is controlled through the sharing model
-- History record access is restricted to records the user has permission to view
-
-4. External Callout Security
----------------------------
-- No external callouts are made in the package
-- All operations are performed within Salesforce's security context
-- No sensitive data is exposed to external systems
-
-5. Dynamic Apex Safety
----------------------
-- Schema.Describe calls are used to validate object and field names
-- Dynamic SOQL is only used with validated and sanitized input
-- All dynamic queries are constructed with proper security checks
-- Field names are validated against Schema before use in queries
-
-6. Method and Class Exposure
----------------------------
-- Only necessary methods are marked as `@AuraEnabled` or `@InvocableMethod`
-- Global methods are limited to those required for Flow integration
-- Test methods are properly marked with `@isTest`
-- Internal methods are marked as private where possible
-- Sensitive operations are encapsulated in private methods
-
-7. Object and Field Access
--------------------------
-- Object access is validated through Schema.Describe
-- Field access is controlled through Schema.Describe
-- Custom object and field names are properly namespaced
-- Field-level security is enforced through Schema checks
-- Access to history records is restricted to authorized users
-
-8. Additional Security Measures
------------------------------
-- CPU time limits are monitored and enforced
-- Batch processing is implemented to handle large data volumes safely
-- Error handling includes proper logging without exposing sensitive information
-- Retry mechanisms are implemented with maximum retry limits
-- All user input is validated before processing
-
-9. Testing and Validation
+2. Encryption In Transit
 ------------------------
-- Comprehensive test coverage for security scenarios
-- Test classes include negative test cases for security
-- Sharing rules are tested in test classes
-- Field-level security is verified in tests
-- Error handling and validation are thoroughly tested
+- Every callout uses HTTPS/TLS to the org's My Domain. No cleartext transport.
+- Data at rest is held in native Salesforce custom objects, governed by standard
+  Salesforce security and any Shield Platform Encryption the subscriber enables.
 
-This document is maintained as part of the Flowdometer package and should be updated as new security measures are implemented or existing ones are modified. 
+3. Authentication (same-org OAuth, no external IdP)
+---------------------------------------------------
+- Same-org API calls are authenticated with the OAuth 2.0 client_credentials flow
+  issued by a packaged External Client App ("Flowdometer ECA"). Requested scope is
+  "Api" only (no refresh_token / offline_access).
+- The subscriber admin enables the ECA Client Credentials flow and sets a Run-As
+  user manually in Setup. The package does NOT modify the External Client App
+  programmatically (it deliberately avoids the prohibited pattern of using a
+  session id to create/modify an External Client App via the Metadata/Tooling API).
+- No external identity provider and no external authentication are involved.
+
+4. Secrets Handling
+-------------------
+- The ECA consumer key/secret are stored in a Protected Custom Metadata Type
+  (Eca_Secret__mdt, record protected=true). Protected custom metadata records are
+  readable only by Apex within the package namespace; subscriber admins and
+  subscriber code cannot view, query, or export them.
+- Access tokens are minted on demand and held only in a transaction-scoped,
+  in-memory Apex variable. No access or refresh tokens are persisted anywhere
+  (no Custom Object/Setting/Metadata, Platform Cache, Big Object, or external
+  store).
+- No secrets, tokens, session ids, or PII are written to System.debug or to any
+  field/object. Persisted error fields receive user-safe summaries only; stack
+  traces and query text go to the transient debug log only.
+
+5. Session ID Usage
+-------------------
+- UserInfo.getSessionId() is NOT used for runtime API calls.
+- A Visualforce-sourced API session is used transiently only within a single
+  admin-initiated "Prepare for Uninstall" Metadata API request (Lightning sessions
+  lack Metadata API scope). It is never persisted or logged and is used only for
+  same-org SOAP calls within that one request.
+
+6. CRUD / FLS and Sharing
+-------------------------
+- Classes default to "with sharing"; utility/queueable classes called from
+  multiple contexts use "inherited sharing" with documented justification. There
+  are no "without sharing" declarations on classes that touch permission or
+  FieldPermissions DML.
+- User-facing reads enforce CRUD/FLS via Schema.Describe isAccessible()/
+  isUpdateable() checks and Security.stripInaccessible where applicable.
+- System-context bookkeeping writes (population of the package's own correlation
+  lookup fields) are deliberately FLS-independent and documented: they target only
+  package-created fields (verified by describe/referenceTo before any write), no
+  standard or subscriber-owned field is ever written with FLS bypassed, and
+  row-level sharing is respected.
+
+7. Dynamic Field-Level Security (permission architecture)
+---------------------------------------------------------
+- Flowdometer creates lookup fields at runtime (Tooling API) for the objects an
+  admin chooses to track, so those fields cannot exist at package build time.
+- Because FieldPermissions DML against a managed (MANAGED_INSTALLED) permission set
+  is blocked by the platform, FLS for the dynamic fields is held on an UNMANAGED
+  permission set (Flowdometer_Dynamic_FLS) created at runtime via native
+  FieldPermissions DML (no Metadata API, no session token).
+- A permission set group (Flowdometer_Access) bundles the managed packaged
+  permission set with the unmanaged one. FlowdometerPermissionReconciler creates
+  and reconciles these idempotently. All such DML is gated by the running admin's
+  own "Manage Profiles and Permission Sets" permission; Apex cannot self-escalate.
+
+8. SOQL Injection Prevention
+----------------------------
+- Values always use bind variables. The only dynamic elements in any query are
+  sObject/field API names (which SOQL cannot bind); each is a package-controlled
+  constant or a Schema.Describe-resolved identifier - never raw end-user input.
+- Object names are validated against Schema.getGlobalDescribe(); the history query
+  builder additionally rejects DML keywords / statement terminators before exec.
+
+9. Authorization Controls
+-------------------------
+- Privileged/admin operations are permission-gated. The pre-uninstall cleanup
+  (FlowdometerUninstallHelper) and the flow-deactivation entry points require the
+  "Customize Application" permission; the REST resource uses @HttpPost (no
+  state change on GET) and the LWC disables the action for non-admins.
+- The packaged permission set (Flowdometer_User) does not grant "Customize
+  Application"; only existing org admins can run setup. View All / Modify All in
+  that permission set is limited to the package's own tracking objects (Flow__c,
+  Listener__c, Step__c) and is assigned at the admin's discretion.
+
+10. Dynamic Apex Safety
+-----------------------
+- Schema.Describe is used to validate object and field names before use.
+- Dynamic SOQL is built only from validated identifiers + bind variables.
+
+11. Method and Class Exposure
+-----------------------------
+- Only necessary methods are @AuraEnabled / @InvocableMethod; global members are
+  limited to those required for Flow integration and the documented REST resource.
+- Test code is annotated @isTest (including the test-data factory) and is excluded
+  from the runtime/security surface. Internal methods are private where possible.
+
+12. Resilience / Error Handling
+-------------------------------
+- CPU/limit-aware processing; batch/queueable patterns for large volumes.
+- Bounded retries with maximum attempt limits.
+- Error handling logs diagnostics to the debug log without exposing secrets, and
+  surfaces only user-safe messages to the UI.
+
+13. Testing and Validation
+--------------------------
+- Apex unit tests cover positive and negative (including authorization-rejection
+  and FLS) paths; all callouts are mocked (no network dependency).
+- 75%+ coverage maintained; the full suite runs green in both the packaging org
+  and installed subscriber scratch orgs, plus an end-to-end Tier 2 QA suite.
+
+This document is maintained as part of the Flowdometer package and is updated as
+security measures change. For the full reviewer narrative, architecture diagram,
+and scan justifications, see SECURITY_REVIEW_NOTES.md.
