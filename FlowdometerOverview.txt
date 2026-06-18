@@ -114,7 +114,7 @@ Security Measures:
   https://raw.githubusercontent.com/michaelmuse/Flowdometer/refs/heads/master/SecurityMeasures.txt
 
 Data Model
-  https://gist.githubusercontent.com/michaelmuse/ef3ccbd0692b0c633f5428168442dd9f/raw/6307d878ee2af66961616bc658f25d1fbce03520/gist_content.json
+  https://raw.githubusercontent.com/michaelmuse/Flowdometer/refs/heads/master/FlowdometerObjectSchema.json
 
 Apex
   Current Apex classes in the released 2GP package (3.0.0) and their roles:
