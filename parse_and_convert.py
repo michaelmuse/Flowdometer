@@ -30,5 +30,8 @@ if __name__ == "__main__":
                     field_name = os.path.splitext(filename)[0].replace(".field-meta", "")
                     json_output[parent_dir_name][field_name] = parse_xml_to_json(filepath)
 
-    with open("FlowdometerObjectSchema.json", "w") as f:
+    # NOTE: write to a distinct generated filename so this raw auto-parse never
+    # clobbers the hand-curated reviewer doc FlowdometerObjectSchema.json (which is
+    # linked from FlowdometerOverview.txt for Security Review).
+    with open("FlowdometerObjectSchema.generated.json", "w") as f:
         json.dump(json_output, f, indent=4)
